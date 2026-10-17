@@ -1,0 +1,4104 @@
+{
+  "schemaVersion": 1,
+  "auditedAt": "2026-10-17",
+  "catalogPath": "data/sesame-records.json",
+  "catalogSha256": "bb40d0e61cc336e89c703a02f1d4663ac36126c06cf9623679e09a8da701077e",
+  "scope": "Existing catalog links only. No media downloads, no catalog/UI edits, no complete-playback verification.",
+  "definitions": {
+    "canonicalEpisode": "A distinct named Shalom Sesame home-video program; duplicates, broadcast edits, songs and trailers are not additional episodes.",
+    "title-verified candidate": "An existing single-upload whole-episode candidate with title or primary-numbering evidence; media completeness remains unreviewed.",
+    "complete-upload linked": "Reserved for a single-upload edition whose actual program identity and complete playback have been checked; none reached that status in this metadata audit.",
+    "parts-only": "No single whole-upload candidate; one or more explicitly labeled episode parts are linked.",
+    "missing": "No single whole-upload candidate and no episode-part upload. Short studio scenes or trailers may still be linked.",
+    "wholeUploadCandidatePolicy": "Use a canonical episode title or primary-numbered identity and long-form runtime. Two substantially shorter than reference editions are tracked separately. Runtime alone never proves completeness.",
+    "runtimeComparisons": "Library runtimes are approximate and editions vary; shorter runtimes are a review flag, not proof that an upload is missing scenes.",
+    "yearComparisons": "Production/copyright year, original home-video release and later dubbed/broadcast dates differ. Secondary rollout years are labeled provisional rather than merged into primary program-year fields."
+  },
+  "sources": {
+    "umass": {
+      "title": "UMass Amherst, Jewish Heritage Video Collection",
+      "url": "https://www.umass.edu/langctr/jhweb.html",
+      "type": "primary-library-catalog",
+      "supports": "Eleven distinct classic Shalom Sesame titles, call numbers CH 256 through CH 266."
+    },
+    "manitoba": {
+      "title": "Manitoba Education and Training, Catalogue of Videorecordings and Films, Kindergarten to Grade 6, 1993",
+      "url": "https://files.eric.ed.gov/fulltext/ED377837.pdf",
+      "type": "primary-government-library-catalog",
+      "supports": "Series index at PDF page 178 maps Shows 1–5 to titles. Item entries give copyright 1986 and approximately 30 min. PDF pages 111,115,117,158,197."
+    },
+    "fedweb": {
+      "title": "Alpha Listing Media Guide, Shalom Sesame entries",
+      "url": "https://cdn.fedweb.org/71/165/Alpha%2520Listing%2520Media%2520Guide.pdf#page=34",
+      "type": "primary-library-media-guide",
+      "supports": "Classic numbering 1–10 and nominal runtimes 30 min for 1–8,40 min for 9–11. Kids Sing Israel ordinal is misprinted 1 in this guide; other sources establish 11."
+    },
+    "classic-retailer": {
+      "title": "All Judaica, Shalom Sesame classic complete set contents",
+      "url": "https://www.alljudaica.com/Shalom-Sesame-Complete-Set-6-DVDs-p/7993.htm",
+      "type": "primary-retailer-product-listing",
+      "supports": "Explicit numbered classic show list 1–11. Introductory copy inconsistently says 12 programs/sixdiscs, while detailed list names 11 shows across fivediscs; not used for total."
+    },
+    "az-aleph": {
+      "title": "University of Arizona CMES, Aleph-Bet Telethon: Discovering the Hebrew Letters",
+      "url": "https://cmeslibrary.sbs.arizona.edu/video/aleph-bet-telethon-discovering-hebrew-letters",
+      "type": "primary-library-catalog",
+      "supports": "Show 9, year 1991."
+    },
+    "az-kids": {
+      "title": "University of Arizona CMES, Kids Sing Israel (Grouches Don't)",
+      "url": "https://cmeslibrary.sbs.arizona.edu/index.php/video/kids-sing-israel-grouches-dont",
+      "type": "primary-library-catalog",
+      "supports": "Year 1991 and 38 min length."
+    },
+    "modern-set": {
+      "title": "Israel Book Shop, Shalom Sesame series for schools, set of 12 DVDs",
+      "url": "https://www.israelbookshop.com/products/shalom-sesame-series-for-schools-set-of-12-dvd",
+      "type": "primary-retailer-distributor-product-listing",
+      "supports": "Explicit 12 episodes and complete numbered 12-title list."
+    },
+    "urj": {
+      "title": "Union for Reform Judaism, Shalom Sesame partnership announcement, November 21,2013",
+      "url": "https://urj.org/press-room/reformjudaismorg-partners-shalom-sesame-offer-engaging-jewish-content-kids",
+      "type": "primary-program-partner-announcement",
+      "supports": "Twelve new episodes in the modern initiative; its 2010 shorthand is not used as an exact individual DVD release date."
+    },
+    "apple-welcome": {
+      "title": "Apple TV, Shalom Sesame: Welcome to Israel",
+      "url": "https://tv.apple.com/us/movie/shalom-sesame---welcome-to-israel/umc.cmc.2mg7y4zqbxrjsi0gjab3ocffq",
+      "type": "primary-licensed-distribution-metadata",
+      "supports": "27 min,2010 and Sesame Workshop copyright."
+    },
+    "apple-shabbat": {
+      "title": "Apple TV, Shalom Sesame: Shabbat Shalom, Grover!",
+      "url": "https://tv.apple.com/us/movie/shalom-sesame---shabbat-shalom-grover/umc.cmc.h7ep2bsvd8po40e0ut4bnyf5",
+      "type": "primary-licensed-distribution-metadata",
+      "supports": "27 min and 2010 program/copyright metadata."
+    },
+    "apple-sukkah": {
+      "title": "Apple TV, Shalom Sesame: Monsters in the Sukkah",
+      "url": "https://tv.apple.com/us/movie/shalom-sesame---monsters-in-the-sukkah/umc.cmc.3tcgr41lod41m65q10ueylwqt",
+      "type": "primary-licensed-distribution-metadata",
+      "supports": "25 min and 2010 program/copyright metadata."
+    },
+    "oru-hebrew": {
+      "title": "Oral Roberts University, Hebrew Culture DVDs, item 239",
+      "url": "https://oru.edu/pdfs/current-students/my-academics/resources/hebrew_culture_dvds.pdf#page=13",
+      "type": "primary-university-library-inventory",
+      "supports": "Grover Learns Hebrew program 23 min, separately 27 min extras;2010 program label and 12 episode series."
+    },
+    "wiki-years": {
+      "title": "Shalom Sesame episode chronology, Wikipedia, revision 1371814228",
+      "url": "https://en.wikipedia.org/w/index.php?title=Shalom_Sesame&oldid=1371814228",
+      "type": "secondary-year-chronology",
+      "supports": "Provisional wave-year grouping 1990 for 6–8,1991 for 9–11; modern DVD rollout 2010–11. Exact rollout dates not independently confirmed for every title."
+    }
+  },
+  "summaries": [
+    {
+      "series": "shalom-classic",
+      "canonicalEpisodeTotal": 11,
+      "totalSources": [
+        "umass",
+        "classic-retailer"
+      ],
+      "catalogUploadRecordCount": 53,
+      "uniqueCanonicalEpisodesWithWholeUploadCandidates": 11,
+      "wholeUploadCandidateLinkCount": 18,
+      "additionalPossiblyShortenedUploadLinkCount": 2,
+      "uniqueCanonicalEpisodesWithDirectTitleWholeCandidate": 9,
+      "uniqueCanonicalEpisodesWithOnlyNumberResolvedWholeCandidate": 2,
+      "verifiedCompleteSingleUploadEpisodeCount": 0,
+      "uniqueCanonicalEpisodesWithEpisodeParts": 10,
+      "uniqueCanonicalEpisodesWithAllLabeledEpisodeParts": 9,
+      "episodePartLinkCount": 27,
+      "trailerLinkCount": 0,
+      "studioOrStorySegmentLinkCount": 1,
+      "uniqueCanonicalEpisodesMissingSingleWholeUploadCandidate": 0,
+      "statusCounts": {
+        "title-verified candidate": 11
+      }
+    },
+    {
+      "series": "shalom-modern",
+      "canonicalEpisodeTotal": 12,
+      "totalSources": [
+        "modern-set",
+        "urj",
+        "oru-hebrew"
+      ],
+      "catalogUploadRecordCount": 257,
+      "uniqueCanonicalEpisodesWithWholeUploadCandidates": 0,
+      "wholeUploadCandidateLinkCount": 0,
+      "additionalPossiblyShortenedUploadLinkCount": 0,
+      "uniqueCanonicalEpisodesWithDirectTitleWholeCandidate": 0,
+      "uniqueCanonicalEpisodesWithOnlyNumberResolvedWholeCandidate": 0,
+      "verifiedCompleteSingleUploadEpisodeCount": 0,
+      "uniqueCanonicalEpisodesWithEpisodeParts": 2,
+      "uniqueCanonicalEpisodesWithAllLabeledEpisodeParts": 1,
+      "episodePartLinkCount": 3,
+      "trailerLinkCount": 12,
+      "studioOrStorySegmentLinkCount": 11,
+      "uniqueCanonicalEpisodesMissingSingleWholeUploadCandidate": 12,
+      "statusCounts": {
+        "parts-only": 2,
+        "missing": 10
+      }
+    }
+  ],
+  "episodes": [
+    {
+      "id": "shalom-classic-01",
+      "series": "shalom-classic",
+      "canonicalNumber": 1,
+      "canonicalTitle": "The Land of Israel",
+      "originalProductionYear": 1986,
+      "yearEvidenceStatus": "primary-confirmed",
+      "yearSources": [
+        "manitoba"
+      ],
+      "numberingSources": [
+        "manitoba",
+        "fedweb"
+      ],
+      "titleSources": [
+        "umass"
+      ],
+      "referenceRuntimes": [
+        {
+          "minutes": 30,
+          "precision": "nominal-library-runtime",
+          "sourceId": "manitoba"
+        }
+      ],
+      "coverageStatus": "title-verified candidate",
+      "wholeUploadCandidates": [
+        {
+          "catalogId": "yt-XCsTpvlCBa8",
+          "url": "https://www.youtube.com/watch?v=XCsTpvlCBa8",
+          "catalogTitle": "Shalom Sesame Ep  1",
+          "originalTitle": "Shalom Sesame Ep  1",
+          "durationSeconds": 1962,
+          "uploader": "Edward Bernstein",
+          "sourceType": "community",
+          "catalogKind": "episode",
+          "role": "whole-upload-candidate",
+          "identificationMethod": "canonical-number",
+          "playbackReviewed": false,
+          "identificationSources": [
+            "manitoba"
+          ],
+          "identificationNote": "Uploader metadata gives the show number. The external primary catalog maps that number to this title; this is not based on upload order. The title card has not been watched."
+        },
+        {
+          "catalogId": "yt-dZNOBb3zqLw",
+          "url": "https://www.youtube.com/watch?v=dZNOBb3zqLw",
+          "catalogTitle": "Shalom Sesame, Episode 1, The Land of Israel, English with Hebrew Subtitles",
+          "originalTitle": "שלום סומסום - פרק 1 - ארץ ישראל (דובר אנגלית ומתורגם לעברית)",
+          "durationSeconds": 1916,
+          "uploader": "dayingale",
+          "sourceType": "community",
+          "catalogKind": "episode",
+          "role": "whole-upload-candidate",
+          "identificationMethod": "canonical-title",
+          "playbackReviewed": false
+        }
+      ],
+      "shortenedOrUncertainLongUploads": [],
+      "episodePartGroups": [
+        {
+          "scope": "episode",
+          "uploader": "nostalgiateenable",
+          "expectedPartCountFromLabels": 3,
+          "presentParts": [
+            1,
+            2,
+            3
+          ],
+          "missingParts": [],
+          "allLabeledPartsPresent": true,
+          "totalLinkedDurationSeconds": 1924,
+          "fullEpisodeCompletenessVerified": false,
+          "countsAsSingleWholeUpload": false,
+          "links": [
+            {
+              "catalogId": "yt-sww_5EwBSwQ",
+              "url": "https://www.youtube.com/watch?v=sww_5EwBSwQ",
+              "catalogTitle": "The Land of Israel (1/3)",
+              "originalTitle": "Shalom Sesame: The Land of Israel (1/3)",
+              "durationSeconds": 901,
+              "uploader": "nostalgiateenable",
+              "sourceType": "community",
+              "catalogKind": "clip",
+              "role": "episode-part",
+              "identificationMethod": "canonical-title",
+              "playbackReviewed": false,
+              "partNumber": 1
+            },
+            {
+              "catalogId": "yt-Dw26x8vCkQ0",
+              "url": "https://www.youtube.com/watch?v=Dw26x8vCkQ0",
+              "catalogTitle": "The Land of Israel (2/3)",
+              "originalTitle": "Shalom Sesame: The Land of Israel (2/3)",
+              "durationSeconds": 901,
+              "uploader": "nostalgiateenable",
+              "sourceType": "community",
+              "catalogKind": "clip",
+              "role": "episode-part",
+              "identificationMethod": "canonical-title",
+              "playbackReviewed": false,
+              "partNumber": 2
+            },
+            {
+              "catalogId": "yt-1VH4ylQ1wJc",
+              "url": "https://www.youtube.com/watch?v=1VH4ylQ1wJc",
+              "catalogTitle": "The Land of Israel (3/3)",
+              "originalTitle": "Shalom Sesame: The Land of Israel (3/3)",
+              "durationSeconds": 122,
+              "uploader": "nostalgiateenable",
+              "sourceType": "community",
+              "catalogKind": "clip",
+              "role": "episode-part",
+              "identificationMethod": "canonical-title",
+              "playbackReviewed": false,
+              "partNumber": 3
+            }
+          ]
+        }
+      ],
+      "studioSegmentPartGroups": [],
+      "trailers": [],
+      "segments": [],
+      "completenessVerified": false,
+      "todos": [
+        "Review a candidate from start to credits against its canonical episode identity and known edition before marking it complete."
+      ],
+      "associatedCatalogIds": [
+        "yt-XCsTpvlCBa8",
+        "yt-dZNOBb3zqLw",
+        "yt-sww_5EwBSwQ",
+        "yt-Dw26x8vCkQ0",
+        "yt-1VH4ylQ1wJc"
+      ]
+    },
+    {
+      "id": "shalom-classic-02",
+      "series": "shalom-classic",
+      "canonicalNumber": 2,
+      "canonicalTitle": "Tel Aviv",
+      "originalProductionYear": 1986,
+      "yearEvidenceStatus": "primary-confirmed",
+      "yearSources": [
+        "manitoba"
+      ],
+      "numberingSources": [
+        "manitoba",
+        "fedweb"
+      ],
+      "titleSources": [
+        "umass"
+      ],
+      "referenceRuntimes": [
+        {
+          "minutes": 30,
+          "precision": "nominal-library-runtime",
+          "sourceId": "manitoba"
+        }
+      ],
+      "coverageStatus": "title-verified candidate",
+      "wholeUploadCandidates": [
+        {
+          "catalogId": "yt-Pvb-ziyleaA",
+          "url": "https://www.youtube.com/watch?v=Pvb-ziyleaA",
+          "catalogTitle": "Shalom Sesame Ep  2",
+          "originalTitle": "Shalom Sesame Ep  2",
+          "durationSeconds": 1931,
+          "uploader": "Edward Bernstein",
+          "sourceType": "community",
+          "catalogKind": "episode",
+          "role": "whole-upload-candidate",
+          "identificationMethod": "canonical-number",
+          "playbackReviewed": false,
+          "identificationSources": [
+            "manitoba"
+          ],
+          "identificationNote": "Uploader metadata gives the show number. The external primary catalog maps that number to this title; this is not based on upload order. The title card has not been watched."
+        },
+        {
+          "catalogId": "yt-aZmEKLOp9YI",
+          "url": "https://www.youtube.com/watch?v=aZmEKLOp9YI",
+          "catalogTitle": "Shalom Sesame, Episode 2, Tel Aviv, English with Hebrew Subtitles",
+          "originalTitle": "שלום סומסום - פרק 2 - תל אביב (דובר אנגלית ומתורגם לעברית)",
+          "durationSeconds": 1777,
+          "uploader": "dayingale",
+          "sourceType": "community",
+          "catalogKind": "episode",
+          "role": "whole-upload-candidate",
+          "identificationMethod": "canonical-title",
+          "playbackReviewed": false
+        }
+      ],
+      "shortenedOrUncertainLongUploads": [
+        {
+          "catalogId": "yt-Zdrzz3ozH7o",
+          "url": "https://www.youtube.com/watch?v=Zdrzz3ozH7o",
+          "catalogTitle": "Shalom Sesame, Season 2, Episode 2, Tel Aviv, 1990",
+          "originalTitle": "שלום סומסום עונה 2 פרק 2 - תל אביב 1990",
+          "durationSeconds": 1508,
+          "uploader": "Dinostalgic 90'",
+          "sourceType": "community",
+          "catalogKind": "episode",
+          "role": "possible-shortened-edition",
+          "identificationMethod": "canonical-title",
+          "playbackReviewed": false,
+          "note": "25:08 versus approximately 30 min in the primary catalog; source title 1990 may describe a later broadcast/dub rather than original production. Kept outside the stronger whole-upload candidate count."
+        }
+      ],
+      "episodePartGroups": [
+        {
+          "scope": "episode",
+          "uploader": "nostalgiateenable",
+          "expectedPartCountFromLabels": 2,
+          "presentParts": [
+            1,
+            2
+          ],
+          "missingParts": [],
+          "allLabeledPartsPresent": true,
+          "totalLinkedDurationSeconds": 1784,
+          "fullEpisodeCompletenessVerified": false,
+          "countsAsSingleWholeUpload": false,
+          "links": [
+            {
+              "catalogId": "yt-2laiCZSU1_4",
+              "url": "https://www.youtube.com/watch?v=2laiCZSU1_4",
+              "catalogTitle": "Tel Aviv (1/2)",
+              "originalTitle": "Shalom Sesame: Tel Aviv (1/2)",
+              "durationSeconds": 901,
+              "uploader": "nostalgiateenable",
+              "sourceType": "community",
+              "catalogKind": "clip",
+              "role": "episode-part",
+              "identificationMethod": "canonical-title",
+              "playbackReviewed": false,
+              "partNumber": 1
+            },
+            {
+              "catalogId": "yt-mmwuT8Yrlzk",
+              "url": "https://www.youtube.com/watch?v=mmwuT8Yrlzk",
+              "catalogTitle": "Tel Aviv (2/2)",
+              "originalTitle": "Shalom Sesame: Tel Aviv (2/2)",
+              "durationSeconds": 883,
+              "uploader": "nostalgiateenable",
+              "sourceType": "community",
+              "catalogKind": "clip",
+              "role": "episode-part",
+              "identificationMethod": "canonical-title",
+              "playbackReviewed": false,
+              "partNumber": 2
+            }
+          ]
+        }
+      ],
+      "studioSegmentPartGroups": [],
+      "trailers": [],
+      "segments": [],
+      "completenessVerified": false,
+      "todos": [
+        "Review a candidate from start to credits against its canonical episode identity and known edition before marking it complete."
+      ],
+      "associatedCatalogIds": [
+        "yt-Pvb-ziyleaA",
+        "yt-aZmEKLOp9YI",
+        "yt-Zdrzz3ozH7o",
+        "yt-2laiCZSU1_4",
+        "yt-mmwuT8Yrlzk"
+      ]
+    },
+    {
+      "id": "shalom-classic-03",
+      "series": "shalom-classic",
+      "canonicalNumber": 3,
+      "canonicalTitle": "Kibbutz",
+      "originalProductionYear": 1986,
+      "yearEvidenceStatus": "primary-confirmed",
+      "yearSources": [
+        "manitoba"
+      ],
+      "numberingSources": [
+        "manitoba",
+        "fedweb"
+      ],
+      "titleSources": [
+        "umass"
+      ],
+      "referenceRuntimes": [
+        {
+          "minutes": 30,
+          "precision": "nominal-library-runtime",
+          "sourceId": "manitoba"
+        }
+      ],
+      "coverageStatus": "title-verified candidate",
+      "wholeUploadCandidates": [
+        {
+          "catalogId": "yt-FxoTj7jZKuk",
+          "url": "https://www.youtube.com/watch?v=FxoTj7jZKuk",
+          "catalogTitle": "Shalom Sesame Ep  3",
+          "originalTitle": "Shalom Sesame Ep  3",
+          "durationSeconds": 1954,
+          "uploader": "Edward Bernstein",
+          "sourceType": "community",
+          "catalogKind": "episode",
+          "role": "whole-upload-candidate",
+          "identificationMethod": "canonical-number",
+          "playbackReviewed": false,
+          "identificationSources": [
+            "manitoba"
+          ],
+          "identificationNote": "Uploader metadata gives the show number. The external primary catalog maps that number to this title; this is not based on upload order. The title card has not been watched."
+        },
+        {
+          "catalogId": "yt-OCiyjivPMA8",
+          "url": "https://www.youtube.com/watch?v=OCiyjivPMA8",
+          "catalogTitle": "Shalom Sesame Show 3 \"Kibbutz\"",
+          "originalTitle": "Shalom Sesame Show 3 \"Kibbutz\"",
+          "durationSeconds": 1769,
+          "uploader": "Sybil Kibble",
+          "sourceType": "community",
+          "catalogKind": "episode",
+          "role": "whole-upload-candidate",
+          "identificationMethod": "canonical-title",
+          "playbackReviewed": false
+        },
+        {
+          "catalogId": "yt-h_tBVbWoplo",
+          "url": "https://www.youtube.com/watch?v=h_tBVbWoplo",
+          "catalogTitle": "Shalom Sesame, Episode 3, Kibbutz, English with Hebrew Subtitles",
+          "originalTitle": "שלום סומסום - פרק 3 - קיבוץ (דובר אנגלית ומתורגם לעברית)",
+          "durationSeconds": 1907,
+          "uploader": "dayingale",
+          "sourceType": "community",
+          "catalogKind": "episode",
+          "role": "whole-upload-candidate",
+          "identificationMethod": "canonical-title",
+          "playbackReviewed": false
+        }
+      ],
+      "shortenedOrUncertainLongUploads": [],
+      "episodePartGroups": [
+        {
+          "scope": "episode",
+          "uploader": "nostalgiateenable",
+          "expectedPartCountFromLabels": 3,
+          "presentParts": [
+            1,
+            2,
+            3
+          ],
+          "missingParts": [],
+          "allLabeledPartsPresent": true,
+          "totalLinkedDurationSeconds": 1915,
+          "fullEpisodeCompletenessVerified": false,
+          "countsAsSingleWholeUpload": false,
+          "links": [
+            {
+              "catalogId": "yt-1Snb0OVhmko",
+              "url": "https://www.youtube.com/watch?v=1Snb0OVhmko",
+              "catalogTitle": "Kibbutz (1/3)",
+              "originalTitle": "Shalom Sesame: Kibbutz (1/3)",
+              "durationSeconds": 901,
+              "uploader": "nostalgiateenable",
+              "sourceType": "community",
+              "catalogKind": "clip",
+              "role": "episode-part",
+              "identificationMethod": "canonical-title",
+              "playbackReviewed": false,
+              "partNumber": 1
+            },
+            {
+              "catalogId": "yt-VS1FpvkPOQg",
+              "url": "https://www.youtube.com/watch?v=VS1FpvkPOQg",
+              "catalogTitle": "Kibbutz (2/3)",
+              "originalTitle": "Shalom Sesame: Kibbutz (2/3)",
+              "durationSeconds": 901,
+              "uploader": "nostalgiateenable",
+              "sourceType": "community",
+              "catalogKind": "clip",
+              "role": "episode-part",
+              "identificationMethod": "canonical-title",
+              "playbackReviewed": false,
+              "partNumber": 2
+            },
+            {
+              "catalogId": "yt-AIC4Ov_NWZg",
+              "url": "https://www.youtube.com/watch?v=AIC4Ov_NWZg",
+              "catalogTitle": "Kibbutz (3/3)",
+              "originalTitle": "Shalom Sesame: Kibbutz (3/3)",
+              "durationSeconds": 113,
+              "uploader": "nostalgiateenable",
+              "sourceType": "community",
+              "catalogKind": "clip",
+              "role": "episode-part",
+              "identificationMethod": "canonical-title",
+              "playbackReviewed": false,
+              "partNumber": 3
+            }
+          ]
+        }
+      ],
+      "studioSegmentPartGroups": [],
+      "trailers": [],
+      "segments": [],
+      "completenessVerified": false,
+      "todos": [
+        "Review a candidate from start to credits against its canonical episode identity and known edition before marking it complete."
+      ],
+      "associatedCatalogIds": [
+        "yt-FxoTj7jZKuk",
+        "yt-OCiyjivPMA8",
+        "yt-h_tBVbWoplo",
+        "yt-1Snb0OVhmko",
+        "yt-VS1FpvkPOQg",
+        "yt-AIC4Ov_NWZg"
+      ]
+    },
+    {
+      "id": "shalom-classic-04",
+      "series": "shalom-classic",
+      "canonicalNumber": 4,
+      "canonicalTitle": "The People of Israel",
+      "originalProductionYear": 1986,
+      "yearEvidenceStatus": "primary-confirmed",
+      "yearSources": [
+        "manitoba"
+      ],
+      "numberingSources": [
+        "manitoba",
+        "fedweb"
+      ],
+      "titleSources": [
+        "umass"
+      ],
+      "referenceRuntimes": [
+        {
+          "minutes": 30,
+          "precision": "nominal-library-runtime",
+          "sourceId": "manitoba"
+        }
+      ],
+      "coverageStatus": "title-verified candidate",
+      "wholeUploadCandidates": [
+        {
+          "catalogId": "yt-dkW2lNq4Ul4",
+          "url": "https://www.youtube.com/watch?v=dkW2lNq4Ul4",
+          "catalogTitle": "Shalom Sesame Ep  4",
+          "originalTitle": "Shalom Sesame Ep  4",
+          "durationSeconds": 1886,
+          "uploader": "Edward Bernstein",
+          "sourceType": "community",
+          "catalogKind": "episode",
+          "role": "whole-upload-candidate",
+          "identificationMethod": "canonical-number",
+          "playbackReviewed": false,
+          "identificationSources": [
+            "manitoba"
+          ],
+          "identificationNote": "Uploader metadata gives the show number. The external primary catalog maps that number to this title; this is not based on upload order. The title card has not been watched."
+        }
+      ],
+      "shortenedOrUncertainLongUploads": [],
+      "episodePartGroups": [
+        {
+          "scope": "episode",
+          "uploader": "nostalgiateenable",
+          "expectedPartCountFromLabels": 3,
+          "presentParts": [
+            1,
+            2,
+            3
+          ],
+          "missingParts": [],
+          "allLabeledPartsPresent": true,
+          "totalLinkedDurationSeconds": 1930,
+          "fullEpisodeCompletenessVerified": false,
+          "countsAsSingleWholeUpload": false,
+          "links": [
+            {
+              "catalogId": "yt--T8TApBXq3c",
+              "url": "https://www.youtube.com/watch?v=-T8TApBXq3c",
+              "catalogTitle": "The People of Israel (1/3)",
+              "originalTitle": "Shalom Sesame: The People of Israel (1/3)",
+              "durationSeconds": 901,
+              "uploader": "nostalgiateenable",
+              "sourceType": "community",
+              "catalogKind": "clip",
+              "role": "episode-part",
+              "identificationMethod": "canonical-title",
+              "playbackReviewed": false,
+              "partNumber": 1
+            },
+            {
+              "catalogId": "yt-uc1Jh0x4G1I",
+              "url": "https://www.youtube.com/watch?v=uc1Jh0x4G1I",
+              "catalogTitle": "The People of Israel (2/3)",
+              "originalTitle": "Shalom Sesame: The People of Israel (2/3)",
+              "durationSeconds": 901,
+              "uploader": "nostalgiateenable",
+              "sourceType": "community",
+              "catalogKind": "clip",
+              "role": "episode-part",
+              "identificationMethod": "canonical-title",
+              "playbackReviewed": false,
+              "partNumber": 2
+            },
+            {
+              "catalogId": "yt-1ykIDrEVVdU",
+              "url": "https://www.youtube.com/watch?v=1ykIDrEVVdU",
+              "catalogTitle": "The People of Israel (3/3)",
+              "originalTitle": "Shalom Sesame: The People of Israel (3/3)",
+              "durationSeconds": 128,
+              "uploader": "nostalgiateenable",
+              "sourceType": "community",
+              "catalogKind": "clip",
+              "role": "episode-part",
+              "identificationMethod": "canonical-title",
+              "playbackReviewed": false,
+              "partNumber": 3
+            }
+          ]
+        }
+      ],
+      "studioSegmentPartGroups": [],
+      "trailers": [],
+      "segments": [],
+      "completenessVerified": false,
+      "todos": [
+        "Review a candidate from start to credits against its canonical episode identity and known edition before marking it complete."
+      ],
+      "auditNotes": [
+        "Only the generic numbered whole-upload title is linked. Its number resolves to the canonical title in primary library metadata; confirm the actual video title card/content during playback review."
+      ],
+      "associatedCatalogIds": [
+        "yt-dkW2lNq4Ul4",
+        "yt--T8TApBXq3c",
+        "yt-uc1Jh0x4G1I",
+        "yt-1ykIDrEVVdU"
+      ]
+    },
+    {
+      "id": "shalom-classic-05",
+      "series": "shalom-classic",
+      "canonicalNumber": 5,
+      "canonicalTitle": "Jerusalem",
+      "originalProductionYear": 1986,
+      "yearEvidenceStatus": "primary-confirmed",
+      "yearSources": [
+        "manitoba"
+      ],
+      "numberingSources": [
+        "manitoba",
+        "fedweb"
+      ],
+      "titleSources": [
+        "umass"
+      ],
+      "referenceRuntimes": [
+        {
+          "minutes": 30,
+          "precision": "nominal-library-runtime",
+          "sourceId": "manitoba"
+        }
+      ],
+      "coverageStatus": "title-verified candidate",
+      "wholeUploadCandidates": [
+        {
+          "catalogId": "yt-VNjR-rAVPPs",
+          "url": "https://www.youtube.com/watch?v=VNjR-rAVPPs",
+          "catalogTitle": "Shalom Sesame Ep  5",
+          "originalTitle": "Shalom Sesame Ep  5",
+          "durationSeconds": 1884,
+          "uploader": "Edward Bernstein",
+          "sourceType": "community",
+          "catalogKind": "episode",
+          "role": "whole-upload-candidate",
+          "identificationMethod": "canonical-number",
+          "playbackReviewed": false,
+          "identificationSources": [
+            "manitoba"
+          ],
+          "identificationNote": "Uploader metadata gives the show number. The external primary catalog maps that number to this title; this is not based on upload order. The title card has not been watched."
+        }
+      ],
+      "shortenedOrUncertainLongUploads": [],
+      "episodePartGroups": [
+        {
+          "scope": "episode",
+          "uploader": "nostalgiateenable",
+          "expectedPartCountFromLabels": 3,
+          "presentParts": [
+            1,
+            2,
+            3
+          ],
+          "missingParts": [],
+          "allLabeledPartsPresent": true,
+          "totalLinkedDurationSeconds": 1879,
+          "fullEpisodeCompletenessVerified": false,
+          "countsAsSingleWholeUpload": false,
+          "links": [
+            {
+              "catalogId": "yt-s1LAGj9h4kw",
+              "url": "https://www.youtube.com/watch?v=s1LAGj9h4kw",
+              "catalogTitle": "Jerusalem (1/3)",
+              "originalTitle": "Shalom Sesame: Jerusalem (1/3)",
+              "durationSeconds": 901,
+              "uploader": "nostalgiateenable",
+              "sourceType": "community",
+              "catalogKind": "clip",
+              "role": "episode-part",
+              "identificationMethod": "canonical-title",
+              "playbackReviewed": false,
+              "partNumber": 1
+            },
+            {
+              "catalogId": "yt-j_5G1MkrmyA",
+              "url": "https://www.youtube.com/watch?v=j_5G1MkrmyA",
+              "catalogTitle": "Jerusalem (2/3)",
+              "originalTitle": "Shalom Sesame: Jerusalem (2/3)",
+              "durationSeconds": 901,
+              "uploader": "nostalgiateenable",
+              "sourceType": "community",
+              "catalogKind": "clip",
+              "role": "episode-part",
+              "identificationMethod": "canonical-title",
+              "playbackReviewed": false,
+              "partNumber": 2
+            },
+            {
+              "catalogId": "yt-e9Ld8je1cYI",
+              "url": "https://www.youtube.com/watch?v=e9Ld8je1cYI",
+              "catalogTitle": "Jerusalem (3/3)",
+              "originalTitle": "Shalom Sesame: Jerusalem (3/3)",
+              "durationSeconds": 77,
+              "uploader": "nostalgiateenable",
+              "sourceType": "community",
+              "catalogKind": "clip",
+              "role": "episode-part",
+              "identificationMethod": "canonical-title",
+              "playbackReviewed": false,
+              "partNumber": 3
+            }
+          ]
+        }
+      ],
+      "studioSegmentPartGroups": [],
+      "trailers": [],
+      "segments": [],
+      "completenessVerified": false,
+      "todos": [
+        "Review a candidate from start to credits against its canonical episode identity and known edition before marking it complete."
+      ],
+      "auditNotes": [
+        "Only the generic numbered whole-upload title is linked. Its number resolves to the canonical title in primary library metadata; confirm the actual video title card/content during playback review."
+      ],
+      "associatedCatalogIds": [
+        "yt-VNjR-rAVPPs",
+        "yt-s1LAGj9h4kw",
+        "yt-j_5G1MkrmyA",
+        "yt-e9Ld8je1cYI"
+      ]
+    },
+    {
+      "id": "shalom-classic-06",
+      "series": "shalom-classic",
+      "canonicalNumber": 6,
+      "canonicalTitle": "Chanukah",
+      "originalProductionYear": 1990,
+      "yearEvidenceStatus": "secondary-chronology-provisional",
+      "yearSources": [
+        "wiki-years"
+      ],
+      "numberingSources": [
+        "fedweb",
+        "classic-retailer"
+      ],
+      "titleSources": [
+        "umass"
+      ],
+      "referenceRuntimes": [
+        {
+          "minutes": 30,
+          "precision": "nominal-library-runtime",
+          "sourceId": "fedweb"
+        }
+      ],
+      "coverageStatus": "title-verified candidate",
+      "wholeUploadCandidates": [
+        {
+          "catalogId": "yt-cZ1TVctGUpw",
+          "url": "https://www.youtube.com/watch?v=cZ1TVctGUpw",
+          "catalogTitle": "Shalom Sesame Ep 6 Chanukah",
+          "originalTitle": "Shalom Sesame Ep 6 Chanukah",
+          "durationSeconds": 1967,
+          "uploader": "Edward Bernstein",
+          "sourceType": "community",
+          "catalogKind": "episode",
+          "role": "whole-upload-candidate",
+          "identificationMethod": "canonical-title",
+          "playbackReviewed": false
+        }
+      ],
+      "shortenedOrUncertainLongUploads": [],
+      "episodePartGroups": [
+        {
+          "scope": "episode",
+          "uploader": "nostalgiateenable",
+          "expectedPartCountFromLabels": 3,
+          "presentParts": [
+            1,
+            2,
+            3
+          ],
+          "missingParts": [],
+          "allLabeledPartsPresent": true,
+          "totalLinkedDurationSeconds": 1930,
+          "fullEpisodeCompletenessVerified": false,
+          "countsAsSingleWholeUpload": false,
+          "links": [
+            {
+              "catalogId": "yt-paWkpXAXcjw",
+              "url": "https://www.youtube.com/watch?v=paWkpXAXcjw",
+              "catalogTitle": "Chanukah (1/3)",
+              "originalTitle": "Shalom Sesame: Chanukah (1/3)",
+              "durationSeconds": 901,
+              "uploader": "nostalgiateenable",
+              "sourceType": "community",
+              "catalogKind": "clip",
+              "role": "episode-part",
+              "identificationMethod": "canonical-title",
+              "playbackReviewed": false,
+              "partNumber": 1
+            },
+            {
+              "catalogId": "yt-2hb9nmyWu6w",
+              "url": "https://www.youtube.com/watch?v=2hb9nmyWu6w",
+              "catalogTitle": "Chanukah (2/3)",
+              "originalTitle": "Shalom Sesame: Chanukah (2/3)",
+              "durationSeconds": 901,
+              "uploader": "nostalgiateenable",
+              "sourceType": "community",
+              "catalogKind": "clip",
+              "role": "episode-part",
+              "identificationMethod": "canonical-title",
+              "playbackReviewed": false,
+              "partNumber": 2
+            },
+            {
+              "catalogId": "yt-zoXwFRH_OXk",
+              "url": "https://www.youtube.com/watch?v=zoXwFRH_OXk",
+              "catalogTitle": "Chanukah (3/3)",
+              "originalTitle": "Shalom Sesame: Chanukah (3/3)",
+              "durationSeconds": 128,
+              "uploader": "nostalgiateenable",
+              "sourceType": "community",
+              "catalogKind": "clip",
+              "role": "episode-part",
+              "identificationMethod": "canonical-title",
+              "playbackReviewed": false,
+              "partNumber": 3
+            }
+          ]
+        }
+      ],
+      "studioSegmentPartGroups": [],
+      "trailers": [],
+      "segments": [],
+      "completenessVerified": false,
+      "todos": [
+        "Review a candidate from start to credits against its canonical episode identity and known edition before marking it complete."
+      ],
+      "associatedCatalogIds": [
+        "yt-cZ1TVctGUpw",
+        "yt-paWkpXAXcjw",
+        "yt-2hb9nmyWu6w",
+        "yt-zoXwFRH_OXk"
+      ]
+    },
+    {
+      "id": "shalom-classic-07",
+      "series": "shalom-classic",
+      "canonicalNumber": 7,
+      "canonicalTitle": "Sing Around the Seasons",
+      "originalProductionYear": 1990,
+      "yearEvidenceStatus": "secondary-chronology-provisional",
+      "yearSources": [
+        "wiki-years"
+      ],
+      "numberingSources": [
+        "fedweb",
+        "classic-retailer"
+      ],
+      "titleSources": [
+        "umass"
+      ],
+      "referenceRuntimes": [
+        {
+          "minutes": 30,
+          "precision": "nominal-library-runtime",
+          "sourceId": "fedweb"
+        }
+      ],
+      "coverageStatus": "title-verified candidate",
+      "wholeUploadCandidates": [
+        {
+          "catalogId": "yt-UKO0HdFDQ0A",
+          "url": "https://www.youtube.com/watch?v=UKO0HdFDQ0A",
+          "catalogTitle": "Shalom Sesame Ep  7 Seasons",
+          "originalTitle": "Shalom Sesame Ep  7 Seasons",
+          "durationSeconds": 2121,
+          "uploader": "Edward Bernstein",
+          "sourceType": "community",
+          "catalogKind": "episode",
+          "role": "whole-upload-candidate",
+          "identificationMethod": "canonical-title",
+          "playbackReviewed": false
+        },
+        {
+          "catalogId": "yt-WbxNshR-8kU",
+          "url": "https://www.youtube.com/watch?v=WbxNshR-8kU",
+          "catalogTitle": "Sing Around the Seasons | Shalom Sesame | 60fps",
+          "originalTitle": "Sing Around the Seasons | Shalom Sesame | 60fps",
+          "durationSeconds": 2052,
+          "uploader": "Nostalgia Done Right",
+          "sourceType": "community",
+          "catalogKind": "collection",
+          "role": "whole-upload-candidate",
+          "identificationMethod": "canonical-title",
+          "playbackReviewed": false
+        }
+      ],
+      "shortenedOrUncertainLongUploads": [],
+      "episodePartGroups": [],
+      "studioSegmentPartGroups": [],
+      "trailers": [],
+      "segments": [],
+      "completenessVerified": false,
+      "todos": [
+        "Review a candidate from start to credits against its canonical episode identity and known edition before marking it complete."
+      ],
+      "auditNotes": [
+        "The canonical episode Sing Around the Seasons appears as a collection in the current library for yt-WbxNshR-8 kU. It still belongs to episode 7 for story-coverage accounting; no UI data is changed by this audit."
+      ],
+      "associatedCatalogIds": [
+        "yt-UKO0HdFDQ0A",
+        "yt-WbxNshR-8kU"
+      ]
+    },
+    {
+      "id": "shalom-classic-08",
+      "series": "shalom-classic",
+      "canonicalNumber": 8,
+      "canonicalTitle": "Journey to Secret Places",
+      "originalProductionYear": 1990,
+      "yearEvidenceStatus": "secondary-chronology-provisional",
+      "yearSources": [
+        "wiki-years"
+      ],
+      "numberingSources": [
+        "fedweb",
+        "classic-retailer"
+      ],
+      "titleSources": [
+        "umass"
+      ],
+      "referenceRuntimes": [
+        {
+          "minutes": 30,
+          "precision": "nominal-library-runtime",
+          "sourceId": "fedweb"
+        }
+      ],
+      "coverageStatus": "title-verified candidate",
+      "wholeUploadCandidates": [
+        {
+          "catalogId": "yt-eAa0TLqIZ1Q",
+          "url": "https://www.youtube.com/watch?v=eAa0TLqIZ1Q",
+          "catalogTitle": "#Shalom #Sesame Show 8: Journey to Secret Places [Learn Hebrew]",
+          "originalTitle": "#Shalom #Sesame Show 8: Journey to Secret Places [Learn Hebrew]",
+          "durationSeconds": 1757,
+          "uploader": "Sybil Kibble",
+          "sourceType": "community",
+          "catalogKind": "episode",
+          "role": "whole-upload-candidate",
+          "identificationMethod": "canonical-title",
+          "playbackReviewed": false
+        }
+      ],
+      "shortenedOrUncertainLongUploads": [],
+      "episodePartGroups": [
+        {
+          "scope": "episode",
+          "uploader": "nostalgiateenable",
+          "expectedPartCountFromLabels": 2,
+          "presentParts": [
+            1,
+            2
+          ],
+          "missingParts": [],
+          "allLabeledPartsPresent": true,
+          "totalLinkedDurationSeconds": 1785,
+          "fullEpisodeCompletenessVerified": false,
+          "countsAsSingleWholeUpload": false,
+          "links": [
+            {
+              "catalogId": "yt-NjJ3KCVFEn4",
+              "url": "https://www.youtube.com/watch?v=NjJ3KCVFEn4",
+              "catalogTitle": "Journey to Secret Places (1/2)",
+              "originalTitle": "Shalom Sesame: Journey to Secret Places (1/2)",
+              "durationSeconds": 901,
+              "uploader": "nostalgiateenable",
+              "sourceType": "community",
+              "catalogKind": "clip",
+              "role": "episode-part",
+              "identificationMethod": "canonical-title",
+              "playbackReviewed": false,
+              "partNumber": 1
+            },
+            {
+              "catalogId": "yt-Dup9n75ADJo",
+              "url": "https://www.youtube.com/watch?v=Dup9n75ADJo",
+              "catalogTitle": "Journey to Secret Places (2/2)",
+              "originalTitle": "Shalom Sesame: Journey to Secret Places (2/2)",
+              "durationSeconds": 884,
+              "uploader": "nostalgiateenable",
+              "sourceType": "community",
+              "catalogKind": "clip",
+              "role": "episode-part",
+              "identificationMethod": "canonical-title",
+              "playbackReviewed": false,
+              "partNumber": 2
+            }
+          ]
+        }
+      ],
+      "studioSegmentPartGroups": [],
+      "trailers": [],
+      "segments": [
+        {
+          "catalogId": "yt-gC5SwGmFvvw",
+          "url": "https://www.youtube.com/watch?v=gC5SwGmFvvw",
+          "catalogTitle": "\"I'm Between\" Shalom Sesame Ep  8",
+          "originalTitle": "\"I'm Between\" Shalom Sesame Ep  8",
+          "durationSeconds": 122,
+          "uploader": "Edward Bernstein",
+          "sourceType": "community",
+          "catalogKind": "clip",
+          "role": "episode-segment",
+          "identificationMethod": "canonical-number",
+          "playbackReviewed": false,
+          "identificationSources": [
+            "manitoba"
+          ],
+          "identificationNote": "Uploader metadata gives the show number. The external primary catalog maps that number to this title; this is not based on upload order. The title card has not been watched.",
+          "note": "Source title explicitly attributes this short song to classic episode 8."
+        }
+      ],
+      "completenessVerified": false,
+      "todos": [
+        "Review a candidate from start to credits against its canonical episode identity and known edition before marking it complete."
+      ],
+      "associatedCatalogIds": [
+        "yt-eAa0TLqIZ1Q",
+        "yt-gC5SwGmFvvw",
+        "yt-NjJ3KCVFEn4",
+        "yt-Dup9n75ADJo"
+      ]
+    },
+    {
+      "id": "shalom-classic-09",
+      "series": "shalom-classic",
+      "canonicalNumber": 9,
+      "canonicalTitle": "Aleph-Bet Telethon",
+      "originalProductionYear": 1991,
+      "yearEvidenceStatus": "primary-confirmed",
+      "yearSources": [
+        "az-aleph"
+      ],
+      "numberingSources": [
+        "fedweb",
+        "classic-retailer"
+      ],
+      "titleSources": [
+        "umass"
+      ],
+      "referenceRuntimes": [
+        {
+          "minutes": 40,
+          "precision": "nominal-library-runtime",
+          "sourceId": "fedweb"
+        }
+      ],
+      "coverageStatus": "title-verified candidate",
+      "wholeUploadCandidates": [
+        {
+          "catalogId": "yt-aCe9MfpAtqk",
+          "url": "https://www.youtube.com/watch?v=aCe9MfpAtqk",
+          "catalogTitle": "Shalom Sesame - Aleph Bet Telethon",
+          "originalTitle": "Shalom Sesame - Aleph Bet Telethon",
+          "durationSeconds": 2264,
+          "uploader": "Nostalgia_ChannelTV",
+          "sourceType": "community",
+          "catalogKind": "episode",
+          "role": "whole-upload-candidate",
+          "identificationMethod": "canonical-title",
+          "playbackReviewed": false
+        },
+        {
+          "catalogId": "yt-trl8wZ4zDIA",
+          "url": "https://www.youtube.com/watch?v=trl8wZ4zDIA",
+          "catalogTitle": "Shalom Sesame Ep 9 Aleph Bet Telethon",
+          "originalTitle": "Shalom Sesame Ep 9 Aleph Bet Telethon",
+          "durationSeconds": 2301,
+          "uploader": "Edward Bernstein",
+          "sourceType": "community",
+          "catalogKind": "episode",
+          "role": "whole-upload-candidate",
+          "identificationMethod": "canonical-title",
+          "playbackReviewed": false
+        }
+      ],
+      "shortenedOrUncertainLongUploads": [
+        {
+          "catalogId": "yt-Yo365rmez08",
+          "url": "https://www.youtube.com/watch?v=Yo365rmez08",
+          "catalogTitle": "#Shalom #Sesame Show 9 \"Aleph Bet Telethon\" [learn Hebrew]",
+          "originalTitle": "#Shalom #Sesame Show 9 \"Aleph Bet Telethon\" [learn Hebrew]",
+          "durationSeconds": 1766,
+          "uploader": "Sybil Kibble",
+          "sourceType": "community",
+          "catalogKind": "episode",
+          "role": "possible-shortened-edition",
+          "identificationMethod": "canonical-title",
+          "playbackReviewed": false,
+          "note": "29:26 versus nominal 40 min; other linked uploads are 37:44 and 38:21. May be a broadcast edit; do not assume a full home-video edition."
+        }
+      ],
+      "episodePartGroups": [
+        {
+          "scope": "episode",
+          "uploader": "nostalgiateenable",
+          "expectedPartCountFromLabels": 3,
+          "presentParts": [
+            2,
+            3
+          ],
+          "missingParts": [
+            1
+          ],
+          "allLabeledPartsPresent": false,
+          "totalLinkedDurationSeconds": 1334,
+          "fullEpisodeCompletenessVerified": false,
+          "countsAsSingleWholeUpload": false,
+          "links": [
+            {
+              "catalogId": "yt-ouNVTX0nuXI",
+              "url": "https://www.youtube.com/watch?v=ouNVTX0nuXI",
+              "catalogTitle": "Aleph-Bet Telethon (2/3)",
+              "originalTitle": "Shalom Sesame: Aleph-Bet Telethon (2/3)",
+              "durationSeconds": 901,
+              "uploader": "nostalgiateenable",
+              "sourceType": "community",
+              "catalogKind": "clip",
+              "role": "episode-part",
+              "identificationMethod": "canonical-title",
+              "playbackReviewed": false,
+              "partNumber": 2
+            },
+            {
+              "catalogId": "yt-SYaHsPrZMXM",
+              "url": "https://www.youtube.com/watch?v=SYaHsPrZMXM",
+              "catalogTitle": "Aleph-Bet Telethon (3/3)",
+              "originalTitle": "Shalom Sesame: Aleph-Bet Telethon (3/3)",
+              "durationSeconds": 433,
+              "uploader": "nostalgiateenable",
+              "sourceType": "community",
+              "catalogKind": "clip",
+              "role": "episode-part",
+              "identificationMethod": "canonical-title",
+              "playbackReviewed": false,
+              "partNumber": 3
+            }
+          ]
+        }
+      ],
+      "studioSegmentPartGroups": [],
+      "trailers": [],
+      "segments": [],
+      "completenessVerified": false,
+      "todos": [
+        "Review a candidate from start to credits against its canonical episode identity and known edition before marking it complete.",
+        "Find or replace missing numbered part 1 of 3 in the existing Aleph-Bet Telethon split upload."
+      ],
+      "associatedCatalogIds": [
+        "yt-aCe9MfpAtqk",
+        "yt-trl8wZ4zDIA",
+        "yt-Yo365rmez08",
+        "yt-ouNVTX0nuXI",
+        "yt-SYaHsPrZMXM"
+      ]
+    },
+    {
+      "id": "shalom-classic-10",
+      "series": "shalom-classic",
+      "canonicalNumber": 10,
+      "canonicalTitle": "Passover",
+      "originalProductionYear": 1991,
+      "yearEvidenceStatus": "secondary-chronology-provisional",
+      "yearSources": [
+        "wiki-years"
+      ],
+      "numberingSources": [
+        "fedweb",
+        "classic-retailer"
+      ],
+      "titleSources": [
+        "umass"
+      ],
+      "referenceRuntimes": [
+        {
+          "minutes": 40,
+          "precision": "nominal-library-runtime",
+          "sourceId": "fedweb"
+        }
+      ],
+      "coverageStatus": "title-verified candidate",
+      "wholeUploadCandidates": [
+        {
+          "catalogId": "yt-gtlmeDpjmq4",
+          "url": "https://www.youtube.com/watch?v=gtlmeDpjmq4",
+          "catalogTitle": "Shalom Sesame Passover",
+          "originalTitle": "Shalom Sesame Passover",
+          "durationSeconds": 2211,
+          "uploader": "Edward Bernstein",
+          "sourceType": "community",
+          "catalogKind": "episode",
+          "role": "whole-upload-candidate",
+          "identificationMethod": "canonical-title",
+          "playbackReviewed": false
+        },
+        {
+          "catalogId": "yt-hjf2sFySZMc",
+          "url": "https://www.youtube.com/watch?v=hjf2sFySZMc",
+          "catalogTitle": "Shalom Sesame: Passover, 1991",
+          "originalTitle": "Shalom Sesame: Passover (1991) שלום סומסום: פסח",
+          "durationSeconds": 2169,
+          "uploader": "Uri Finzi",
+          "sourceType": "community",
+          "catalogKind": "episode",
+          "role": "whole-upload-candidate",
+          "identificationMethod": "canonical-title",
+          "playbackReviewed": false
+        }
+      ],
+      "shortenedOrUncertainLongUploads": [],
+      "episodePartGroups": [
+        {
+          "scope": "episode",
+          "uploader": "nostalgiateenable",
+          "expectedPartCountFromLabels": 3,
+          "presentParts": [
+            1,
+            2,
+            3
+          ],
+          "missingParts": [],
+          "allLabeledPartsPresent": true,
+          "totalLinkedDurationSeconds": 2171,
+          "fullEpisodeCompletenessVerified": false,
+          "countsAsSingleWholeUpload": false,
+          "links": [
+            {
+              "catalogId": "yt-1awryn0jV6k",
+              "url": "https://www.youtube.com/watch?v=1awryn0jV6k",
+              "catalogTitle": "Passover (1/3)",
+              "originalTitle": "Shalom Sesame: Passover (1/3)",
+              "durationSeconds": 901,
+              "uploader": "nostalgiateenable",
+              "sourceType": "community",
+              "catalogKind": "clip",
+              "role": "episode-part",
+              "identificationMethod": "canonical-title",
+              "playbackReviewed": false,
+              "partNumber": 1
+            },
+            {
+              "catalogId": "yt-YkBoYEkSeSY",
+              "url": "https://www.youtube.com/watch?v=YkBoYEkSeSY",
+              "catalogTitle": "Passover (2/3)",
+              "originalTitle": "Shalom Sesame: Passover (2/3)",
+              "durationSeconds": 901,
+              "uploader": "nostalgiateenable",
+              "sourceType": "community",
+              "catalogKind": "clip",
+              "role": "episode-part",
+              "identificationMethod": "canonical-title",
+              "playbackReviewed": false,
+              "partNumber": 2
+            },
+            {
+              "catalogId": "yt-038ARUy-R5Q",
+              "url": "https://www.youtube.com/watch?v=038ARUy-R5Q",
+              "catalogTitle": "Passover (3/3)",
+              "originalTitle": "Shalom Sesame: Passover (3/3)",
+              "durationSeconds": 369,
+              "uploader": "nostalgiateenable",
+              "sourceType": "community",
+              "catalogKind": "clip",
+              "role": "episode-part",
+              "identificationMethod": "canonical-title",
+              "playbackReviewed": false,
+              "partNumber": 3
+            }
+          ]
+        }
+      ],
+      "studioSegmentPartGroups": [],
+      "trailers": [],
+      "segments": [],
+      "completenessVerified": false,
+      "todos": [
+        "Review a candidate from start to credits against its canonical episode identity and known edition before marking it complete."
+      ],
+      "associatedCatalogIds": [
+        "yt-gtlmeDpjmq4",
+        "yt-hjf2sFySZMc",
+        "yt-1awryn0jV6k",
+        "yt-YkBoYEkSeSY",
+        "yt-038ARUy-R5Q"
+      ]
+    },
+    {
+      "id": "shalom-classic-11",
+      "series": "shalom-classic",
+      "canonicalNumber": 11,
+      "canonicalTitle": "Kids Sing Israel",
+      "originalProductionYear": 1991,
+      "yearEvidenceStatus": "primary-confirmed",
+      "yearSources": [
+        "az-kids"
+      ],
+      "numberingSources": [
+        "fedweb",
+        "classic-retailer"
+      ],
+      "titleSources": [
+        "umass"
+      ],
+      "referenceRuntimes": [
+        {
+          "minutes": 40,
+          "precision": "nominal-library-runtime",
+          "sourceId": "fedweb"
+        },
+        {
+          "minutes": 38,
+          "precision": "cataloged-VHS-runtime",
+          "sourceId": "az-kids"
+        }
+      ],
+      "coverageStatus": "title-verified candidate",
+      "wholeUploadCandidates": [
+        {
+          "catalogId": "yt-aSIbH-uLfo8",
+          "url": "https://www.youtube.com/watch?v=aSIbH-uLfo8",
+          "catalogTitle": "Shalom Sesame Ep  11 Kids Sing Israel",
+          "originalTitle": "Shalom Sesame Ep  11 Kids Sing Israel",
+          "durationSeconds": 2371,
+          "uploader": "Edward Bernstein",
+          "sourceType": "community",
+          "catalogKind": "episode",
+          "role": "whole-upload-candidate",
+          "identificationMethod": "canonical-title",
+          "playbackReviewed": false
+        }
+      ],
+      "shortenedOrUncertainLongUploads": [],
+      "episodePartGroups": [
+        {
+          "scope": "episode",
+          "uploader": "nostalgiateenable",
+          "expectedPartCountFromLabels": 3,
+          "presentParts": [
+            1,
+            2,
+            3
+          ],
+          "missingParts": [],
+          "allLabeledPartsPresent": true,
+          "totalLinkedDurationSeconds": 2319,
+          "fullEpisodeCompletenessVerified": false,
+          "countsAsSingleWholeUpload": false,
+          "links": [
+            {
+              "catalogId": "yt-ZCEGHaOioJs",
+              "url": "https://www.youtube.com/watch?v=ZCEGHaOioJs",
+              "catalogTitle": "Kids Sing Israel (1/3)",
+              "originalTitle": "Shalom Sesame: Kids Sing Israel (1/3)",
+              "durationSeconds": 900,
+              "uploader": "nostalgiateenable",
+              "sourceType": "community",
+              "catalogKind": "clip",
+              "role": "episode-part",
+              "identificationMethod": "canonical-title",
+              "playbackReviewed": false,
+              "partNumber": 1
+            },
+            {
+              "catalogId": "yt-zDj0phDsg1Y",
+              "url": "https://www.youtube.com/watch?v=zDj0phDsg1Y",
+              "catalogTitle": "Kids Sing Israel (2/3)",
+              "originalTitle": "Shalom Sesame: Kids Sing Israel (2/3)",
+              "durationSeconds": 900,
+              "uploader": "nostalgiateenable",
+              "sourceType": "community",
+              "catalogKind": "clip",
+              "role": "episode-part",
+              "identificationMethod": "canonical-title",
+              "playbackReviewed": false,
+              "partNumber": 2
+            },
+            {
+              "catalogId": "yt-6Vr2fTZ6hxM",
+              "url": "https://www.youtube.com/watch?v=6Vr2fTZ6hxM",
+              "catalogTitle": "Kids Sing Israel (3/3)",
+              "originalTitle": "Shalom Sesame: Kids Sing Israel (3/3)",
+              "durationSeconds": 519,
+              "uploader": "nostalgiateenable",
+              "sourceType": "community",
+              "catalogKind": "clip",
+              "role": "episode-part",
+              "identificationMethod": "canonical-title",
+              "playbackReviewed": false,
+              "partNumber": 3
+            }
+          ]
+        }
+      ],
+      "studioSegmentPartGroups": [],
+      "trailers": [],
+      "segments": [],
+      "completenessVerified": false,
+      "todos": [
+        "Review a candidate from start to credits against its canonical episode identity and known edition before marking it complete."
+      ],
+      "associatedCatalogIds": [
+        "yt-aSIbH-uLfo8",
+        "yt-ZCEGHaOioJs",
+        "yt-zDj0phDsg1Y",
+        "yt-6Vr2fTZ6hxM"
+      ]
+    },
+    {
+      "id": "shalom-modern-01",
+      "series": "shalom-modern",
+      "canonicalNumber": 1,
+      "canonicalTitle": "Welcome to Israel",
+      "originalReleaseYear": 2010,
+      "yearEvidenceStatus": "secondary-DVD-rollout-chronology",
+      "yearSources": [
+        "wiki-years"
+      ],
+      "titleSources": [
+        "modern-set"
+      ],
+      "numberingSources": [
+        "modern-set"
+      ],
+      "referenceRuntimes": [
+        {
+          "minutes": 27,
+          "precision": "licensed-streaming-runtime",
+          "sourceId": "apple-welcome"
+        }
+      ],
+      "coverageStatus": "parts-only",
+      "wholeUploadCandidates": [],
+      "shortenedOrUncertainLongUploads": [],
+      "episodePartGroups": [
+        {
+          "scope": "episode",
+          "uploader": "nostalgiateenable",
+          "expectedPartCountFromLabels": 2,
+          "presentParts": [
+            2
+          ],
+          "missingParts": [
+            1
+          ],
+          "allLabeledPartsPresent": false,
+          "totalLinkedDurationSeconds": 759,
+          "fullEpisodeCompletenessVerified": false,
+          "countsAsSingleWholeUpload": false,
+          "links": [
+            {
+              "catalogId": "yt-iuUHBFIbiRc",
+              "url": "https://www.youtube.com/watch?v=iuUHBFIbiRc",
+              "catalogTitle": "Welcome to Israel (2/2)",
+              "originalTitle": "Shalom Sesame: Welcome to Israel (2/2)",
+              "durationSeconds": 759,
+              "uploader": "nostalgiateenable",
+              "sourceType": "community",
+              "catalogKind": "clip",
+              "role": "episode-part",
+              "identificationMethod": "canonical-title",
+              "playbackReviewed": false,
+              "partNumber": 2
+            }
+          ]
+        }
+      ],
+      "studioSegmentPartGroups": [],
+      "trailers": [
+        {
+          "catalogId": "yt-O2fjYzdYXWo",
+          "url": "https://www.youtube.com/watch?v=O2fjYzdYXWo",
+          "catalogTitle": "Sneak Peek: Welcome to Israel",
+          "originalTitle": "Shalom Sesame: Sneak Peek: Welcome to Israel",
+          "durationSeconds": 96,
+          "uploader": "Shalom Sesame",
+          "sourceType": "official",
+          "catalogKind": "clip",
+          "role": "trailer",
+          "identificationMethod": "canonical-title",
+          "playbackReviewed": false
+        }
+      ],
+      "segments": [],
+      "completenessVerified": false,
+      "todos": [
+        "Find a single whole-episode link or another complete licensed edition; current trailers/studio segments do not establish full-episode coverage.",
+        "Find Welcome to Israel part 1 of 2; only part 2 of 2 is currently linked."
+      ],
+      "programMetadataYear": 2010,
+      "programMetadataYearSources": [
+        "apple-welcome"
+      ],
+      "associatedCatalogIds": [
+        "yt-O2fjYzdYXWo",
+        "yt-iuUHBFIbiRc"
+      ]
+    },
+    {
+      "id": "shalom-modern-02",
+      "series": "shalom-modern",
+      "canonicalNumber": 2,
+      "canonicalTitle": "Chanukah: The Missing Menorah",
+      "originalReleaseYear": 2010,
+      "yearEvidenceStatus": "secondary-DVD-rollout-chronology",
+      "yearSources": [
+        "wiki-years"
+      ],
+      "titleSources": [
+        "modern-set"
+      ],
+      "numberingSources": [
+        "modern-set"
+      ],
+      "referenceRuntimes": [],
+      "coverageStatus": "parts-only",
+      "wholeUploadCandidates": [],
+      "shortenedOrUncertainLongUploads": [],
+      "episodePartGroups": [
+        {
+          "scope": "episode",
+          "uploader": "nostalgiateenable",
+          "expectedPartCountFromLabels": 2,
+          "presentParts": [
+            1,
+            2
+          ],
+          "missingParts": [],
+          "allLabeledPartsPresent": true,
+          "totalLinkedDurationSeconds": 1657,
+          "fullEpisodeCompletenessVerified": false,
+          "countsAsSingleWholeUpload": false,
+          "links": [
+            {
+              "catalogId": "yt-tGW3jDoiJvA",
+              "url": "https://www.youtube.com/watch?v=tGW3jDoiJvA",
+              "catalogTitle": "Chanukah: The Missing Menorah (1/2)",
+              "originalTitle": "Shalom Sesame: Chanukah: The Missing Menorah (1/2)",
+              "durationSeconds": 900,
+              "uploader": "nostalgiateenable",
+              "sourceType": "community",
+              "catalogKind": "clip",
+              "role": "episode-part",
+              "identificationMethod": "canonical-title",
+              "playbackReviewed": false,
+              "partNumber": 1
+            },
+            {
+              "catalogId": "yt-ozg5XXchlEs",
+              "url": "https://www.youtube.com/watch?v=ozg5XXchlEs",
+              "catalogTitle": "Chanukah: The Missing Menorah (2/2)",
+              "originalTitle": "Shalom Sesame: Chanukah: The Missing Menorah (2/2)",
+              "durationSeconds": 757,
+              "uploader": "nostalgiateenable",
+              "sourceType": "community",
+              "catalogKind": "clip",
+              "role": "episode-part",
+              "identificationMethod": "canonical-title",
+              "playbackReviewed": false,
+              "partNumber": 2
+            }
+          ]
+        }
+      ],
+      "studioSegmentPartGroups": [],
+      "trailers": [
+        {
+          "catalogId": "yt-wUPF62TNh3U",
+          "url": "https://www.youtube.com/watch?v=wUPF62TNh3U",
+          "catalogTitle": "Sneak Peek: Chanukah: The Missing Menorah",
+          "originalTitle": "Shalom Sesame: Sneak Peek: Chanukah: The Missing Menorah",
+          "durationSeconds": 95,
+          "uploader": "Shalom Sesame",
+          "sourceType": "official",
+          "catalogKind": "clip",
+          "role": "trailer",
+          "identificationMethod": "canonical-title",
+          "playbackReviewed": false
+        }
+      ],
+      "segments": [
+        {
+          "catalogId": "yt-NV-ddVH-iiM",
+          "url": "https://www.youtube.com/watch?v=NV-ddVH-iiM",
+          "catalogTitle": "The Missing Menorah",
+          "originalTitle": "Shalom Sesame: The Missing Menorah",
+          "durationSeconds": 346,
+          "uploader": "Shalom Sesame",
+          "sourceType": "official",
+          "catalogKind": "clip",
+          "role": "studio-or-story-segment",
+          "identificationMethod": "canonical-title",
+          "playbackReviewed": false
+        },
+        {
+          "catalogId": "yt-vs4JjvvjewE",
+          "url": "https://www.youtube.com/watch?v=vs4JjvvjewE",
+          "catalogTitle": "Missing Menorah",
+          "originalTitle": "Shalom Sesame: Missing Menorah",
+          "durationSeconds": 170,
+          "uploader": "Shalom Sesame",
+          "sourceType": "official",
+          "catalogKind": "clip",
+          "role": "studio-or-story-segment",
+          "identificationMethod": "canonical-title",
+          "playbackReviewed": false
+        }
+      ],
+      "completenessVerified": false,
+      "todos": [
+        "Find a single whole-episode link or another complete licensed edition; current trailers/studio segments do not establish full-episode coverage.",
+        "Review Missing Menorah parts 1 and 2 together; the labeled set is present and totals 27:37 but has not been checked for cuts, gaps or duplicated boundaries."
+      ],
+      "associatedCatalogIds": [
+        "yt-wUPF62TNh3U",
+        "yt-NV-ddVH-iiM",
+        "yt-vs4JjvvjewE",
+        "yt-tGW3jDoiJvA",
+        "yt-ozg5XXchlEs"
+      ]
+    },
+    {
+      "id": "shalom-modern-03",
+      "series": "shalom-modern",
+      "canonicalNumber": 3,
+      "canonicalTitle": "Shabbat Shalom, Grover!",
+      "originalReleaseYear": 2011,
+      "yearEvidenceStatus": "secondary-DVD-rollout-chronology",
+      "yearSources": [
+        "wiki-years"
+      ],
+      "titleSources": [
+        "modern-set"
+      ],
+      "numberingSources": [
+        "modern-set"
+      ],
+      "referenceRuntimes": [
+        {
+          "minutes": 27,
+          "precision": "licensed-streaming-runtime",
+          "sourceId": "apple-shabbat"
+        }
+      ],
+      "coverageStatus": "missing",
+      "wholeUploadCandidates": [],
+      "shortenedOrUncertainLongUploads": [],
+      "episodePartGroups": [],
+      "studioSegmentPartGroups": [],
+      "trailers": [
+        {
+          "catalogId": "yt-ZyRrM6KNtQg",
+          "url": "https://www.youtube.com/watch?v=ZyRrM6KNtQg",
+          "catalogTitle": "Sneak Peek: Shabbat Shalom Grover!",
+          "originalTitle": "Shalom Sesame: Sneak Peek: Shabbat Shalom Grover!",
+          "durationSeconds": 103,
+          "uploader": "Shalom Sesame",
+          "sourceType": "official",
+          "catalogKind": "clip",
+          "role": "trailer",
+          "identificationMethod": "canonical-title",
+          "playbackReviewed": false
+        }
+      ],
+      "segments": [
+        {
+          "catalogId": "yt-ucEIPOxR-bs",
+          "url": "https://www.youtube.com/watch?v=ucEIPOxR-bs",
+          "catalogTitle": "Shabbat Shalom, Grover! (Full Studio)",
+          "originalTitle": "Shalom Sesame: Shabbat Shalom, Grover! (Full Studio)",
+          "durationSeconds": 516,
+          "uploader": "Shalom Sesame",
+          "sourceType": "official",
+          "catalogKind": "clip",
+          "role": "studio-or-story-segment",
+          "identificationMethod": "canonical-title",
+          "playbackReviewed": false
+        }
+      ],
+      "completenessVerified": false,
+      "todos": [
+        "Find a single whole-episode link or another complete licensed edition; current trailers/studio segments do not establish full-episode coverage."
+      ],
+      "programMetadataYear": 2010,
+      "programMetadataYearSources": [
+        "apple-shabbat"
+      ],
+      "associatedCatalogIds": [
+        "yt-ZyRrM6KNtQg",
+        "yt-ucEIPOxR-bs"
+      ]
+    },
+    {
+      "id": "shalom-modern-04",
+      "series": "shalom-modern",
+      "canonicalNumber": 4,
+      "canonicalTitle": "Grover Plants a Tree",
+      "originalReleaseYear": 2011,
+      "yearEvidenceStatus": "secondary-DVD-rollout-chronology",
+      "yearSources": [
+        "wiki-years"
+      ],
+      "titleSources": [
+        "modern-set"
+      ],
+      "numberingSources": [
+        "modern-set"
+      ],
+      "referenceRuntimes": [],
+      "coverageStatus": "missing",
+      "wholeUploadCandidates": [],
+      "shortenedOrUncertainLongUploads": [],
+      "episodePartGroups": [],
+      "studioSegmentPartGroups": [],
+      "trailers": [
+        {
+          "catalogId": "yt-tSF94y2NvmM",
+          "url": "https://www.youtube.com/watch?v=tSF94y2NvmM",
+          "catalogTitle": "Sneak Peek: Grover Plants a Tree",
+          "originalTitle": "Shalom Sesame: Sneak Peek: Grover Plants a Tree",
+          "durationSeconds": 104,
+          "uploader": "Shalom Sesame",
+          "sourceType": "official",
+          "catalogKind": "clip",
+          "role": "trailer",
+          "identificationMethod": "canonical-title",
+          "playbackReviewed": false
+        }
+      ],
+      "segments": [],
+      "completenessVerified": false,
+      "todos": [
+        "Find a single whole-episode link or another complete licensed edition; current trailers/studio segments do not establish full-episode coverage."
+      ],
+      "associatedCatalogIds": [
+        "yt-tSF94y2NvmM"
+      ]
+    },
+    {
+      "id": "shalom-modern-05",
+      "series": "shalom-modern",
+      "canonicalNumber": 5,
+      "canonicalTitle": "Mitzvah on the Street",
+      "originalReleaseYear": 2011,
+      "yearEvidenceStatus": "secondary-DVD-rollout-chronology",
+      "yearSources": [
+        "wiki-years"
+      ],
+      "titleSources": [
+        "modern-set"
+      ],
+      "numberingSources": [
+        "modern-set"
+      ],
+      "referenceRuntimes": [],
+      "coverageStatus": "missing",
+      "wholeUploadCandidates": [],
+      "shortenedOrUncertainLongUploads": [],
+      "episodePartGroups": [],
+      "studioSegmentPartGroups": [],
+      "trailers": [
+        {
+          "catalogId": "yt-jtNcl3w85cg",
+          "url": "https://www.youtube.com/watch?v=jtNcl3w85cg",
+          "catalogTitle": "Sneak Peek: Mitzvah on the Street",
+          "originalTitle": "Shalom Sesame: Sneak Peek: Mitzvah on the Street",
+          "durationSeconds": 101,
+          "uploader": "Shalom Sesame",
+          "sourceType": "official",
+          "catalogKind": "clip",
+          "role": "trailer",
+          "identificationMethod": "canonical-title",
+          "playbackReviewed": false
+        }
+      ],
+      "segments": [
+        {
+          "catalogId": "yt-yYr7eRCeG1E",
+          "url": "https://www.youtube.com/watch?v=yYr7eRCeG1E",
+          "catalogTitle": "Mitzvah on the Street",
+          "originalTitle": "Shalom Sesame: Mitzvah on the Street",
+          "durationSeconds": 563,
+          "uploader": "Shalom Sesame",
+          "sourceType": "official",
+          "catalogKind": "clip",
+          "role": "studio-or-story-segment",
+          "identificationMethod": "canonical-title",
+          "playbackReviewed": false
+        },
+        {
+          "catalogId": "yt-Rj3EOfMuOmk",
+          "url": "https://www.youtube.com/watch?v=Rj3EOfMuOmk",
+          "catalogTitle": "Mitzvah on the Street",
+          "originalTitle": "Shalom Sesame: Mitzvah on the Street",
+          "durationSeconds": 92,
+          "uploader": "Shalom Sesame",
+          "sourceType": "official",
+          "catalogKind": "clip",
+          "role": "studio-or-story-segment",
+          "identificationMethod": "canonical-title",
+          "playbackReviewed": false
+        }
+      ],
+      "completenessVerified": false,
+      "todos": [
+        "Find a single whole-episode link or another complete licensed edition; current trailers/studio segments do not establish full-episode coverage."
+      ],
+      "associatedCatalogIds": [
+        "yt-jtNcl3w85cg",
+        "yt-yYr7eRCeG1E",
+        "yt-Rj3EOfMuOmk"
+      ]
+    },
+    {
+      "id": "shalom-modern-06",
+      "series": "shalom-modern",
+      "canonicalNumber": 6,
+      "canonicalTitle": "Be Happy, It's Purim!",
+      "originalReleaseYear": 2011,
+      "yearEvidenceStatus": "secondary-DVD-rollout-chronology",
+      "yearSources": [
+        "wiki-years"
+      ],
+      "titleSources": [
+        "modern-set"
+      ],
+      "numberingSources": [
+        "modern-set"
+      ],
+      "referenceRuntimes": [],
+      "coverageStatus": "missing",
+      "wholeUploadCandidates": [],
+      "shortenedOrUncertainLongUploads": [],
+      "episodePartGroups": [],
+      "studioSegmentPartGroups": [],
+      "trailers": [
+        {
+          "catalogId": "yt-Zk0UG2I6v98",
+          "url": "https://www.youtube.com/watch?v=Zk0UG2I6v98",
+          "catalogTitle": "Sneak Peek: Be Happy It's Purim!",
+          "originalTitle": "Shalom Sesame: Sneak Peek: Be Happy It's Purim!",
+          "durationSeconds": 101,
+          "uploader": "Shalom Sesame",
+          "sourceType": "official",
+          "catalogKind": "clip",
+          "role": "trailer",
+          "identificationMethod": "canonical-title",
+          "playbackReviewed": false
+        }
+      ],
+      "segments": [
+        {
+          "catalogId": "yt-PSq6FVfm0fg",
+          "url": "https://www.youtube.com/watch?v=PSq6FVfm0fg",
+          "catalogTitle": "Be Happy, It's Purim!",
+          "originalTitle": "Shalom Sesame: Be Happy, It's Purim!",
+          "durationSeconds": 167,
+          "uploader": "Shalom Sesame",
+          "sourceType": "official",
+          "catalogKind": "clip",
+          "role": "studio-or-story-segment",
+          "identificationMethod": "canonical-title",
+          "playbackReviewed": false
+        }
+      ],
+      "completenessVerified": false,
+      "todos": [
+        "Find a single whole-episode link or another complete licensed edition; current trailers/studio segments do not establish full-episode coverage."
+      ],
+      "associatedCatalogIds": [
+        "yt-Zk0UG2I6v98",
+        "yt-PSq6FVfm0fg"
+      ]
+    },
+    {
+      "id": "shalom-modern-07",
+      "series": "shalom-modern",
+      "canonicalNumber": 7,
+      "canonicalTitle": "It's Passover, Grover!",
+      "originalReleaseYear": 2011,
+      "yearEvidenceStatus": "secondary-DVD-rollout-chronology",
+      "yearSources": [
+        "wiki-years"
+      ],
+      "titleSources": [
+        "modern-set"
+      ],
+      "numberingSources": [
+        "modern-set"
+      ],
+      "referenceRuntimes": [],
+      "coverageStatus": "missing",
+      "wholeUploadCandidates": [],
+      "shortenedOrUncertainLongUploads": [],
+      "episodePartGroups": [],
+      "studioSegmentPartGroups": [],
+      "trailers": [
+        {
+          "catalogId": "yt-ZcMWc-Ty1x0",
+          "url": "https://www.youtube.com/watch?v=ZcMWc-Ty1x0",
+          "catalogTitle": "Sneak Peek: It's Passover Grover!",
+          "originalTitle": "Shalom Sesame: Sneak Peek: It's Passover Grover!",
+          "durationSeconds": 98,
+          "uploader": "Shalom Sesame",
+          "sourceType": "official",
+          "catalogKind": "clip",
+          "role": "trailer",
+          "identificationMethod": "canonical-title",
+          "playbackReviewed": false
+        }
+      ],
+      "segments": [
+        {
+          "catalogId": "yt-kcSX2USdZl4",
+          "url": "https://www.youtube.com/watch?v=kcSX2USdZl4",
+          "catalogTitle": "It's Passover, Grover!",
+          "originalTitle": "It's Passover, Grover!",
+          "durationSeconds": 492,
+          "uploader": "Shalom Sesame",
+          "sourceType": "official",
+          "catalogKind": "clip",
+          "role": "studio-or-story-segment",
+          "identificationMethod": "canonical-title",
+          "playbackReviewed": false
+        }
+      ],
+      "completenessVerified": false,
+      "todos": [
+        "Find a single whole-episode link or another complete licensed edition; current trailers/studio segments do not establish full-episode coverage."
+      ],
+      "associatedCatalogIds": [
+        "yt-ZcMWc-Ty1x0",
+        "yt-kcSX2USdZl4"
+      ]
+    },
+    {
+      "id": "shalom-modern-08",
+      "series": "shalom-modern",
+      "canonicalNumber": 8,
+      "canonicalTitle": "Grover Learns Hebrew",
+      "originalReleaseYear": 2011,
+      "yearEvidenceStatus": "secondary-DVD-rollout-chronology",
+      "yearSources": [
+        "wiki-years"
+      ],
+      "titleSources": [
+        "modern-set"
+      ],
+      "numberingSources": [
+        "modern-set"
+      ],
+      "referenceRuntimes": [
+        {
+          "minutes": 23,
+          "precision": "DVD-main-program-excludes27min-extras",
+          "sourceId": "oru-hebrew"
+        }
+      ],
+      "coverageStatus": "missing",
+      "wholeUploadCandidates": [],
+      "shortenedOrUncertainLongUploads": [],
+      "episodePartGroups": [],
+      "studioSegmentPartGroups": [],
+      "trailers": [
+        {
+          "catalogId": "yt-LNGW6xfR3zI",
+          "url": "https://www.youtube.com/watch?v=LNGW6xfR3zI",
+          "catalogTitle": "Sneak Peek: Grover Learns Hebrew",
+          "originalTitle": "Shalom Sesame: Sneak Peek: Grover Learns Hebrew",
+          "durationSeconds": 106,
+          "uploader": "Shalom Sesame",
+          "sourceType": "official",
+          "catalogKind": "clip",
+          "role": "trailer",
+          "identificationMethod": "canonical-title",
+          "playbackReviewed": false
+        }
+      ],
+      "segments": [
+        {
+          "catalogId": "yt-PCqRRfJVH6Q",
+          "url": "https://www.youtube.com/watch?v=PCqRRfJVH6Q",
+          "catalogTitle": "Grover Learns Hebrew",
+          "originalTitle": "Shalom Sesame: Grover Learns Hebrew",
+          "durationSeconds": 166,
+          "uploader": "Shalom Sesame",
+          "sourceType": "official",
+          "catalogKind": "clip",
+          "role": "studio-or-story-segment",
+          "identificationMethod": "canonical-title",
+          "playbackReviewed": false
+        }
+      ],
+      "completenessVerified": false,
+      "todos": [
+        "Find a single whole-episode link or another complete licensed edition; current trailers/studio segments do not establish full-episode coverage."
+      ],
+      "programMetadataYear": 2010,
+      "programMetadataYearSources": [
+        "oru-hebrew"
+      ],
+      "associatedCatalogIds": [
+        "yt-LNGW6xfR3zI",
+        "yt-PCqRRfJVH6Q"
+      ]
+    },
+    {
+      "id": "shalom-modern-09",
+      "series": "shalom-modern",
+      "canonicalNumber": 9,
+      "canonicalTitle": "Countdown to Shavuot",
+      "originalReleaseYear": 2011,
+      "yearEvidenceStatus": "secondary-DVD-rollout-chronology",
+      "yearSources": [
+        "wiki-years"
+      ],
+      "titleSources": [
+        "modern-set"
+      ],
+      "numberingSources": [
+        "modern-set"
+      ],
+      "referenceRuntimes": [],
+      "coverageStatus": "missing",
+      "wholeUploadCandidates": [],
+      "shortenedOrUncertainLongUploads": [],
+      "episodePartGroups": [],
+      "studioSegmentPartGroups": [],
+      "trailers": [
+        {
+          "catalogId": "yt-vTVWZwNZehM",
+          "url": "https://www.youtube.com/watch?v=vTVWZwNZehM",
+          "catalogTitle": "Sneak Peek: Countdown to Shavuot",
+          "originalTitle": "Shalom Sesame: Sneak Peek: Countdown to Shavuot",
+          "durationSeconds": 105,
+          "uploader": "Shalom Sesame",
+          "sourceType": "official",
+          "catalogKind": "clip",
+          "role": "trailer",
+          "identificationMethod": "canonical-title",
+          "playbackReviewed": false
+        }
+      ],
+      "segments": [],
+      "completenessVerified": false,
+      "todos": [
+        "Find a single whole-episode link or another complete licensed edition; current trailers/studio segments do not establish full-episode coverage."
+      ],
+      "associatedCatalogIds": [
+        "yt-vTVWZwNZehM"
+      ]
+    },
+    {
+      "id": "shalom-modern-10",
+      "series": "shalom-modern",
+      "canonicalNumber": 10,
+      "canonicalTitle": "The Sticky Shofar",
+      "originalReleaseYear": 2011,
+      "yearEvidenceStatus": "secondary-DVD-rollout-chronology",
+      "yearSources": [
+        "wiki-years"
+      ],
+      "titleSources": [
+        "modern-set"
+      ],
+      "numberingSources": [
+        "modern-set"
+      ],
+      "referenceRuntimes": [],
+      "coverageStatus": "missing",
+      "wholeUploadCandidates": [],
+      "shortenedOrUncertainLongUploads": [],
+      "episodePartGroups": [],
+      "studioSegmentPartGroups": [
+        {
+          "scope": "studio-story",
+          "uploader": "Shalom Sesame",
+          "expectedPartCountFromLabels": 3,
+          "presentParts": [
+            1,
+            2,
+            3
+          ],
+          "missingParts": [],
+          "allLabeledPartsPresent": true,
+          "totalLinkedDurationSeconds": 396,
+          "fullEpisodeCompletenessVerified": false,
+          "countsAsSingleWholeUpload": false,
+          "links": [
+            {
+              "catalogId": "yt-lfImV2Pj3TU",
+              "url": "https://www.youtube.com/watch?v=lfImV2Pj3TU",
+              "catalogTitle": "The Sticky Shofar Part I",
+              "originalTitle": "Shalom Sesame: The Sticky Shofar Part I",
+              "durationSeconds": 146,
+              "uploader": "Shalom Sesame",
+              "sourceType": "official",
+              "catalogKind": "clip",
+              "role": "studio-story-part",
+              "identificationMethod": "canonical-title",
+              "playbackReviewed": false,
+              "partNumber": 1
+            },
+            {
+              "catalogId": "yt-TlcJ3eIg8kg",
+              "url": "https://www.youtube.com/watch?v=TlcJ3eIg8kg",
+              "catalogTitle": "The Sticky Shofar Part II",
+              "originalTitle": "Shalom Sesame: The Sticky Shofar Part II",
+              "durationSeconds": 77,
+              "uploader": "Shalom Sesame",
+              "sourceType": "official",
+              "catalogKind": "clip",
+              "role": "studio-story-part",
+              "identificationMethod": "canonical-title",
+              "playbackReviewed": false,
+              "partNumber": 2
+            },
+            {
+              "catalogId": "yt-eMrAFo03ejU",
+              "url": "https://www.youtube.com/watch?v=eMrAFo03ejU",
+              "catalogTitle": "The Sticky Shofar Part III",
+              "originalTitle": "Shalom Sesame: The Sticky Shofar Part III",
+              "durationSeconds": 173,
+              "uploader": "Shalom Sesame",
+              "sourceType": "official",
+              "catalogKind": "clip",
+              "role": "studio-story-part",
+              "identificationMethod": "canonical-title",
+              "playbackReviewed": false,
+              "partNumber": 3
+            }
+          ]
+        }
+      ],
+      "trailers": [
+        {
+          "catalogId": "yt-sAs1rfZ-Cew",
+          "url": "https://www.youtube.com/watch?v=sAs1rfZ-Cew",
+          "catalogTitle": "Sneak Peek: The Sticky Shofar",
+          "originalTitle": "Shalom Sesame: Sneak Peek: The Sticky Shofar",
+          "durationSeconds": 102,
+          "uploader": "Shalom Sesame",
+          "sourceType": "official",
+          "catalogKind": "clip",
+          "role": "trailer",
+          "identificationMethod": "canonical-title",
+          "playbackReviewed": false
+        }
+      ],
+      "segments": [],
+      "completenessVerified": false,
+      "todos": [
+        "Find a single whole-episode link or another complete licensed edition; current trailers/studio segments do not establish full-episode coverage."
+      ],
+      "auditNotes": [
+        "Official PartsI–III total 6:36. They form a short studio-story sequence, not the full modern episode. Do not count this as all episode parts present."
+      ],
+      "associatedCatalogIds": [
+        "yt-sAs1rfZ-Cew",
+        "yt-lfImV2Pj3TU",
+        "yt-TlcJ3eIg8kg",
+        "yt-eMrAFo03ejU"
+      ]
+    },
+    {
+      "id": "shalom-modern-11",
+      "series": "shalom-modern",
+      "canonicalNumber": 11,
+      "canonicalTitle": "Monsters in the Sukkah",
+      "originalReleaseYear": 2011,
+      "yearEvidenceStatus": "secondary-DVD-rollout-chronology",
+      "yearSources": [
+        "wiki-years"
+      ],
+      "titleSources": [
+        "modern-set"
+      ],
+      "numberingSources": [
+        "modern-set"
+      ],
+      "referenceRuntimes": [
+        {
+          "minutes": 25,
+          "precision": "licensed-streaming-runtime",
+          "sourceId": "apple-sukkah"
+        }
+      ],
+      "coverageStatus": "missing",
+      "wholeUploadCandidates": [],
+      "shortenedOrUncertainLongUploads": [],
+      "episodePartGroups": [],
+      "studioSegmentPartGroups": [],
+      "trailers": [
+        {
+          "catalogId": "yt-ACh9ZM1RG70",
+          "url": "https://www.youtube.com/watch?v=ACh9ZM1RG70",
+          "catalogTitle": "Sneak Peek: Monsters in the Sukkah",
+          "originalTitle": "Shalom Sesame: Sneak Peek: Monsters in the Sukkah",
+          "durationSeconds": 100,
+          "uploader": "Shalom Sesame",
+          "sourceType": "official",
+          "catalogKind": "clip",
+          "role": "trailer",
+          "identificationMethod": "canonical-title",
+          "playbackReviewed": false
+        }
+      ],
+      "segments": [],
+      "completenessVerified": false,
+      "todos": [
+        "Find a single whole-episode link or another complete licensed edition; current trailers/studio segments do not establish full-episode coverage."
+      ],
+      "programMetadataYear": 2010,
+      "programMetadataYearSources": [
+        "apple-sukkah"
+      ],
+      "associatedCatalogIds": [
+        "yt-ACh9ZM1RG70"
+      ]
+    },
+    {
+      "id": "shalom-modern-12",
+      "series": "shalom-modern",
+      "canonicalNumber": 12,
+      "canonicalTitle": "Adventures in Israel",
+      "originalReleaseYear": 2011,
+      "yearEvidenceStatus": "secondary-DVD-rollout-chronology",
+      "yearSources": [
+        "wiki-years"
+      ],
+      "titleSources": [
+        "modern-set"
+      ],
+      "numberingSources": [
+        "modern-set"
+      ],
+      "referenceRuntimes": [],
+      "coverageStatus": "missing",
+      "wholeUploadCandidates": [],
+      "shortenedOrUncertainLongUploads": [],
+      "episodePartGroups": [],
+      "studioSegmentPartGroups": [],
+      "trailers": [
+        {
+          "catalogId": "yt-WORFaRqA0JQ",
+          "url": "https://www.youtube.com/watch?v=WORFaRqA0JQ",
+          "catalogTitle": "Sneak Peek: Adventures in Israel",
+          "originalTitle": "Shalom Sesame: Sneak Peek: Adventures in Israel",
+          "durationSeconds": 105,
+          "uploader": "Shalom Sesame",
+          "sourceType": "official",
+          "catalogKind": "clip",
+          "role": "trailer",
+          "identificationMethod": "canonical-title",
+          "playbackReviewed": false
+        }
+      ],
+      "segments": [],
+      "completenessVerified": false,
+      "todos": [
+        "Find a single whole-episode link or another complete licensed edition; current trailers/studio segments do not establish full-episode coverage."
+      ],
+      "associatedCatalogIds": [
+        "yt-WORFaRqA0JQ"
+      ]
+    }
+  ],
+  "unassignedCatalogRecords": [
+    {
+      "catalogId": "yt-rWEm8bU7s64",
+      "url": "https://www.youtube.com/watch?v=rWEm8bU7s64",
+      "title": "[VHS] Shalom Sesame (Highlights) - (1986)",
+      "durationSeconds": 1468,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-jhB9IGsiAi4",
+      "url": "https://www.youtube.com/watch?v=jhB9IGsiAi4",
+      "title": "Classic Ernie and Cookie Monster Bake a Cake",
+      "durationSeconds": 143,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-OfexSD2WuBA",
+      "url": "https://www.youtube.com/watch?v=OfexSD2WuBA",
+      "title": "Classic Mischpacha \"The Family Song\"",
+      "durationSeconds": 159,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-b4f3swZmLiI",
+      "url": "https://www.youtube.com/watch?v=b4f3swZmLiI",
+      "title": "Classic Shalom Sesame Opening",
+      "durationSeconds": 89,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-ql5uv-3LF04",
+      "url": "https://www.youtube.com/watch?v=ql5uv-3LF04",
+      "title": "Shalom Sesame \"It's A Small World\"",
+      "durationSeconds": 251,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-irtCpnaqZs4",
+      "url": "https://www.youtube.com/watch?v=irtCpnaqZs4",
+      "title": "Abraham and the Three Visitors",
+      "durationSeconds": 168,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-QI7X4BNeiV8",
+      "url": "https://www.youtube.com/watch?v=QI7X4BNeiV8",
+      "title": "Acco's Clock Tower",
+      "durationSeconds": 189,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-YzjHjXe-2XU",
+      "url": "https://www.youtube.com/watch?v=YzjHjXe-2XU",
+      "title": "Aleph Bet Song",
+      "durationSeconds": 57,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-h1HJKiYf8Z8",
+      "url": "https://www.youtube.com/watch?v=h1HJKiYf8Z8",
+      "title": "Ann Curry: The Word Apology",
+      "durationSeconds": 28,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-UcfcSeoBbsI",
+      "url": "https://www.youtube.com/watch?v=UcfcSeoBbsI",
+      "title": "Arriving in Israel",
+      "durationSeconds": 171,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-UsrFqX0JnCI",
+      "url": "https://www.youtube.com/watch?v=UsrFqX0JnCI",
+      "title": "Avigail & Brosh Explain Hachnasat Orchim",
+      "durationSeconds": 177,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-NHzK7Y84eX8",
+      "url": "https://www.youtube.com/watch?v=NHzK7Y84eX8",
+      "title": "Avigail and Rabbi Lau",
+      "durationSeconds": 128,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-y3UDxfqINSg",
+      "url": "https://www.youtube.com/watch?v=y3UDxfqINSg",
+      "title": "Avigail Grows a Tree",
+      "durationSeconds": 106,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-l6LIC_J4384",
+      "url": "https://www.youtube.com/watch?v=l6LIC_J4384",
+      "title": "Baby Bear and Telly Play Dreidel",
+      "durationSeconds": 207,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-FTaIlmNndFE",
+      "url": "https://www.youtube.com/watch?v=FTaIlmNndFE",
+      "title": "Barvazoni (Rubber Duckie)",
+      "durationSeconds": 142,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-zTQ_9xM_oiw",
+      "url": "https://www.youtube.com/watch?v=zTQ_9xM_oiw",
+      "title": "Bert and Bernice Count to 10",
+      "durationSeconds": 71,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-43P4FeG-GXM",
+      "url": "https://www.youtube.com/watch?v=43P4FeG-GXM",
+      "title": "Cedric the Entertainer: Challah",
+      "durationSeconds": 19,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-k5UQXz_wHmQ",
+      "url": "https://www.youtube.com/watch?v=k5UQXz_wHmQ",
+      "title": "Celebrating Shabbat",
+      "durationSeconds": 195,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-K8gysxsI8sE",
+      "url": "https://www.youtube.com/watch?v=K8gysxsI8sE",
+      "title": "Christina Applegate says \"Shalom\"",
+      "durationSeconds": 38,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-I3xOlBk2ruw",
+      "url": "https://www.youtube.com/watch?v=I3xOlBk2ruw",
+      "title": "Cold Animation",
+      "durationSeconds": 18,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-njnG56avG3Y",
+      "url": "https://www.youtube.com/watch?v=njnG56avG3Y",
+      "title": "Cookie and the Hebrew word 'matanah'",
+      "durationSeconds": 5,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-6Cm0outiuM0",
+      "url": "https://www.youtube.com/watch?v=6Cm0outiuM0",
+      "title": "Cookie learns \"Bete'avon\"",
+      "durationSeconds": 27,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-Ay5kyFhUv5M",
+      "url": "https://www.youtube.com/watch?v=Ay5kyFhUv5M",
+      "title": "Cookie loooooves Hamantaschen!",
+      "durationSeconds": 10,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-Pe3sz2jrQVc",
+      "url": "https://www.youtube.com/watch?v=Pe3sz2jrQVc",
+      "title": "Cookie Monster - Nature",
+      "durationSeconds": 8,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-vKO9KRyztm4",
+      "url": "https://www.youtube.com/watch?v=vKO9KRyztm4",
+      "title": "Cookie Monster says \"slicha\"",
+      "durationSeconds": 7,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-Ky_c_rV71ZI",
+      "url": "https://www.youtube.com/watch?v=Ky_c_rV71ZI",
+      "title": "Corn Farmer",
+      "durationSeconds": 63,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-MNbG53yImZw",
+      "url": "https://www.youtube.com/watch?v=MNbG53yImZw",
+      "title": "Count's Number of the Day: Shevah",
+      "durationSeconds": 67,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-lre-LLz-UzE",
+      "url": "https://www.youtube.com/watch?v=lre-LLz-UzE",
+      "title": "Creation",
+      "durationSeconds": 125,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-LPRbp9eG6uQ",
+      "url": "https://www.youtube.com/watch?v=LPRbp9eG6uQ",
+      "title": "Debra Messing on What's in a name?",
+      "durationSeconds": 24,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-HrPCyibYJcc",
+      "url": "https://www.youtube.com/watch?v=HrPCyibYJcc",
+      "title": "Eli Celebrates Purim",
+      "durationSeconds": 153,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-yIqHAtxfC6g",
+      "url": "https://www.youtube.com/watch?v=yIqHAtxfC6g",
+      "title": "Emmy Rossum Wishes You Yom Huledet Sameach!",
+      "durationSeconds": 8,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-b-R7PUMBavI",
+      "url": "https://www.youtube.com/watch?v=b-R7PUMBavI",
+      "title": "Ernie's Silly Garden",
+      "durationSeconds": 140,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-zsmaIefsmdU",
+      "url": "https://www.youtube.com/watch?v=zsmaIefsmdU",
+      "title": "Eva Longoria Purim Joke",
+      "durationSeconds": 16,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-Us9cNqM-0_A",
+      "url": "https://www.youtube.com/watch?v=Us9cNqM-0_A",
+      "title": "Every Color is a Good One",
+      "durationSeconds": 326,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-pHYUVAj3n0c",
+      "url": "https://www.youtube.com/watch?v=pHYUVAj3n0c",
+      "title": "Extreme Makeover: Temple Edition",
+      "durationSeconds": 196,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-2DVs2ZrB3i4",
+      "url": "https://www.youtube.com/watch?v=2DVs2ZrB3i4",
+      "title": "Four Friends",
+      "durationSeconds": 64,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-Fb1KQ0d1IR4",
+      "url": "https://www.youtube.com/watch?v=Fb1KQ0d1IR4",
+      "title": "Friendship",
+      "durationSeconds": 129,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-BEcZaYZsDrM",
+      "url": "https://www.youtube.com/watch?v=BEcZaYZsDrM",
+      "title": "Gali's New Beginnings",
+      "durationSeconds": 170,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-OzCWDZ4Y4e0",
+      "url": "https://www.youtube.com/watch?v=OzCWDZ4Y4e0",
+      "title": "Ginnifer Goodwin Tells Us a Riddle!",
+      "durationSeconds": 12,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-d0ydDsLyvhw",
+      "url": "https://www.youtube.com/watch?v=d0ydDsLyvhw",
+      "title": "Ginnifer Goodwin wishes you Shanah Tovah (Happy New Year)!",
+      "durationSeconds": 6,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-f4isFXhOpIg",
+      "url": "https://www.youtube.com/watch?v=f4isFXhOpIg",
+      "title": "Global Grover: Safe Haven",
+      "durationSeconds": 217,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-lDAxKePPJWs",
+      "url": "https://www.youtube.com/watch?v=lDAxKePPJWs",
+      "title": "Green Gan",
+      "durationSeconds": 155,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-WBQmNUetel0",
+      "url": "https://www.youtube.com/watch?v=WBQmNUetel0",
+      "title": "Grover Aleph Bet Disco: The Letter Aleph!",
+      "durationSeconds": 161,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-LBG2hI4Qjyw",
+      "url": "https://www.youtube.com/watch?v=LBG2hI4Qjyw",
+      "title": "Grover Aleph Bet Disco: The letter Ayin!",
+      "durationSeconds": 161,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-iqB9DC-aMUg",
+      "url": "https://www.youtube.com/watch?v=iqB9DC-aMUg",
+      "title": "Grover Aleph Bet Disco: The letter Bet!",
+      "durationSeconds": 161,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-ezifBZllg4I",
+      "url": "https://www.youtube.com/watch?v=ezifBZllg4I",
+      "title": "Grover Aleph Bet Disco: The letter Chet!",
+      "durationSeconds": 161,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-Ww9XiDYSTWE",
+      "url": "https://www.youtube.com/watch?v=Ww9XiDYSTWE",
+      "title": "Grover Aleph Bet Disco: The letter Dalet",
+      "durationSeconds": 160,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-Z63EGoDTLrc",
+      "url": "https://www.youtube.com/watch?v=Z63EGoDTLrc",
+      "title": "Grover Aleph Bet Disco: The letter Gimmel!",
+      "durationSeconds": 161,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-UxihS6qf9HU",
+      "url": "https://www.youtube.com/watch?v=UxihS6qf9HU",
+      "title": "Grover Aleph Bet Disco: The letter Heh!",
+      "durationSeconds": 161,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-z6tnLzh-m38",
+      "url": "https://www.youtube.com/watch?v=z6tnLzh-m38",
+      "title": "Grover Aleph Bet Disco: The letter Kaf!",
+      "durationSeconds": 161,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-uUWOdSXq-fQ",
+      "url": "https://www.youtube.com/watch?v=uUWOdSXq-fQ",
+      "title": "Grover Aleph Bet Disco: The letter Kuf!",
+      "durationSeconds": 161,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-uhv5jjrULvc",
+      "url": "https://www.youtube.com/watch?v=uhv5jjrULvc",
+      "title": "Grover Aleph Bet Disco: The letter Lamed!",
+      "durationSeconds": 161,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-APIwomDn9Nc",
+      "url": "https://www.youtube.com/watch?v=APIwomDn9Nc",
+      "title": "Grover Aleph Bet Disco: The letter Mem!",
+      "durationSeconds": 161,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-QmUXRYuD0Wk",
+      "url": "https://www.youtube.com/watch?v=QmUXRYuD0Wk",
+      "title": "Grover Aleph Bet Disco: The letter Nun!",
+      "durationSeconds": 161,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-ZZBgtB6QL9U",
+      "url": "https://www.youtube.com/watch?v=ZZBgtB6QL9U",
+      "title": "Grover Aleph Bet Disco: The letter Peh!",
+      "durationSeconds": 161,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-Jos2tqG4kAE",
+      "url": "https://www.youtube.com/watch?v=Jos2tqG4kAE",
+      "title": "Grover Aleph Bet Disco: The letter Resh!",
+      "durationSeconds": 161,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-BS1SNK6c-Ns",
+      "url": "https://www.youtube.com/watch?v=BS1SNK6c-Ns",
+      "title": "Grover Aleph Bet Disco: The letter Samech!",
+      "durationSeconds": 161,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-R6ca4OjeBI4",
+      "url": "https://www.youtube.com/watch?v=R6ca4OjeBI4",
+      "title": "Grover Aleph Bet Disco: The letter Shin!",
+      "durationSeconds": 161,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-gYpSUnDtpTM",
+      "url": "https://www.youtube.com/watch?v=gYpSUnDtpTM",
+      "title": "Grover Aleph Bet Disco: The Letter Taf!",
+      "durationSeconds": 161,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-7VGMYZUOET4",
+      "url": "https://www.youtube.com/watch?v=7VGMYZUOET4",
+      "title": "Grover Aleph Bet Disco: The letter Tet!",
+      "durationSeconds": 161,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-JUhb3qlKYKg",
+      "url": "https://www.youtube.com/watch?v=JUhb3qlKYKg",
+      "title": "Grover Aleph Bet Disco: The letter Tzadi!",
+      "durationSeconds": 161,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-4LqGiIoBfIo",
+      "url": "https://www.youtube.com/watch?v=4LqGiIoBfIo",
+      "title": "Grover Aleph Bet Disco: The letter Vav!",
+      "durationSeconds": 161,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-qVw86KGvf2I",
+      "url": "https://www.youtube.com/watch?v=qVw86KGvf2I",
+      "title": "Grover Aleph Bet Disco: The letter Yud!",
+      "durationSeconds": 161,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-8XN9p7ToKc4",
+      "url": "https://www.youtube.com/watch?v=8XN9p7ToKc4",
+      "title": "Grover Aleph Bet Disco: The letter Zayin!",
+      "durationSeconds": 161,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-d3JeXLu63Gw",
+      "url": "https://www.youtube.com/watch?v=d3JeXLu63Gw",
+      "title": "Grover in Jerusalem",
+      "durationSeconds": 273,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-2yrB9HBx3H8",
+      "url": "https://www.youtube.com/watch?v=2yrB9HBx3H8",
+      "title": "Grover learns Mishpacha",
+      "durationSeconds": 80,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-X-vKhLfb2PQ",
+      "url": "https://www.youtube.com/watch?v=X-vKhLfb2PQ",
+      "title": "Grover Visits Jerusalem",
+      "durationSeconds": 81,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-vcRwMz0Ng1g",
+      "url": "https://www.youtube.com/watch?v=vcRwMz0Ng1g",
+      "title": "Growing Plants",
+      "durationSeconds": 60,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-7_a1PivRNaY",
+      "url": "https://www.youtube.com/watch?v=7_a1PivRNaY",
+      "title": "Hamsa for Good Luck",
+      "durationSeconds": 175,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-Vch8sJJiOkc",
+      "url": "https://www.youtube.com/watch?v=Vch8sJJiOkc",
+      "title": "Hank Azaria wishes you a Happy Chanukah!",
+      "durationSeconds": 9,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-BqWpc6Qsni8",
+      "url": "https://www.youtube.com/watch?v=BqWpc6Qsni8",
+      "title": "Hank Azaria Wishes You Shabbat Shalom!",
+      "durationSeconds": 5,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-82K-0CuAhpo",
+      "url": "https://www.youtube.com/watch?v=82K-0CuAhpo",
+      "title": "Happy Purim 2013!",
+      "durationSeconds": 31,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-7xpyiI33GY8",
+      "url": "https://www.youtube.com/watch?v=7xpyiI33GY8",
+      "title": "Happy Shavuot from Kat Dennings!",
+      "durationSeconds": 6,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-JDf8oY-Xjc0",
+      "url": "https://www.youtube.com/watch?v=JDf8oY-Xjc0",
+      "title": "Harvesting Wheat",
+      "durationSeconds": 78,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-Ngd_1IrE9yQ",
+      "url": "https://www.youtube.com/watch?v=Ngd_1IrE9yQ",
+      "title": "Hava Nagila Beatbox",
+      "durationSeconds": 194,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-IFRN08PXObc",
+      "url": "https://www.youtube.com/watch?v=IFRN08PXObc",
+      "title": "Hebrew Body Animation",
+      "durationSeconds": 40,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-yRAdxGKbUV0",
+      "url": "https://www.youtube.com/watch?v=yRAdxGKbUV0",
+      "title": "Hebrew Calendar- Kislev",
+      "durationSeconds": 27,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-gXvkXnnZtTQ",
+      "url": "https://www.youtube.com/watch?v=gXvkXnnZtTQ",
+      "title": "Hebrew Word of the Day: Friends",
+      "durationSeconds": 46,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-8YmXghVIYtk",
+      "url": "https://www.youtube.com/watch?v=8YmXghVIYtk",
+      "title": "Helping those in Need",
+      "durationSeconds": 125,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-SIPslTJkSfw",
+      "url": "https://www.youtube.com/watch?v=SIPslTJkSfw",
+      "title": "Hillel and Shammai",
+      "durationSeconds": 127,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-V4xwR0VPzbs",
+      "url": "https://www.youtube.com/watch?v=V4xwR0VPzbs",
+      "title": "Jake Gyllenhaal and the Afikoman",
+      "durationSeconds": 57,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-xpUN5J7_uyk",
+      "url": "https://www.youtube.com/watch?v=xpUN5J7_uyk",
+      "title": "Karambula",
+      "durationSeconds": 243,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-6lOZrtivtTE",
+      "url": "https://www.youtube.com/watch?v=6lOZrtivtTE",
+      "title": "Khalikidan's Passover Seder",
+      "durationSeconds": 215,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-P0dcUx78iUo",
+      "url": "https://www.youtube.com/watch?v=P0dcUx78iUo",
+      "title": "Kids Talk About Chanukah",
+      "durationSeconds": 67,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-L8gwVPcyzfo",
+      "url": "https://www.youtube.com/watch?v=L8gwVPcyzfo",
+      "title": "Kids Talk About Jerusalem",
+      "durationSeconds": 36,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-flP779XdVuU",
+      "url": "https://www.youtube.com/watch?v=flP779XdVuU",
+      "title": "Kids Talk About Mizvot",
+      "durationSeconds": 12,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-XoDK2C4kWXE",
+      "url": "https://www.youtube.com/watch?v=XoDK2C4kWXE",
+      "title": "Kids Talk about Purim",
+      "durationSeconds": 52,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-3bkOoy_7534",
+      "url": "https://www.youtube.com/watch?v=3bkOoy_7534",
+      "title": "Kids Talk About Rosh Hashanah",
+      "durationSeconds": 51,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-q5dmrlFzA1I",
+      "url": "https://www.youtube.com/watch?v=q5dmrlFzA1I",
+      "title": "Kids Talk About Shabbat",
+      "durationSeconds": 54,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-7FzUIBuKCPI",
+      "url": "https://www.youtube.com/watch?v=7FzUIBuKCPI",
+      "title": "Kids Talk About Sukkot",
+      "durationSeconds": 57,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-IjM2nFMsm2k",
+      "url": "https://www.youtube.com/watch?v=IjM2nFMsm2k",
+      "title": "Kids Talk about the Four Questions",
+      "durationSeconds": 40,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-dgIE0-MsJAc",
+      "url": "https://www.youtube.com/watch?v=dgIE0-MsJAc",
+      "title": "Kids Talk about the Passover Story",
+      "durationSeconds": 62,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt--HgFaDV47z0",
+      "url": "https://www.youtube.com/watch?v=-HgFaDV47z0",
+      "title": "Kids Talk About Tu Bishvat",
+      "durationSeconds": 46,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-nEhQdFTC1RA",
+      "url": "https://www.youtube.com/watch?v=nEhQdFTC1RA",
+      "title": "Kingston's House Party (Hebrew and English)",
+      "durationSeconds": 114,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-v4Zc-3le51k",
+      "url": "https://www.youtube.com/watch?v=v4Zc-3le51k",
+      "title": "Learn more about the Shalom Sesame!",
+      "durationSeconds": 125,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-Njv3SsfLVEw",
+      "url": "https://www.youtube.com/watch?v=Njv3SsfLVEw",
+      "title": "Learn the Hebrew letter ALEPH",
+      "durationSeconds": 121,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-8XzixYmtKYI",
+      "url": "https://www.youtube.com/watch?v=8XzixYmtKYI",
+      "title": "Learn the Hebrew letter AYIN",
+      "durationSeconds": 121,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-qfcCp5bKUfE",
+      "url": "https://www.youtube.com/watch?v=qfcCp5bKUfE",
+      "title": "Learn the Hebrew letter BET",
+      "durationSeconds": 121,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-8fHNPNViTpM",
+      "url": "https://www.youtube.com/watch?v=8fHNPNViTpM",
+      "title": "Learn the Hebrew letter CHET",
+      "durationSeconds": 121,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-dQvGUQpD4Ww",
+      "url": "https://www.youtube.com/watch?v=dQvGUQpD4Ww",
+      "title": "Learn the Hebrew letter DALET",
+      "durationSeconds": 121,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-Yi5OWteelHc",
+      "url": "https://www.youtube.com/watch?v=Yi5OWteelHc",
+      "title": "Learn the Hebrew letter GIMMEL",
+      "durationSeconds": 121,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-uKfMKf69I20",
+      "url": "https://www.youtube.com/watch?v=uKfMKf69I20",
+      "title": "Learn the Hebrew letter HEH",
+      "durationSeconds": 121,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-TM2VJPG0NG8",
+      "url": "https://www.youtube.com/watch?v=TM2VJPG0NG8",
+      "title": "Learn the Hebrew letter KAF",
+      "durationSeconds": 121,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-Bhs8fHGBiIY",
+      "url": "https://www.youtube.com/watch?v=Bhs8fHGBiIY",
+      "title": "Learn the Hebrew letter KUF",
+      "durationSeconds": 121,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-OnNKv5YElmY",
+      "url": "https://www.youtube.com/watch?v=OnNKv5YElmY",
+      "title": "Learn the Hebrew letter LAMED",
+      "durationSeconds": 121,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-DVGONGGlSuM",
+      "url": "https://www.youtube.com/watch?v=DVGONGGlSuM",
+      "title": "Learn the Hebrew letter MEM",
+      "durationSeconds": 121,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-ruBxQZlUruE",
+      "url": "https://www.youtube.com/watch?v=ruBxQZlUruE",
+      "title": "Learn the Hebrew letter NUN",
+      "durationSeconds": 121,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-BK6kOipwljw",
+      "url": "https://www.youtube.com/watch?v=BK6kOipwljw",
+      "title": "Learn the Hebrew letter PEY",
+      "durationSeconds": 121,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-eQ-zrmirH-o",
+      "url": "https://www.youtube.com/watch?v=eQ-zrmirH-o",
+      "title": "Learn the Hebrew letter RESH",
+      "durationSeconds": 121,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-LLv2-jeEI3Q",
+      "url": "https://www.youtube.com/watch?v=LLv2-jeEI3Q",
+      "title": "Learn the Hebrew letter SAMECH",
+      "durationSeconds": 121,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-YnmdKsrS8k8",
+      "url": "https://www.youtube.com/watch?v=YnmdKsrS8k8",
+      "title": "Learn the Hebrew letter SHIN",
+      "durationSeconds": 121,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-q81uyjNwUAk",
+      "url": "https://www.youtube.com/watch?v=q81uyjNwUAk",
+      "title": "Learn the Hebrew letter TAV",
+      "durationSeconds": 121,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-F-tdVSw259A",
+      "url": "https://www.youtube.com/watch?v=F-tdVSw259A",
+      "title": "Learn the Hebrew letter TET",
+      "durationSeconds": 121,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt--LI0RLf5IJA",
+      "url": "https://www.youtube.com/watch?v=-LI0RLf5IJA",
+      "title": "Learn the Hebrew letter TZADI",
+      "durationSeconds": 121,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-tcmVTkfOj-Y",
+      "url": "https://www.youtube.com/watch?v=tcmVTkfOj-Y",
+      "title": "Learn the Hebrew letter VAV",
+      "durationSeconds": 121,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-HTXpAciuHTE",
+      "url": "https://www.youtube.com/watch?v=HTXpAciuHTE",
+      "title": "Learn the Hebrew letter YUD",
+      "durationSeconds": 121,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-dHphhL2oCRc",
+      "url": "https://www.youtube.com/watch?v=dHphhL2oCRc",
+      "title": "Learn the Hebrew letter ZAYIN",
+      "durationSeconds": 121,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-wpzLKo3diWk",
+      "url": "https://www.youtube.com/watch?v=wpzLKo3diWk",
+      "title": "Les Matzarables",
+      "durationSeconds": 125,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-fEgRS5HGuDA",
+      "url": "https://www.youtube.com/watch?v=fEgRS5HGuDA",
+      "title": "Lulav and Etrog Montage",
+      "durationSeconds": 22,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-nh5G8o9XMxU",
+      "url": "https://www.youtube.com/watch?v=nh5G8o9XMxU",
+      "title": "Madlenka Plants a Garden",
+      "durationSeconds": 93,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-DiMUYnhDYDo",
+      "url": "https://www.youtube.com/watch?v=DiMUYnhDYDo",
+      "title": "Making a Mezuzah",
+      "durationSeconds": 211,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-OeB4iSfSoig",
+      "url": "https://www.youtube.com/watch?v=OeB4iSfSoig",
+      "title": "Making Hamentaschen",
+      "durationSeconds": 196,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-SJsx1o1EFGM",
+      "url": "https://www.youtube.com/watch?v=SJsx1o1EFGM",
+      "title": "Making Olive Oil",
+      "durationSeconds": 213,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-_gqmRneB3zY",
+      "url": "https://www.youtube.com/watch?v=_gqmRneB3zY",
+      "title": "Mindy Kaling Welcomes Aviv--Spring!",
+      "durationSeconds": 15,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-wiy7DdVThnE",
+      "url": "https://www.youtube.com/watch?v=wiy7DdVThnE",
+      "title": "Mitzvah Impossible",
+      "durationSeconds": 245,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-24FC9_VClgE",
+      "url": "https://www.youtube.com/watch?v=24FC9_VClgE",
+      "title": "Moroccan Mimuna",
+      "durationSeconds": 110,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-jJG4-CE2np8",
+      "url": "https://www.youtube.com/watch?v=jJG4-CE2np8",
+      "title": "Moses on Mount Sinai",
+      "durationSeconds": 150,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-ZsjbH9ixsmw",
+      "url": "https://www.youtube.com/watch?v=ZsjbH9ixsmw",
+      "title": "My Shabbat",
+      "durationSeconds": 130,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-8yoNYuvQqjo",
+      "url": "https://www.youtube.com/watch?v=8yoNYuvQqjo",
+      "title": "My Shabbat",
+      "durationSeconds": 130,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-T145hHD3QCQ",
+      "url": "https://www.youtube.com/watch?v=T145hHD3QCQ",
+      "title": "New York Knicks Superstar Amar'e Stoudemire Defines the Word \"Tov\" for Shalom Sesame",
+      "durationSeconds": 23,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-0Z5rGZc2w3Y",
+      "url": "https://www.youtube.com/watch?v=0Z5rGZc2w3Y",
+      "title": "Noam's Sukkot",
+      "durationSeconds": 169,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-LXloocMuPZ8",
+      "url": "https://www.youtube.com/watch?v=LXloocMuPZ8",
+      "title": "Number of the Day: Teysha (9)",
+      "durationSeconds": 83,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-sxpitvdCTy0",
+      "url": "https://www.youtube.com/watch?v=sxpitvdCTy0",
+      "title": "Onomatopoeias",
+      "durationSeconds": 30,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-1wOj7Y0uWHs",
+      "url": "https://www.youtube.com/watch?v=1wOj7Y0uWHs",
+      "title": "Our Turn to Solve",
+      "durationSeconds": 178,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-Xor1YhMtUxk",
+      "url": "https://www.youtube.com/watch?v=Xor1YhMtUxk",
+      "title": "Planting  a Tree",
+      "durationSeconds": 87,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-PLmPFgAn9KM",
+      "url": "https://www.youtube.com/watch?v=PLmPFgAn9KM",
+      "title": "Please, Thank You, I'm Sorry",
+      "durationSeconds": 132,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-FI-VM7yz1tg",
+      "url": "https://www.youtube.com/watch?v=FI-VM7yz1tg",
+      "title": "Postcard from Grover: Beit Guvrin",
+      "durationSeconds": 66,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-1idD--sbpco",
+      "url": "https://www.youtube.com/watch?v=1idD--sbpco",
+      "title": "Postcard from Grover: Eilat",
+      "durationSeconds": 60,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-YP5slFoRt6k",
+      "url": "https://www.youtube.com/watch?v=YP5slFoRt6k",
+      "title": "Postcard from Grover: Hula Valley",
+      "durationSeconds": 67,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-HvNJq-xiLeA",
+      "url": "https://www.youtube.com/watch?v=HvNJq-xiLeA",
+      "title": "Postcard from Grover: Kibbutz",
+      "durationSeconds": 68,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-sZhiOUYU1v0",
+      "url": "https://www.youtube.com/watch?v=sZhiOUYU1v0",
+      "title": "Postcard from Grover: Kinneret",
+      "durationSeconds": 69,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-O7p6T4dVmaQ",
+      "url": "https://www.youtube.com/watch?v=O7p6T4dVmaQ",
+      "title": "Postcard from Grover: Tel Aviv",
+      "durationSeconds": 66,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-tyNH6aSx7fI",
+      "url": "https://www.youtube.com/watch?v=tyNH6aSx7fI",
+      "title": "Postcard from Grover: Tzefat",
+      "durationSeconds": 65,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-vrLuWj0hxf8",
+      "url": "https://www.youtube.com/watch?v=vrLuWj0hxf8",
+      "title": "Postcards from Grover: Daliyat El-Carmel",
+      "durationSeconds": 67,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-wr3tGkOB6C4",
+      "url": "https://www.youtube.com/watch?v=wr3tGkOB6C4",
+      "title": "Postcards from Grover: Haifa",
+      "durationSeconds": 78,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-sFEz5kailpE",
+      "url": "https://www.youtube.com/watch?v=sFEz5kailpE",
+      "title": "Postcards from Grover: Jaffa",
+      "durationSeconds": 66,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-PMmy7M2TnLY",
+      "url": "https://www.youtube.com/watch?v=PMmy7M2TnLY",
+      "title": "Proud Song",
+      "durationSeconds": 96,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-KAAf8QFlSyQ",
+      "url": "https://www.youtube.com/watch?v=KAAf8QFlSyQ",
+      "title": "Purim Montage",
+      "durationSeconds": 31,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-3wvrbAa2Onk",
+      "url": "https://www.youtube.com/watch?v=3wvrbAa2Onk",
+      "title": "Purim Story",
+      "durationSeconds": 150,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-BKyOl-5Ed-I",
+      "url": "https://www.youtube.com/watch?v=BKyOl-5Ed-I",
+      "title": "Purim: Costume Parade",
+      "durationSeconds": 22,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-S2T_Tnh2GSc",
+      "url": "https://www.youtube.com/watch?v=S2T_Tnh2GSc",
+      "title": "Purim: Street Parade",
+      "durationSeconds": 21,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-CW5QhzRNlL4",
+      "url": "https://www.youtube.com/watch?v=CW5QhzRNlL4",
+      "title": "Rechov Sumsum's Revolution Trash Bin",
+      "durationSeconds": 139,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-nxgfddo1a18",
+      "url": "https://www.youtube.com/watch?v=nxgfddo1a18",
+      "title": "Rosh Hashanah Hannah",
+      "durationSeconds": 130,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-QEQEpJ2xMrE",
+      "url": "https://www.youtube.com/watch?v=QEQEpJ2xMrE",
+      "title": "Saying Sorry",
+      "durationSeconds": 87,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-XjeCN3BWkdY",
+      "url": "https://www.youtube.com/watch?v=XjeCN3BWkdY",
+      "title": "Seth Rogen with Elmo-Todah",
+      "durationSeconds": 40,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-ppYCwWJRzk8",
+      "url": "https://www.youtube.com/watch?v=ppYCwWJRzk8",
+      "title": "Shalom Sesame - Happy Chanukah",
+      "durationSeconds": 28,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-iyxIK2qbS-E",
+      "url": "https://www.youtube.com/watch?v=iyxIK2qbS-E",
+      "title": "Shalome Sesame: Postcard from Grover: Desert Ramon Crater, Masada",
+      "durationSeconds": 74,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-Ag5XyZabTyU",
+      "url": "https://www.youtube.com/watch?v=Ag5XyZabTyU",
+      "title": "Shehecheyanu",
+      "durationSeconds": 306,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-Xp7eo3L93Kc",
+      "url": "https://www.youtube.com/watch?v=Xp7eo3L93Kc",
+      "title": "Signing Moon Poem",
+      "durationSeconds": 42,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-PQmZKRHfm0A",
+      "url": "https://www.youtube.com/watch?v=PQmZKRHfm0A",
+      "title": "Sivan in the Park",
+      "durationSeconds": 255,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-KrpM1K3eJ0k",
+      "url": "https://www.youtube.com/watch?v=KrpM1K3eJ0k",
+      "title": "Staying Up All Night",
+      "durationSeconds": 152,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-Y-iyMb2XB8g",
+      "url": "https://www.youtube.com/watch?v=Y-iyMb2XB8g",
+      "title": "Taking Care of Animals",
+      "durationSeconds": 162,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-27c7LMUZEiQ",
+      "url": "https://www.youtube.com/watch?v=27c7LMUZEiQ",
+      "title": "Taking Time for Ourselves and Others",
+      "durationSeconds": 125,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-G8rj-GlBCYI",
+      "url": "https://www.youtube.com/watch?v=G8rj-GlBCYI",
+      "title": "The Count's Number of the Day- Echad",
+      "durationSeconds": 99,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-lsgdjowJXmo",
+      "url": "https://www.youtube.com/watch?v=lsgdjowJXmo",
+      "title": "The Count's Number of the Day- Shesh",
+      "durationSeconds": 106,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-s1ewe1a3WkU",
+      "url": "https://www.youtube.com/watch?v=s1ewe1a3WkU",
+      "title": "The Count's Number of the Day: Achat Esre",
+      "durationSeconds": 97,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-RTybQKCv6gI",
+      "url": "https://www.youtube.com/watch?v=RTybQKCv6gI",
+      "title": "The Count's Number of the Day: Arbah",
+      "durationSeconds": 62,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-xkLk0e7p-Zo",
+      "url": "https://www.youtube.com/watch?v=xkLk0e7p-Zo",
+      "title": "The Count's Number of the Day: Arbah Esre",
+      "durationSeconds": 107,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt--foQAidCp4w",
+      "url": "https://www.youtube.com/watch?v=-foQAidCp4w",
+      "title": "The Count's Number of the Day: Chamesh",
+      "durationSeconds": 66,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-Z3aWJG2gsXo",
+      "url": "https://www.youtube.com/watch?v=Z3aWJG2gsXo",
+      "title": "The Count's Number of the Day: Chamesh Esre",
+      "durationSeconds": 76,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-1Wy-oukZe1U",
+      "url": "https://www.youtube.com/watch?v=1Wy-oukZe1U",
+      "title": "The Count's Number of the Day: Eser",
+      "durationSeconds": 79,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-WNa4VDHr8ug",
+      "url": "https://www.youtube.com/watch?v=WNa4VDHr8ug",
+      "title": "The Count's Number of the Day: Esrim",
+      "durationSeconds": 104,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-_Ufd-0O4ius",
+      "url": "https://www.youtube.com/watch?v=_Ufd-0O4ius",
+      "title": "The Count's Number of the Day: Shalosh",
+      "durationSeconds": 72,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-t_NzWz6YrsA",
+      "url": "https://www.youtube.com/watch?v=t_NzWz6YrsA",
+      "title": "The Count's Number of the Day: Shesh Esre",
+      "durationSeconds": 99,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-kEe9Z9nByiw",
+      "url": "https://www.youtube.com/watch?v=kEe9Z9nByiw",
+      "title": "The Count's Number of the Day: Shlosh Esre",
+      "durationSeconds": 93,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-8O2IcHTy8_I",
+      "url": "https://www.youtube.com/watch?v=8O2IcHTy8_I",
+      "title": "The Count's Number of the Day: Shmonah Esre",
+      "durationSeconds": 107,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-FJJM__gx-mk",
+      "url": "https://www.youtube.com/watch?v=FJJM__gx-mk",
+      "title": "The Count's Number of the Day: Shmoneh",
+      "durationSeconds": 84,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-1z5XrdHYGXY",
+      "url": "https://www.youtube.com/watch?v=1z5XrdHYGXY",
+      "title": "The Count's Number of the Day: Shtayim",
+      "durationSeconds": 98,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-c8_o_0XNyC0",
+      "url": "https://www.youtube.com/watch?v=c8_o_0XNyC0",
+      "title": "The Count's Number of the Day: Shteim Esre",
+      "durationSeconds": 75,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-QEWtDn8mTcE",
+      "url": "https://www.youtube.com/watch?v=QEWtDn8mTcE",
+      "title": "The Count's Number of the Day: Shvah Esre",
+      "durationSeconds": 107,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-6UE1OddO_qw",
+      "url": "https://www.youtube.com/watch?v=6UE1OddO_qw",
+      "title": "The Count's Number of the Day: Tsha Esre",
+      "durationSeconds": 89,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-N6-hXNafH2o",
+      "url": "https://www.youtube.com/watch?v=N6-hXNafH2o",
+      "title": "The Hebrew Calendar (All 12 Months)",
+      "durationSeconds": 233,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-7avhinTzLl0",
+      "url": "https://www.youtube.com/watch?v=7avhinTzLl0",
+      "title": "The Hebrew Calendar- Adar",
+      "durationSeconds": 27,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-HlxKWBGl0vM",
+      "url": "https://www.youtube.com/watch?v=HlxKWBGl0vM",
+      "title": "The Hebrew Calendar- Av",
+      "durationSeconds": 25,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-D0AiZZVKvVI",
+      "url": "https://www.youtube.com/watch?v=D0AiZZVKvVI",
+      "title": "The Hebrew Calendar- Cheshvan",
+      "durationSeconds": 29,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-HjDYllSgLRE",
+      "url": "https://www.youtube.com/watch?v=HjDYllSgLRE",
+      "title": "The Hebrew Calendar- Iyar",
+      "durationSeconds": 26,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-CuVr379WIMk",
+      "url": "https://www.youtube.com/watch?v=CuVr379WIMk",
+      "title": "The Hebrew Calendar- Nissan",
+      "durationSeconds": 27,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-eMe7HaXXJ1o",
+      "url": "https://www.youtube.com/watch?v=eMe7HaXXJ1o",
+      "title": "The Hebrew Calendar- Tammuz",
+      "durationSeconds": 27,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-HsTFZ7RZ4vM",
+      "url": "https://www.youtube.com/watch?v=HsTFZ7RZ4vM",
+      "title": "The Hebrew Calendar- Tishrei",
+      "durationSeconds": 27,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-rerbKUIcGhs",
+      "url": "https://www.youtube.com/watch?v=rerbKUIcGhs",
+      "title": "The Hebrew Letter Aleph",
+      "durationSeconds": 20,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-YoYDfIiXjFU",
+      "url": "https://www.youtube.com/watch?v=YoYDfIiXjFU",
+      "title": "The Hebrew Letter Ayin",
+      "durationSeconds": 16,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-IshOF8-KJOM",
+      "url": "https://www.youtube.com/watch?v=IshOF8-KJOM",
+      "title": "The Hebrew Letter Bet",
+      "durationSeconds": 16,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-iI5EJGAUGsc",
+      "url": "https://www.youtube.com/watch?v=iI5EJGAUGsc",
+      "title": "The Hebrew Letter Chet",
+      "durationSeconds": 16,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-BnuPTm_AWSk",
+      "url": "https://www.youtube.com/watch?v=BnuPTm_AWSk",
+      "title": "The Hebrew Letter Dalet",
+      "durationSeconds": 19,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-jrzzjdqrW6U",
+      "url": "https://www.youtube.com/watch?v=jrzzjdqrW6U",
+      "title": "The Hebrew Letter Gimmel",
+      "durationSeconds": 16,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-iNZcC_ZXymY",
+      "url": "https://www.youtube.com/watch?v=iNZcC_ZXymY",
+      "title": "The Hebrew Letter Heh",
+      "durationSeconds": 17,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-3TIWqGmuXJo",
+      "url": "https://www.youtube.com/watch?v=3TIWqGmuXJo",
+      "title": "The Hebrew Letter Kaf",
+      "durationSeconds": 16,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-Dram41IrLE0",
+      "url": "https://www.youtube.com/watch?v=Dram41IrLE0",
+      "title": "The Hebrew Letter Kuf",
+      "durationSeconds": 16,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-CLbB5X9RcoQ",
+      "url": "https://www.youtube.com/watch?v=CLbB5X9RcoQ",
+      "title": "The Hebrew Letter Lamed",
+      "durationSeconds": 16,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-gSqJhKKCwag",
+      "url": "https://www.youtube.com/watch?v=gSqJhKKCwag",
+      "title": "The Hebrew Letter Mem",
+      "durationSeconds": 17,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-7ZCdPZ5DcuQ",
+      "url": "https://www.youtube.com/watch?v=7ZCdPZ5DcuQ",
+      "title": "The Hebrew Letter Nun",
+      "durationSeconds": 16,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-_waZOy6X6yI",
+      "url": "https://www.youtube.com/watch?v=_waZOy6X6yI",
+      "title": "The Hebrew Letter Pay",
+      "durationSeconds": 17,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-z5naxET7zzE",
+      "url": "https://www.youtube.com/watch?v=z5naxET7zzE",
+      "title": "The Hebrew Letter Resh",
+      "durationSeconds": 26,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-vb-1CSCoid4",
+      "url": "https://www.youtube.com/watch?v=vb-1CSCoid4",
+      "title": "The Hebrew Letter Samech",
+      "durationSeconds": 17,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-VwpczVxroPg",
+      "url": "https://www.youtube.com/watch?v=VwpczVxroPg",
+      "title": "The Hebrew Letter Shin",
+      "durationSeconds": 16,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-wilOMQEfiTA",
+      "url": "https://www.youtube.com/watch?v=wilOMQEfiTA",
+      "title": "The Hebrew Letter Tav",
+      "durationSeconds": 16,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-8Fb6-oO_03I",
+      "url": "https://www.youtube.com/watch?v=8Fb6-oO_03I",
+      "title": "The Hebrew Letter Tet",
+      "durationSeconds": 17,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-BB4pQpG8-Lw",
+      "url": "https://www.youtube.com/watch?v=BB4pQpG8-Lw",
+      "title": "The Hebrew Letter Tzadi",
+      "durationSeconds": 17,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-SNsO0H8opOQ",
+      "url": "https://www.youtube.com/watch?v=SNsO0H8opOQ",
+      "title": "The Hebrew Letter Tzadi",
+      "durationSeconds": 17,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-yCnqOtRlpSU",
+      "url": "https://www.youtube.com/watch?v=yCnqOtRlpSU",
+      "title": "The Hebrew Letter Vav",
+      "durationSeconds": 16,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-wN2DM7LlajY",
+      "url": "https://www.youtube.com/watch?v=wN2DM7LlajY",
+      "title": "The Hebrew Letter Yud",
+      "durationSeconds": 15,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-9luTfkLUiBU",
+      "url": "https://www.youtube.com/watch?v=9luTfkLUiBU",
+      "title": "The Horseradish Hunt",
+      "durationSeconds": 54,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-vI-gjeenVfo",
+      "url": "https://www.youtube.com/watch?v=vI-gjeenVfo",
+      "title": "The Jewish Month of Sivan",
+      "durationSeconds": 27,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-uEQKH-gDT3Y",
+      "url": "https://www.youtube.com/watch?v=uEQKH-gDT3Y",
+      "title": "The Month of Elul",
+      "durationSeconds": 27,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-Do42Pfwxykw",
+      "url": "https://www.youtube.com/watch?v=Do42Pfwxykw",
+      "title": "The Month of Shevat",
+      "durationSeconds": 27,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-yPMz70e2A4I",
+      "url": "https://www.youtube.com/watch?v=yPMz70e2A4I",
+      "title": "The Month of Tevet",
+      "durationSeconds": 27,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-ZcThm4PzA4Y",
+      "url": "https://www.youtube.com/watch?v=ZcThm4PzA4Y",
+      "title": "The Princess and the Elephant",
+      "durationSeconds": 265,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-jzPDmhihPBM",
+      "url": "https://www.youtube.com/watch?v=jzPDmhihPBM",
+      "title": "The Story of Modern Hebrew",
+      "durationSeconds": 147,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-3ZC9lgXO9Qs",
+      "url": "https://www.youtube.com/watch?v=3ZC9lgXO9Qs",
+      "title": "Theme Song",
+      "durationSeconds": 63,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-hXdpnVkRMrs",
+      "url": "https://www.youtube.com/watch?v=hXdpnVkRMrs",
+      "title": "Things Happened Here!",
+      "durationSeconds": 145,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-NzPdYNDTCWc",
+      "url": "https://www.youtube.com/watch?v=NzPdYNDTCWc",
+      "title": "Three Dogs",
+      "durationSeconds": 25,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-y-uxS_HfUac",
+      "url": "https://www.youtube.com/watch?v=y-uxS_HfUac",
+      "title": "Tikkun Olam Song",
+      "durationSeconds": 108,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-6VFxXPElkJA",
+      "url": "https://www.youtube.com/watch?v=6VFxXPElkJA",
+      "title": "Two Brothers Harvest",
+      "durationSeconds": 90,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-sQft5EdHzkk",
+      "url": "https://www.youtube.com/watch?v=sQft5EdHzkk",
+      "title": "Veronica Monica and the Story of Chanukah",
+      "durationSeconds": 124,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-ZITNJ11Puzs",
+      "url": "https://www.youtube.com/watch?v=ZITNJ11Puzs",
+      "title": "We Are Family--Anachnu Mishpacha",
+      "durationSeconds": 178,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-RAIX2r0HAzc",
+      "url": "https://www.youtube.com/watch?v=RAIX2r0HAzc",
+      "title": "Wendi McLendon-Covey Wishes Happy Mother's Day!",
+      "durationSeconds": 7,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-lzmKeb5FyoY",
+      "url": "https://www.youtube.com/watch?v=lzmKeb5FyoY",
+      "title": "Won't you take a break with me?",
+      "durationSeconds": 107,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt--AZ3BhHXhow",
+      "url": "https://www.youtube.com/watch?v=-AZ3BhHXhow",
+      "title": "Word of the Day - Sorry",
+      "durationSeconds": 62,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-Q5lTMlNN55w",
+      "url": "https://www.youtube.com/watch?v=Q5lTMlNN55w",
+      "title": "Word of the Day: Gift",
+      "durationSeconds": 47,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-LsQtlpjlZSI",
+      "url": "https://www.youtube.com/watch?v=LsQtlpjlZSI",
+      "title": "Word on the Street: Appetite",
+      "durationSeconds": 53,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-An2SInYkCm0",
+      "url": "https://www.youtube.com/watch?v=An2SInYkCm0",
+      "title": "Word on the Street: Different",
+      "durationSeconds": 51,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-i4hOWI-rRUQ",
+      "url": "https://www.youtube.com/watch?v=i4hOWI-rRUQ",
+      "title": "Word on the Street: Family",
+      "durationSeconds": 48,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-0OrK9zDRZm8",
+      "url": "https://www.youtube.com/watch?v=0OrK9zDRZm8",
+      "title": "Word on the Street: Hero",
+      "durationSeconds": 61,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-46G0_yZURMI",
+      "url": "https://www.youtube.com/watch?v=46G0_yZURMI",
+      "title": "Word on the Street: Music",
+      "durationSeconds": 49,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-zdpVfkY53Hs",
+      "url": "https://www.youtube.com/watch?v=zdpVfkY53Hs",
+      "title": "Word on the Street: Nature",
+      "durationSeconds": 58,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    },
+    {
+      "catalogId": "yt-zeG2Ezbo7W8",
+      "url": "https://www.youtube.com/watch?v=zeG2Ezbo7W8",
+      "title": "Word on the Street: Together",
+      "durationSeconds": 50,
+      "reason": "Clip, song, opening or highlights without sufficient metadata to assign a canonical episode. Not counted as full-episode coverage."
+    }
+  ],
+  "specificTodos": [
+    {
+      "id": "review-classic-identities",
+      "canonicalEpisodeIds": [
+        "shalom-classic-01",
+        "shalom-classic-02",
+        "shalom-classic-03",
+        "shalom-classic-04",
+        "shalom-classic-05",
+        "shalom-classic-06",
+        "shalom-classic-07",
+        "shalom-classic-08",
+        "shalom-classic-09",
+        "shalom-classic-10",
+        "shalom-classic-11"
+      ],
+      "task": "Verify all 11 classic candidate identities and start-to-credits completeness. Prioritize generic-number-only People of Israel and Jerusalem."
+    },
+    {
+      "id": "modern-whole-episodes",
+      "canonicalEpisodeIds": [
+        "shalom-modern-01",
+        "shalom-modern-02",
+        "shalom-modern-03",
+        "shalom-modern-04",
+        "shalom-modern-05",
+        "shalom-modern-06",
+        "shalom-modern-07",
+        "shalom-modern-08",
+        "shalom-modern-09",
+        "shalom-modern-10",
+        "shalom-modern-11",
+        "shalom-modern-12"
+      ],
+      "task": "Find full modern editions for all 12 canonical programs. Existing studio scenes and trailers do not satisfy this."
+    },
+    {
+      "id": "welcome-missing-part",
+      "canonicalEpisodeIds": [
+        "shalom-modern-01"
+      ],
+      "missingParts": [
+        1
+      ],
+      "expectedPartCount": 2,
+      "task": "Find or replace Welcome to Israel part 1 of 2."
+    },
+    {
+      "id": "classic-aleph-missing-part",
+      "canonicalEpisodeIds": [
+        "shalom-classic-09"
+      ],
+      "missingParts": [
+        1
+      ],
+      "expectedPartCount": 3,
+      "task": "Find or replace classic Aleph-Bet Telethon part 1 of 3."
+    },
+    {
+      "id": "missing-menorah-boundaries",
+      "canonicalEpisodeIds": [
+        "shalom-modern-02"
+      ],
+      "task": "Review both linked parts for continuity and ending; labeled coverage is not a completeness verification."
+    },
+    {
+      "id": "primary-year-corroboration",
+      "canonicalEpisodeIds": [
+        "shalom-classic-06",
+        "shalom-classic-07",
+        "shalom-classic-08",
+        "shalom-classic-10",
+        "shalom-modern-01",
+        "shalom-modern-02",
+        "shalom-modern-03",
+        "shalom-modern-04",
+        "shalom-modern-05",
+        "shalom-modern-06",
+        "shalom-modern-07",
+        "shalom-modern-08",
+        "shalom-modern-09",
+        "shalom-modern-10",
+        "shalom-modern-11",
+        "shalom-modern-12"
+      ],
+      "task": "Corroborate provisional production/release years with original distributor records, title cards or library MARC records."
+    }
+  ],
+  "sourceCommit": "011a072"
+}
