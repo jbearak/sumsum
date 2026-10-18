@@ -2,7 +2,9 @@
 
 Maintain a local, interactive video-link library for classic and modern Rechov Sumsum, classic and modern Shalom Sesame, and Elmo's Israeli talk show, תכנית האירוח של אלמו. Collect episode and clip links, source metadata, and evidence about completeness and availability. Store links and metadata, never video media.
 
-The library is `index.html`, a self-contained file generated from `library.template.html` and `data/`. Its default UI is English, with a Hebrew toggle and RTL layout. Preserve filtering by series, program type, theme and character, dynamic filter counts, and longest-first duration sorting. Full episodes and complete installments of short series are separate categories.
+The library is `index.html`, a self-contained file generated from `library.template.html` and `data/`. Preserve filtering by series, program type, theme and character, dynamic filter counts, and longest-first duration sorting. Full episodes and complete installments of short series are separate categories.
+
+Its UI preferences are the language (English by default, with a Hebrew toggle and RTL layout), the colour theme or palette (Green by default) and the appearance (System by default, or Light or Dark). Every colour comes from the palette and scheme tokens at the top of the template's stylesheet; to add a palette, follow [docs/library-ui.md](docs/library-ui.md#themes-and-appearance).
 
 Before acquisition or coverage work, read [TODO.md](TODO.md): episode totals, coverage gaps and the acquisition checklist. Before changing a claim, read the [research/](research/) note that cites its evidence and limits.
 
@@ -13,15 +15,15 @@ This file records the project's rules and the user's working preferences. Record
 Detail lives in these docs. Read each one before the work it covers:
 
 - [docs/files-and-build.md](docs/files-and-build.md), before changing data files, scripts or the build: what each file holds, what the builder refuses and warns about, what the checks cover, and Vimeo metadata enrichment.
-- [docs/episode-guide.md](docs/episode-guide.md), before editing the episode guide, a record's guide link or `data/licensed-services.json`: the guide rules and required fields, licensed listings and availability checks.
+- [docs/episode-guide.md](docs/episode-guide.md), before editing the episode guide, a record's guide link or `data/licensed-services.json`: the guide rules and field shapes, licensed listings and availability checks.
 - [docs/library-ui.md](docs/library-ui.md), before UI work: views, routes, browser storage, and the theme picker and its palettes.
-- [docs/zen-and-hop.md](docs/zen-and-hop.md), before browser, VPN or Hop work: the Proton settings, Hop discovery, the link collector, and driving Zen from the shell through the accessibility API.
+- [docs/zen-and-hop.md](docs/zen-and-hop.md), before browser, VPN or Hop work: the Proton extension's state and server history, Hop discovery, the link collector, and driving Zen from the shell through the accessibility API.
 
 # Working practices
 
 The user set these on 2026-10-18.
 
-- Commit finished work on the working branch at reasonable checkpoints without waiting to be asked, for example before starting the next big piece of work. When the template, `data/` or `scripts/` changed, the build and checks must pass first. In multi-agent workflows, each stage that changes project files commits its own changes, staged by path rather than with `git add -A`. Scan staged files for credentials. Use imperative, sentence-case subjects like the existing commits. Do not amend, rebase, reset or use a bare `git stash`.
+- Commit finished work on the working branch at reasonable checkpoints without waiting to be asked, for example before starting the next big piece of work. When [Files and build](#files-and-build) calls for the build and checks, they must pass first. In multi-agent workflows, each stage that changes project files commits its own changes, staged by path rather than with `git add -A`. Scan staged files for credentials. Use imperative, sentence-case subjects like the existing commits. Do not amend, rebase, reset or use a bare `git stash`.
 - `origin` is the private GitHub repository `git@github.com:jbearak/sumsum.git`. Push only when the user asks.
 - Review substantial changes with one Claude review round, then a Codex review loop with GPT-6.1-Sol (T3 `delegate_task`, provider `codex`, model `gpt-6.1-sol`). Repeat it until there is no valid feedback or very high confidence that the work is ready to commit or merge. Another Claude review may then check that confidence. Do not cap the rounds at a small fixed number. Each Codex round is a fresh `delegate_task` carrying the original brief, prior findings, responses and unresolved objections. Verify each finding adversarially before fixing it, and commit fixes at checkpoints.
 - Take the time the work needs. Do not trim verification or set time targets to go faster. The user's worry about long runs is crashed agents, not elapsed time, so when work runs long, check that agents are alive (transcript growth, tool activity) and report it.
@@ -37,7 +39,7 @@ The user set these on 2026-10-18.
 
 # Files and build
 
-Edit `library.template.html` or the JSON in `data/` and rebuild. Never make a fix only in the generated `index.html`, and commit the rebuilt `index.html` with its sources. After catalog, guide or UI changes, run from the project root:
+Edit `library.template.html` or the JSON in `data/` and rebuild. Never make a fix only in the generated `index.html`, and commit the rebuilt `index.html` with its sources. After any change to `library.template.html`, `data/` or `scripts/`, run from the project root:
 
 ```sh
 python3 scripts/build-library.py
@@ -48,15 +50,11 @@ Fix every builder error and read its warnings. Passing checks do not cover brows
 
 Merge a new Hop collector report into `data/hop-player-links.json` by id. Never replace the file, and keep existing links and playback evidence verbatim.
 
-Keep `index.html` at its path and keep opening it the same way, as a file in Zen. The user's stars, pasted Vimeo links and watched marks live in that browser's local storage for that location. Before moving the file or changing how it is opened (another browser or profile, or a server instead of `file://`), export a backup from the library's About section.
-
-# UI preferences
-
-Language, theme and appearance are UI preferences kept only in the browser's local storage, and the JSON backup leaves them out. The theme is the colour palette; the appearance is System, Light or Dark. The defaults are English, Green and System. Every colour comes from the palette and scheme tokens at the top of the template's stylesheet. A new palette defines every palette token in a light rule and a dark rule; [docs/library-ui.md](docs/library-ui.md#themes-and-appearance) lists the steps. `node scripts/check-library.cjs` must pass, including its token and contrast checks for every palette in both schemes.
+Keep `index.html` at its path and keep opening it the same way, as a file in Zen. The user's stars, pasted Vimeo links and watched marks live in that browser's local storage for that location, as do the UI preferences. Before moving the file or changing how it is opened (another browser or profile, or a server instead of `file://`), export a backup from the library's About section; the backup leaves out the UI preferences.
 
 # Editing the episode guide
 
-[docs/episode-guide.md](docs/episode-guide.md) has the rest of the rules and the required fields. These matter most:
+[docs/episode-guide.md](docs/episode-guide.md) has the rest of the rules. These matter most:
 
 - `titleHe` is the identifying source's title, verbatim. A `storyHe` is quoted verbatim from a source named in `storySourceEn`. Never compose, shorten or translate one.
 - Link an upload with a role: `whole-candidate`, `alternate-edition`, `part`, `excerpt` or `possible`. A `possible` copy is unresolved and never counts toward coverage, the totals or the Watch button.
@@ -68,10 +66,10 @@ Language, theme and appearance are UI preferences kept only in the browser's loc
 
 - Count upload URLs separately from distinct episode identities. Alternate hosts, duplicate editions and numbered parts do not add episodes.
 - Keep original Rechov Sumsum, the 1998 Rechov Sumsum/Shara'a Simsim co-production, the modern core seasons, short series and home-video compilations distinct when calculating coverage.
-- Number the original series and the 1998 co-production by the IETV programme numbers in the NLI catalogue. Uploader and archive.org season/episode labels, such as "S2E58", follow broadcast or collector order: keep them as alternate labels and evidence in `altLabels`, never in `number`.
+- Number the original series and the 1998 co-production by the IETV programme numbers in the NLI catalogue. Their uploader and archive.org season/episode labels, such as "S2E58", follow broadcast or collector order: keep them as alternate labels and evidence in `altLabels`, never in `number`. A label may supply a number only in a production without a documented numbering, when it is the only evidence of the episode, with `confidence: "uploader-label"`.
 - Do not infer a full episode from duration alone or from Hop's generic use of the word פרק. A short installment can be complete within its own series without being a complete core Rechov Sumsum broadcast.
 - Distinguish metadata checked, playback startup observed, complete playback reviewed, and completeness compared against a reference edition. Record the exact URL, date and evidence for a stronger claim.
-- One observed playback start, of Word of the Day: A hug on Vimeo, does not verify other Vimeo links or complete playback. Public oEmbed metadata confirms titles and durations, not playback or an uncut episode. YouTube copies that returned country restrictions or generic errors are not VPN-free alternatives.
+- One playback start observed outside the VPN, of Word of the Day: A hug on Vimeo, does not verify other Vimeo links or complete playback. Public oEmbed metadata confirms titles and durations, not playback or an uncut episode. YouTube copies that returned country restrictions or generic errors are not VPN-free alternatives.
 - Preserve original titles, uploader names, source URLs, privacy hashes and stable catalog ids. English titles and theme and character tags may be editorial; do not present them as publisher-supplied facts.
 - Name an archive.org uploader by the public "Uploaded by" name on the item's details page, with its `@screenname` page as `uploaderUrl`, or "Unknown (archive.org)" when the page shows Unknown. The item metadata's `uploader` field is a private email address; never derive a name from it.
 - Use primary sources for production totals where available. Keep contradictory totals and uncertain mappings explicit, and record an unconfirmed lead as a lead, not a fact. Annual regulator accounting and current website counts do not establish a lifetime production total.

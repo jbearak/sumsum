@@ -4,13 +4,14 @@ Read this before editing `data/episode-guide.json`, a record's `production` or `
 
 ## Episode identity and titles
 
-- An episode is identified by its documented number or title: the IETV programme number for the original series and the 1998 co-production, the DVD number for 2012, Hop's listing number for the Elmo talk show, or the documented title. Hebrew titles are quoted as published. English titles are editorial unless a source publishes one (the Shalom Sesame series, Sisu's English DVD titles for 2006); keep a published English title verbatim.
+- An episode is identified by its documented number or title: the IETV programme number for the original series and the 1998 co-production, the DVD number for 2012, Hop's listing number for the Elmo talk show, or the documented title; failing these, a label, as described under `altLabels` below. Hebrew titles are quoted as published. English titles are editorial unless a source publishes one (the Shalom Sesame series, Sisu's English DVD titles for 2006); keep a published English title verbatim.
 - Each episode needs a `confidence` in its identity: `documented`, `provisional`, or `uploader-label` when an uploader's label is the only evidence. Each entry in its `sources` has a `url`, a `label` or both.
 - `titleHe` is the identifying source's title, verbatim. For the original series and the 1998 co-production it is the NLI IETV catalogue title.
 - When that title has no story name (`רחוב סומסום <44>`), you may put a Hebrew story name quoted verbatim from another source in `storyHe`. Name that source in `storySourceEn` (required) and `storySourceHe`, for example `archive.org file label (uploader's wording)`. Never compose, shorten or translate a story name into `storyHe`.
 - The Hebrew interface heads the episode with `storyHe`. The English interface uses `titleEn` (editorial or published), or `titleHe` without one. The episode page's identity card keeps `titleHe` as the "Catalogue title" and shows the story name with its source.
 - The builder refuses an empty or non-string value, a `storyHe` without `storySourceEn`, and a source without `storyHe`. It warns when `titleHe` is missing or already contains the story name.
 - Uploader and archive season/episode labels, such as archive.org "S2E58", are alternate labels. Put them in `altLabels`, never in `number`. Each entry is `{labelEn, labelHe?, sourceLabel, url?}`; `sourceLabel` names who uses the label.
+- The exception is a production without a documented numbering, when a label is the only evidence of an episode: the label may supply its `number`, with `confidence: "uploader-label"`. Hop!'s post titles and old site codes number some 2006 and 2009 episodes this way. A label on an episode documented by its title, such as the community "episode 30" for Karambula, still goes in `altLabels`.
 
 ## Uploads, coverage and evidence
 
