@@ -3,43 +3,148 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="color-scheme" content="light dark">
+<meta name="color-scheme" content="light dark" id="meta-color-scheme">
+<meta name="theme-color" content="#0f3f2d" id="meta-theme-color">
 <title>Rechov Sumsum guide</title>
 <style>
 /* ---------- tokens ---------- */
+/* Every colour is a custom property defined here; rules below use only var(--...), system colours (forced colours) and
+   transparent. <html> carries data-palette, data-appearance (system, light or dark) and data-scheme (light or dark: the
+   appearance, or the system scheme while it is System), set before the first paint by the inline script at the end of
+   <head>. Two layers:
+   - Scheme: color-scheme, the font and the colours every palette shares, so their meaning reads the same in each one:
+     coverage (whole, parts, excerpt, missing, unknown), access kinds, series inks, the star and the thumbnail overlays.
+     Light on :root, dark on :root[data-scheme=dark].
+   - Palette: surfaces, inks, lines, the brand (masthead), buttons, accent, focus ring, links, chips, shadows and the
+     masthead controls. Green is the default, on :root and :root[data-scheme=dark]. Another palette NAME is
+     :root[data-palette=NAME] (every palette token) and :root[data-palette=NAME][data-scheme=dark] (at least the tokens
+     the default dark block sets), and its swatch in the theme picker (.tp-sw-NAME) shares both blocks. A palette may also
+     override a shared colour, in both of its blocks: the palettes other than green tint the unknown greys (--unknown,
+     --unknown-bg) to their own surfaces. AGENTS.md ("UI preferences") says how to add one;
+     scripts/check-library.cjs checks the tokens and their contrast in every palette and scheme. */
 :root{color-scheme:light;
- --bg:#f6f4ea;--surface:#fffefa;--surface-2:#efeee3;--surface-3:#e4e7da;
- --ink:#15302a;--muted:#536159;--line:#d9ddd0;--line-strong:#b4bfb1;
- --brand:#0f3f2d;--primary:#136a45;--primary-ink:#fff;--primary-hover:#0d5536;
- --accent:#f5cf45;--focus:#1f66b3;--link:#155f9e;
+ --font:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans Hebrew","Arial Hebrew",Arial,sans-serif;
  --whole:#1b7a4b;--parts:#a86400;--excerpt:#5f4fb3;--missing:#b3392c;--unknown:#7e8a83;--whole-ink:#fff;
  --whole-bg:#e2f1e7;--parts-bg:#faefd9;--excerpt-bg:#ece9fa;--missing-bg:#fbe8e4;--unknown-bg:#eef0ea;
  --acc-ok:#1f5fa8;--acc-public:#5c6b75;--acc-vpn:#8f3f71;--acc-lic:#1d6a6a;--acc-bad:#3d3d3d;
- --chip:#eaeee4;--chip-ink:#3c5547;--scrim:#000000a0;
- --shadow:0 1px 2px #1230240f,0 6px 18px #1230240d;
- /* The masthead is dark green (--brand) in both schemes, so its ink and controls keep one set of values. */
+ --ser-modern:#126844;--ser-classic:#7a5e10;--ser-shalom-classic:#2f5f8c;--ser-shalom-modern:#7a4a80;--ser-elmo:#9c4a2f;
+ --star:#f5cf45;--star-ink:#a77300;--scrim:#000000a0;--scrim-ink:#fff;--host-bg:#fffffff2;--host-ink:#18291f;
+ --seg-hatch:#ffffff5c;--seg-dot:#ffffff80;--shadow-badge:0 1px 3px #0003;--shadow-toast:0 6px 30px #0004}
+:root[data-scheme=dark]{color-scheme:dark;
+ --whole:#5cc790;--parts:#e9a640;--excerpt:#ab9ef2;--missing:#f2826f;--unknown:#84928a;--whole-ink:#05231a;
+ --whole-bg:#173827;--parts-bg:#3a2c12;--excerpt-bg:#29244a;--missing-bg:#40201b;--unknown-bg:#1c2823;
+ --acc-ok:#8cc3ff;--acc-public:#a9b6bf;--acc-vpn:#e59ac6;--acc-lic:#7fd1cc;--acc-bad:#cfcfcf;
+ --ser-modern:#86d6a8;--ser-classic:#e3c167;--ser-shalom-classic:#9cc4ec;--ser-shalom-modern:#d6a6dc;--ser-elmo:#f2a28e}
+/* Palettes. Green, the default: the masthead is dark green (--brand) in both schemes, so its ink and controls keep one set
+   of values. */
+:root,.tp-sw-green{
+ --bg:#f6f4ea;--surface:#fffefa;--surface-2:#efeee3;--surface-3:#e4e7da;
+ --ink:#15302a;--muted:#536159;--line:#d9ddd0;--line-strong:#b4bfb1;
+ --brand:#0f3f2d;--primary:#136a45;--primary-ink:#fff;--primary-hover:#0d5536;
+ --accent:#f5cf45;--focus:#1f66b3;--link:#155f9e;--chip:#eaeee4;--chip-ink:#3c5547;
+ --art-veil:#fffefacc;--shadow:0 1px 2px #1230240f,0 6px 18px #1230240d;
  --mast-ink:#fff;--mast-ink-soft:#e9f3ec;--mast-hover:#ffffff18;--mast-chip:#ffffff26;
  --mast-current:#fff;--mast-current-ink:#0f3f2d;--mast-ctl:#ffffff14;--mast-ctl-hover:#ffffff26;--mast-ctl-line:#ffffff80;
- --mast-focus:#f5cf45;--mast-divider:#ffffff59;--mast-current-divider:#0f3f2d99;
- --font:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans Hebrew","Arial Hebrew",Arial,sans-serif}
-:root[data-theme=dark]{color-scheme:dark;
+ --mast-focus:#f5cf45;--mast-divider:#ffffff59;--mast-current-divider:#0f3f2d99}
+:root[data-scheme=dark],[data-scheme=dark] .tp-sw-green{
  --bg:#0e1714;--surface:#15211c;--surface-2:#1b2a24;--surface-3:#23352d;
  --ink:#e6eee8;--muted:#a6b5ac;--line:#2b3c35;--line-strong:#42574d;
  --brand:#0a2a1e;--primary:#7fd3a5;--primary-ink:#05231a;--primary-hover:#a1e2bd;
- --focus:#8cc3ff;--link:#93c7ff;
- --whole:#5cc790;--parts:#e9a640;--excerpt:#ab9ef2;--missing:#f2826f;--unknown:#84928a;--whole-ink:#05231a;
- --whole-bg:#173827;--parts-bg:#3a2c12;--excerpt-bg:#29244a;--missing-bg:#40201b;--unknown-bg:#1c2823;
- --acc-ok:#8cc3ff;--acc-public:#a9b6bf;--acc-vpn:#e59ac6;--acc-lic:#7fd1cc;--acc-bad:#cfcfcf;
- --chip:#23352d;--chip-ink:#c6d5cb;--shadow:0 1px 2px #0006}
-@media (prefers-color-scheme:dark){:root:not([data-theme=light]){color-scheme:dark;
- --bg:#0e1714;--surface:#15211c;--surface-2:#1b2a24;--surface-3:#23352d;
- --ink:#e6eee8;--muted:#a6b5ac;--line:#2b3c35;--line-strong:#42574d;
- --brand:#0a2a1e;--primary:#7fd3a5;--primary-ink:#05231a;--primary-hover:#a1e2bd;
- --focus:#8cc3ff;--link:#93c7ff;
- --whole:#5cc790;--parts:#e9a640;--excerpt:#ab9ef2;--missing:#f2826f;--unknown:#84928a;--whole-ink:#05231a;
- --whole-bg:#173827;--parts-bg:#3a2c12;--excerpt-bg:#29244a;--missing-bg:#40201b;--unknown-bg:#1c2823;
- --acc-ok:#8cc3ff;--acc-public:#a9b6bf;--acc-vpn:#e59ac6;--acc-lic:#7fd1cc;--acc-bad:#cfcfcf;
- --chip:#23352d;--chip-ink:#c6d5cb;--shadow:0 1px 2px #0006}}
+ --focus:#8cc3ff;--link:#93c7ff;--chip:#23352d;--chip-ink:#c6d5cb;
+ --art-veil:#15211ccc;--shadow:0 1px 2px #0006}
+/* Blue: navy masthead, blue buttons, an amber focus ring. */
+:root[data-palette=blue],.tp-sw-blue{
+ --bg:#f2f5f9;--surface:#fcfdff;--surface-2:#e9eef5;--surface-3:#dce4ee;
+ --ink:#13233a;--muted:#4d5b6f;--line:#d3dae4;--line-strong:#aab6c6;
+ --brand:#143a6a;--primary:#1a5fae;--primary-ink:#fff;--primary-hover:#134a8a;
+ --accent:#f5cf45;--focus:#b04a0c;--link:#1757a6;--chip:#e6ecf4;--chip-ink:#3a4b63;
+ --art-veil:#fcfdffcc;--shadow:0 1px 2px #0f24400f,0 6px 18px #0f24400d;
+ --mast-ink:#fff;--mast-ink-soft:#e6eefa;--mast-hover:#ffffff18;--mast-chip:#ffffff26;
+ --mast-current:#fff;--mast-current-ink:#143a6a;--mast-ctl:#ffffff14;--mast-ctl-hover:#ffffff26;--mast-ctl-line:#ffffff80;
+ --mast-focus:#f5cf45;--mast-divider:#ffffff59;--mast-current-divider:#143a6a99;
+ --unknown:#7a8696;--unknown-bg:#edf1f6}
+:root[data-palette=blue][data-scheme=dark],[data-scheme=dark] .tp-sw-blue{
+ --bg:#0d131c;--surface:#141b26;--surface-2:#1a2331;--surface-3:#222d3d;
+ --ink:#e5ebf3;--muted:#a3afbf;--line:#28334a;--line-strong:#435069;
+ --brand:#0b2444;--primary:#8bbcf5;--primary-ink:#061a33;--primary-hover:#afd1f8;
+ --focus:#fbbf24;--link:#93c7ff;--chip:#222d3d;--chip-ink:#c5d0de;
+ --art-veil:#141b26cc;--shadow:0 1px 2px #0006;
+ --unknown:#8794a6;--unknown-bg:#1b2331}
+/* Plum: deep plum masthead with a gold stripe, a teal focus ring. */
+:root[data-palette=plum],.tp-sw-plum{
+ --bg:#f6f2f6;--surface:#fffcff;--surface-2:#efe8ef;--surface-3:#e5dae6;
+ --ink:#2b1830;--muted:#61516a;--line:#ddd2df;--line-strong:#bcaabf;
+ --brand:#4a1f5c;--primary:#7a3a90;--primary-ink:#fff;--primary-hover:#622d75;
+ --accent:#eebd4f;--focus:#0d7068;--link:#6c2d90;--chip:#f0e6f1;--chip-ink:#56405d;
+ --art-veil:#fffcffcc;--shadow:0 1px 2px #2a10300f,0 6px 18px #2a10300d;
+ --mast-ink:#fff;--mast-ink-soft:#f4e9f7;--mast-hover:#ffffff18;--mast-chip:#ffffff26;
+ --mast-current:#fff;--mast-current-ink:#4a1f5c;--mast-ctl:#ffffff14;--mast-ctl-hover:#ffffff26;--mast-ctl-line:#ffffff80;
+ --mast-focus:#eebd4f;--mast-divider:#ffffff59;--mast-current-divider:#4a1f5c99;
+ --unknown:#877b8c;--unknown-bg:#f2edf2}
+:root[data-palette=plum][data-scheme=dark],[data-scheme=dark] .tp-sw-plum{
+ --bg:#150e17;--surface:#1d1420;--surface-2:#251a29;--surface-3:#2f2234;
+ --ink:#f0e6f2;--muted:#b9a8be;--line:#35283a;--line-strong:#524157;
+ --brand:#2e1239;--primary:#d6a6e6;--primary-ink:#2a0f35;--primary-hover:#e4c2ef;
+ --focus:#5eead4;--link:#d4adff;--chip:#2f2234;--chip-ink:#d9c9dd;
+ --art-veil:#1d1420cc;--shadow:0 1px 2px #0006;
+ --unknown:#988b9e;--unknown-bg:#251c29}
+/* Terracotta: brick masthead with an ochre stripe, rust buttons. */
+:root[data-palette=terracotta],.tp-sw-terracotta{
+ --bg:#f8f2ec;--surface:#fffcf9;--surface-2:#f2e9e1;--surface-3:#e9ddd2;
+ --ink:#33201a;--muted:#6a544a;--line:#e3d6cb;--line-strong:#c4ae9f;
+ --brand:#7c2d1a;--primary:#a63f22;--primary-ink:#fff;--primary-hover:#86321a;
+ --accent:#f2b544;--focus:#1d5fb3;--link:#1c58a0;--chip:#f1e5db;--chip-ink:#5c4237;
+ --art-veil:#fffcf9cc;--shadow:0 1px 2px #3a1a100f,0 6px 18px #3a1a100d;
+ --mast-ink:#fff;--mast-ink-soft:#fbe9e1;--mast-hover:#ffffff18;--mast-chip:#ffffff26;
+ --mast-current:#fff;--mast-current-ink:#7c2d1a;--mast-ctl:#ffffff14;--mast-ctl-hover:#ffffff26;--mast-ctl-line:#ffffff80;
+ --mast-focus:#f2b544;--mast-divider:#ffffff59;--mast-current-divider:#7c2d1a99;
+ --unknown:#887d76;--unknown-bg:#f3eee9}
+:root[data-palette=terracotta][data-scheme=dark],[data-scheme=dark] .tp-sw-terracotta{
+ --bg:#17100d;--surface:#201714;--surface-2:#2a1e19;--surface-3:#352620;
+ --ink:#f3e9e4;--muted:#c0aaa0;--line:#3a2b25;--line-strong:#58443b;
+ --brand:#46190e;--primary:#f0a283;--primary-ink:#3a1408;--primary-hover:#f6bea7;
+ --focus:#8cc3ff;--link:#93c7ff;--chip:#352620;--chip-ink:#dfcbc2;
+ --art-veil:#201714cc;--shadow:0 1px 2px #0006;
+ --unknown:#9a8c84;--unknown-bg:#271e1a}
+/* Sunny: a yellow masthead with dark ink and an orange stripe (deep amber in dark), orange buttons. */
+:root[data-palette=sunny],.tp-sw-sunny{
+ --bg:#fbf6e6;--surface:#fffdf6;--surface-2:#f5eed8;--surface-3:#ece2c6;
+ --ink:#2a2110;--muted:#62563d;--line:#e6dcc2;--line-strong:#c7b991;
+ --brand:#f7c948;--primary:#c2410c;--primary-ink:#fff;--primary-hover:#9a3412;
+ --accent:#e8730c;--focus:#1f5fbf;--link:#1c58a0;--chip:#f2e9cf;--chip-ink:#514530;
+ --art-veil:#fffdf6cc;--shadow:0 1px 2px #3a2a000f,0 6px 18px #3a2a000d;
+ --mast-ink:#231a00;--mast-ink-soft:#33270a;--mast-hover:#0000001a;--mast-chip:#00000021;
+ --mast-current:#2e2300;--mast-current-ink:#ffe7a3;--mast-ctl:#ffffff40;--mast-ctl-hover:#ffffff66;--mast-ctl-line:#00000080;
+ --mast-focus:#1b3a8c;--mast-divider:#0000003d;--mast-current-divider:#ffe7a399;
+ --unknown:#857d68;--unknown-bg:#f4efe0}
+:root[data-palette=sunny][data-scheme=dark],[data-scheme=dark] .tp-sw-sunny{
+ --bg:#15120a;--surface:#1e1a0f;--surface-2:#272214;--surface-3:#322b1a;
+ --ink:#f6efdc;--muted:#c4b694;--line:#3a321f;--line-strong:#5a4e31;
+ --brand:#3b2b05;--primary:#f5b14a;--primary-ink:#2b1a00;--primary-hover:#f8c674;
+ --accent:#f08c2e;--focus:#8cc3ff;--link:#93c7ff;--chip:#322b1a;--chip-ink:#e2d5b5;
+ --art-veil:#1e1a0fcc;--shadow:0 1px 2px #0006;
+ --mast-ink:#fff7e0;--mast-ink-soft:#f8ecc8;--mast-hover:#ffffff18;--mast-chip:#ffffff26;
+ --mast-current:#f7c948;--mast-current-ink:#2b1f00;--mast-ctl:#ffffff14;--mast-ctl-hover:#ffffff26;--mast-ctl-line:#ffffff80;
+ --mast-focus:#8cc3ff;--mast-divider:#ffffff59;--mast-current-divider:#2b1f0099;
+ --unknown:#978d74;--unknown-bg:#252011}
+/* Graphite: neutral greys, a light-blue focus ring on the masthead. */
+:root[data-palette=graphite],.tp-sw-graphite{
+ --bg:#f4f5f6;--surface:#fefefe;--surface-2:#eceef0;--surface-3:#e1e4e7;
+ --ink:#1d2126;--muted:#545b63;--line:#d8dbdf;--line-strong:#b2b8bf;
+ --brand:#2a2f35;--primary:#3f4752;--primary-ink:#fff;--primary-hover:#2c333c;
+ --accent:#aab2bb;--focus:#1f66b3;--link:#1f5fa6;--chip:#eaecef;--chip-ink:#434a52;
+ --art-veil:#fefefecc;--shadow:0 1px 2px #1a1e230f,0 6px 18px #1a1e230d;
+ --mast-ink:#fff;--mast-ink-soft:#eceff2;--mast-hover:#ffffff18;--mast-chip:#ffffff26;
+ --mast-current:#fff;--mast-current-ink:#2a2f35;--mast-ctl:#ffffff14;--mast-ctl-hover:#ffffff26;--mast-ctl-line:#ffffff80;
+ --mast-focus:#8cc3ff;--mast-divider:#ffffff59;--mast-current-divider:#2a2f3599;
+ --unknown:#7f858c;--unknown-bg:#eef0f2}
+:root[data-palette=graphite][data-scheme=dark],[data-scheme=dark] .tp-sw-graphite{
+ --bg:#111315;--surface:#181b1e;--surface-2:#1f2327;--surface-3:#282c31;
+ --ink:#e8eaed;--muted:#a9b0b8;--line:#2c3136;--line-strong:#474e56;
+ --brand:#24282d;--primary:#c3cad2;--primary-ink:#15181b;--primary-hover:#dde2e7;
+ --focus:#8cc3ff;--link:#93c7ff;--chip:#282c31;--chip-ink:#ccd2d8;
+ --art-veil:#181b1ecc;--shadow:0 1px 2px #0006;
+ --unknown:#8d939a;--unknown-bg:#1f2327}
 
 /* ---------- base ---------- */
 *{box-sizing:border-box}
@@ -65,7 +170,8 @@ main{display:block;outline:none}
 .masthead{position:relative;background:var(--brand);color:var(--mast-ink);border-bottom:4px solid var(--accent)}
 /* Physical layout in both languages: the views nav fills the left column and the control group is pinned to the right
    edge, so the language toggle keeps its place and size when the page direction flips. The nav takes the page direction
-   back. The group (#mast-tools) holds the toggle and room for one more compact control (about 40 px). */
+   back. The group (#mast-tools) holds the theme button and the language toggle; it spans the band's height, so the theme
+   popover can drop from its bottom edge. */
 .mast{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;column-gap:18px;min-height:64px;direction:ltr}
 .tabs{min-width:0}
 html[dir=rtl] .tabs{direction:rtl}
@@ -81,7 +187,7 @@ html[dir=rtl] .tabs{direction:rtl}
 /* Browse is a split control: the label opens #/browse; the arrow button discloses a menu of the three Browse pages. At rest
    the two halves read as one tab, "Browse ˅", with no divider and the arrow close to the label. Each half is its own
    control: hovering lights only the half under the pointer, and hovering or focusing either half shows a faint short
-   separator between them. When Browse or one of its pages is current, both halves share the white pill and the separator
+   separator between them. When Browse or one of its pages is current, both halves share the current pill and the separator
    stays, short, in the pill's own colour. */
 .tab-split{position:relative;display:flex;align-items:stretch}
 .tab-split>.tab-browse{border-start-end-radius:0;border-end-end-radius:0;padding-inline-end:3px}
@@ -109,9 +215,9 @@ html[dir=rtl] .tabs{direction:rtl}
 .bm-label{font-weight:700;white-space:nowrap}
 .bm-count{justify-self:start;font-size:12px;font-weight:700;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
 .bm-desc{grid-column:1/-1;font-size:12.5px;font-weight:500;color:var(--muted)}
-/* The menu is light on a light page: the masthead's yellow ring would not show on it. */
+/* The menu is on the page surface: the masthead's own ring colour (--mast-focus) need not show on it. */
 .masthead .bmenu :focus-visible{outline-color:var(--focus);outline-offset:-2px}
-.mast-tools{display:flex;align-items:center;gap:8px}
+.mast-tools{position:relative;align-self:stretch;display:flex;align-items:center;gap:8px}
 /* Language toggle: a radiogroup of two options. dir=ltr keeps EN on the left and עב on the right in both languages; the
    thumb sits under the checked option and follows aria-checked, so the state shown is the state announced. A click
    anywhere on it switches the language. */
@@ -125,6 +231,47 @@ html[dir=rtl] .tabs{direction:rtl}
 .lang-thumb{position:absolute;top:var(--lang-pad);bottom:var(--lang-pad);left:var(--lang-pad);
  width:calc(50% - var(--lang-pad));border-radius:99px;background:var(--mast-current);pointer-events:none}
 .lang-opt[lang=he][aria-checked=true]~.lang-thumb{transform:translateX(100%)}
+/* Theme picker: a round button before the language toggle (40 px, 36 px at 480 px and below; no text, so it has the same
+   size and place in both languages) discloses a popover with two radio groups, Theme (named swatches) and Appearance
+   (System, Light, Dark). The popover drops from the control group's right edge to just below the masthead band, on the
+   page surface, and its content takes the page direction. Each swatch (.tp-sw-NAME) takes its palette's tokens from that
+   palette's blocks, in the current scheme: the masthead colour, the stripe, the page and a button dot. Palettes sit in two
+   columns, one at 480 px and below. */
+.theme{flex:none}
+.theme-btn{display:grid;place-items:center;width:40px;height:40px;padding:0;border:1px solid var(--mast-ctl-line);border-radius:50%;
+ background:var(--mast-ctl);color:var(--mast-ink-soft)}
+.theme-btn:hover{background:var(--mast-ctl-hover)}
+.theme-btn[aria-expanded=true]{background:var(--mast-current);border-color:var(--mast-current);color:var(--mast-current-ink)}
+.theme-btn svg{display:block}
+.tp{position:absolute;z-index:26;top:calc(100% + 12px);right:0;width:min(360px,calc(100vw - 20px));padding:12px 12px 10px;
+ background:var(--surface);color:var(--ink);border:1px solid var(--line-strong);border-radius:12px;box-shadow:var(--shadow);
+ font-size:14px;line-height:1.3;text-align:start}
+html[dir=rtl] .tp{direction:rtl}
+.tp-h{margin:0 0 8px;font-size:11.5px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+[dir=rtl] .tp-h{letter-spacing:0}
+.tp-pals{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin-bottom:14px}
+.tp-pal{display:flex;align-items:center;gap:9px;min-width:0;min-height:44px;padding:5px 8px;border:1px solid var(--line);
+ border-radius:10px;background:var(--surface);color:var(--ink);font-size:13.5px;font-weight:650;text-align:start}
+.tp-pal:hover{background:var(--surface-2)}
+.tp-pal[aria-checked=true]{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
+.tp-name{min-width:0}
+.tp-check{display:block;flex:none;margin-inline-start:auto;line-height:0;visibility:hidden}
+.tp-pal[aria-checked=true] .tp-check{visibility:visible}
+.tp-sw{position:relative;flex:none;width:34px;height:24px;border:1px solid var(--line-strong);border-radius:6px;
+ background:linear-gradient(var(--brand) 0 52%,var(--accent) 52% 66%,var(--bg) 66%)}
+.tp-sw::after{content:"";position:absolute;right:4px;bottom:2px;width:6px;height:6px;border-radius:50%;background:var(--primary)}
+.tp-apps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border:1px solid var(--line-strong);border-radius:10px}
+.tp-app{min-width:0;min-height:40px;padding:4px 6px;border:0;background:var(--surface);color:var(--ink);font-size:13px;
+ font-weight:650;line-height:1.2}
+.tp-app+.tp-app{border-inline-start:1px solid var(--line-strong)}
+.tp-app:first-child{border-start-start-radius:9px;border-end-start-radius:9px}
+.tp-app:last-child{border-start-end-radius:9px;border-end-end-radius:9px}
+.tp-app:hover{background:var(--surface-2)}
+.tp-app[aria-checked=true]{background:var(--ink);color:var(--bg)}
+.tp-app:focus-visible{position:relative;z-index:1}
+.tp-note{margin:10px 0 0;font-size:12px;color:var(--muted)}
+/* The popover is on the page surface, so it uses the page focus ring. */
+.masthead .tp :focus-visible{outline-color:var(--focus)}
 .masthead :focus-visible{outline-color:var(--mast-focus)}
 
 /* ---------- page heads ---------- */
@@ -189,8 +336,8 @@ html[dir=rtl] .tabs{direction:rtl}
 .star{width:40px;height:40px;flex:none;border-radius:50%;border:1px solid transparent;background:transparent;color:var(--muted);
  display:inline-grid;place-items:center;padding:0}
 .star:hover{background:var(--surface-2);border-color:var(--line)}
-.star[aria-pressed=true]{color:#a77300}
-.star[aria-pressed=true] svg{fill:var(--accent)}
+.star[aria-pressed=true]{color:var(--star-ink)}
+.star[aria-pressed=true] svg{fill:var(--star)}
 .note{font-size:13px;color:var(--muted)}
 .callout{border:1px solid var(--line);border-inline-start:4px solid var(--parts);background:var(--surface);border-radius:10px;
  padding:10px 14px;font-size:13.5px;margin:0 0 14px}
@@ -216,8 +363,8 @@ html[dir=rtl] .tabs{direction:rtl}
 .meter.small{height:6px}
 .seg{flex:1 1 0;min-width:3px}
 .seg-whole{background:var(--whole)}
-.seg-parts{background:repeating-linear-gradient(45deg,#ffffff5c 0 2px,transparent 2px 6px),var(--parts)}
-.seg-excerpt{background:radial-gradient(#ffffff80 1px,transparent 1.6px) 0 0/5px 5px,var(--excerpt)}
+.seg-parts{background:repeating-linear-gradient(45deg,var(--seg-hatch) 0 2px,transparent 2px 6px),var(--parts)}
+.seg-excerpt{background:radial-gradient(var(--seg-dot) 1px,transparent 1.6px) 0 0/5px 5px,var(--excerpt)}
 .seg-missing{background:var(--missing-bg);box-shadow:inset 0 0 0 2px var(--missing)}
 .seg-slots{background:repeating-linear-gradient(135deg,var(--unknown) 0 1.5px,var(--unknown-bg) 1.5px 5px)}
 .seg-gaps{background:repeating-linear-gradient(90deg,var(--line-strong) 0 1px,var(--unknown-bg) 1px 4px)}
@@ -398,16 +545,13 @@ details.legend>summary{cursor:pointer;padding:9px 14px;font-size:13px;font-weigh
 .art{position:relative;display:block;aspect-ratio:16/9;background:var(--surface-3);overflow:hidden}
 .art img{position:relative;width:100%;height:100%;object-fit:cover;display:block}
 .cov-parts .art::after,.cov-excerpt .art::after{content:"";position:absolute;inset-block:0;inset-inline-end:0;width:50%;
- background:#fffefacc;-webkit-backdrop-filter:grayscale(1) blur(2px);backdrop-filter:grayscale(1) blur(2px);
+ background:var(--art-veil);-webkit-backdrop-filter:grayscale(1) blur(2px);backdrop-filter:grayscale(1) blur(2px);
  border-inline-start:2px dashed var(--c)}
-:root[data-theme=dark] .cov-parts .art::after,:root[data-theme=dark] .cov-excerpt .art::after{background:#15211ccc}
-@media (prefers-color-scheme:dark){:root:not([data-theme=light]) .cov-parts .art::after,
- :root:not([data-theme=light]) .cov-excerpt .art::after{background:#15211ccc}}
 .cov-excerpt .art::after{width:75%}
 .tile.cov-missing{border-style:dashed;border-top-style:solid;background:transparent}
 .cov-missing .art{background:repeating-linear-gradient(135deg,transparent 0 7px,var(--missing-bg) 7px 14px)}
 .num{position:absolute;inset-block-start:6px;inset-inline-start:6px;background:var(--surface);color:var(--ink);font-weight:800;
- font-size:12px;border-radius:6px;padding:1px 7px;font-variant-numeric:tabular-nums;box-shadow:0 1px 3px #0003;z-index:1}
+ font-size:12px;border-radius:6px;padding:1px 7px;font-variant-numeric:tabular-nums;box-shadow:var(--shadow-badge);z-index:1}
 .bignum{position:absolute;inset:0;display:grid;place-items:center;font-size:30px;font-weight:800;color:var(--missing);opacity:.75;
  font-variant-numeric:tabular-nums}
 .bignum.muted{color:var(--muted);opacity:.4}
@@ -486,7 +630,7 @@ details.legend>summary{cursor:pointer;padding:9px 14px;font-size:13px;font-weigh
 .qtext a:hover{text-decoration:underline}
 .qtext a:focus-visible{outline:0}
 .qtext a:focus-visible::after{outline:3px solid var(--focus);outline-offset:2px;border-radius:8px}
-.u-dur{position:absolute;inset-block-end:5px;inset-inline-end:5px;background:var(--scrim);color:#fff;font-size:11px;font-weight:700;
+.u-dur{position:absolute;inset-block-end:5px;inset-inline-end:5px;background:var(--scrim);color:var(--scrim-ink);font-size:11px;font-weight:700;
  border-radius:4px;padding:0 5px;font-variant-numeric:tabular-nums}
 
 /* ---------- uploads ---------- */
@@ -514,7 +658,7 @@ details.legend>summary{cursor:pointer;padding:9px 14px;font-size:13px;font-weigh
 .u-art{position:relative;display:block;aspect-ratio:16/9;background:var(--surface-3);overflow:hidden}
 .u-art img{position:relative;width:100%;height:100%;object-fit:cover;display:block}
 .u-host{position:absolute;inset-block-start:6px;inset-inline-start:6px;font-size:10.5px;font-weight:800;border-radius:4px;
- padding:1px 6px;background:#fffffff2;color:#18291f;max-width:calc(100% - 12px);overflow:hidden;text-overflow:ellipsis;
+ padding:1px 6px;background:var(--host-bg);color:var(--host-ink);max-width:calc(100% - 12px);overflow:hidden;text-overflow:ellipsis;
  white-space:nowrap}
 .u-body{display:flex;flex-direction:column;gap:3px;padding:10px 12px 0;flex:1;min-width:0}
 .u-kicker{font-size:10.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--series-ink,var(--muted));
@@ -540,16 +684,9 @@ details.legend>summary{cursor:pointer;padding:9px 14px;font-size:13px;font-weigh
 .num-range{white-space:nowrap}
 /* A long Watch label ("Watch on hoopla with a library card") wraps inside the card instead of overflowing it. */
 .u-actions>.btn{min-width:0;white-space:normal;text-align:center;line-height:1.25}
-.ser-modern{--series-ink:#126844}.ser-classic{--series-ink:#7a5e10}.ser-shalom-classic{--series-ink:#2f5f8c}
-.ser-shalom-modern{--series-ink:#7a4a80}.ser-elmo{--series-ink:#9c4a2f}
-:root[data-theme=dark] .ser-modern{--series-ink:#86d6a8}:root[data-theme=dark] .ser-classic{--series-ink:#e3c167}
-:root[data-theme=dark] .ser-shalom-classic{--series-ink:#9cc4ec}:root[data-theme=dark] .ser-shalom-modern{--series-ink:#d6a6dc}
-:root[data-theme=dark] .ser-elmo{--series-ink:#f2a28e}
-@media (prefers-color-scheme:dark){:root:not([data-theme=light]) .ser-modern{--series-ink:#86d6a8}
- :root:not([data-theme=light]) .ser-classic{--series-ink:#e3c167}
- :root:not([data-theme=light]) .ser-shalom-classic{--series-ink:#9cc4ec}
- :root:not([data-theme=light]) .ser-shalom-modern{--series-ink:#d6a6dc}
- :root:not([data-theme=light]) .ser-elmo{--series-ink:#f2a28e}}
+.ser-modern{--series-ink:var(--ser-modern)}.ser-classic{--series-ink:var(--ser-classic)}
+.ser-shalom-classic{--series-ink:var(--ser-shalom-classic)}.ser-shalom-modern{--series-ink:var(--ser-shalom-modern)}
+.ser-elmo{--series-ink:var(--ser-elmo)}
 .more-row{display:flex;justify-content:center;padding-top:22px}
 .empty{padding:40px 20px;text-align:center;border:1.5px dashed var(--line-strong);border-radius:12px;margin-top:18px}
 .empty p{margin:0 0 14px;color:var(--muted)}
@@ -696,7 +833,7 @@ details.about>summary{cursor:pointer;font-weight:700;padding:12px 0;font-size:14
 .file-btn:focus-within{outline:3px solid var(--focus);outline-offset:2px}
 .rights{font-size:11.5px;color:var(--muted);margin:6px 0 0}
 .toast{position:fixed;bottom:22px;inset-inline:16px;margin:auto;width:max-content;max-width:calc(100vw - 32px);background:var(--ink);
- color:var(--bg);border-radius:9px;padding:11px 18px;box-shadow:0 6px 30px #0004;font-size:13.5px;z-index:30}
+ color:var(--bg);border-radius:9px;padding:11px 18px;box-shadow:var(--shadow-toast);font-size:13.5px;z-index:30}
 .toast:not(.show){width:1px;height:1px;padding:0;overflow:hidden;clip-path:inset(50%);white-space:nowrap;box-shadow:none}
 
 /* ---------- responsive ---------- */
@@ -740,6 +877,8 @@ details.about>summary{cursor:pointer;font-weight:700;padding:12px 0;font-size:14
  .tab-more{flex:none;width:44px;padding:0}
  .tab-more::before{top:32%;bottom:32%}
  .bmenu{inset-inline:8px;top:calc(100% + 8px);width:auto;min-width:0;max-width:none}
+ /* The control group spans the row inside the band's 5 px padding: the popover starts 8 px below the band. */
+ .tp{top:calc(100% + 17px)}
  /* A long title may wrap to two lines on a phone, between words. */
  .bm-label{white-space:normal}
  .page-head{padding-block:16px 10px}
@@ -781,6 +920,9 @@ details.about>summary{cursor:pointer;font-weight:700;padding:12px 0;font-size:14
  .tabs>ul{gap:0}
  .tab{font-size:11px;padding-inline:2px}
  .lang{--lang-pad:2px}
+ .theme-btn{width:36px;height:36px}
+ /* One palette per row: two columns would cut a long name ("Terracotta") beside its swatch and check mark. */
+ .tp-pals{grid-template-columns:minmax(0,1fr)}
  .lang-opt{min-height:30px;padding:0 5px;font-size:12px}
  .lang-long{display:none}.lang-short{display:inline}
  .tiles{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
@@ -812,7 +954,7 @@ details.about>summary{cursor:pointer;font-weight:700;padding:12px 0;font-size:14
  .ucard .u-actions{grid-column:1/-1;padding:10px 0 0}
 }
 @media (pointer:coarse){.cell{width:32px;height:32px;font-size:12px}.chip{min-height:40px}.btn{min-height:44px}
- .slot-list a{min-height:36px}}
+ .slot-list a{min-height:36px}.tp-app{min-height:44px}}
 /* Touch screens wider than phones: the tabs and the Browse arrow are 44 px targets too. */
 @media (pointer:coarse) and (min-width:761px){.tab{min-height:44px}.tab-more{min-width:44px}}
 /* Just above phone width the Browse group can sit less than 420 px from the far edge (in Hebrew, with the theme control), so
@@ -823,7 +965,9 @@ details.about>summary{cursor:pointer;font-weight:700;padding:12px 0;font-size:14
  .tab-more svg{transition:transform .15s ease-out}
  .lang-thumb{transition:transform .18s ease-out}
  .lang-opt{transition:color .18s ease-out}
+ .tp{animation:tp-in .14s ease-out}
 }
+@keyframes tp-in{from{opacity:0;transform:translateY(-4px)}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important;scroll-behavior:auto!important}}
 @media (forced-colors:active){
  .seg,.glyph,.dot,.cell,.acc{forced-color-adjust:none}
@@ -849,8 +993,51 @@ details.about>summary{cursor:pointer;font-weight:700;padding:12px 0;font-size:14
  .lang-thumb{background:Highlight}
  .lang-opt[aria-checked=true]{color:HighlightText}
  .lang-opt:focus-visible{outline:3px solid CanvasText;outline-offset:2px}
+ /* Theme picker: the open button and the checked options keep a non-colour mark; the swatches keep their own colours as
+    samples of each palette. */
+ .theme-btn{border-color:ButtonText}
+ .theme-btn[aria-expanded=true]{outline:2px solid CanvasText;outline-offset:2px}
+ .tp-pal[aria-checked=true],.tp-app[aria-checked=true]{outline:2px solid CanvasText;outline-offset:-4px}
+ .tp-pal[aria-checked=true] .tp-name,.tp-app[aria-checked=true]{text-decoration:underline;text-decoration-thickness:2px;
+  text-underline-offset:4px}
+ .tp-pal[aria-checked=true]:focus-visible,.tp-app[aria-checked=true]:focus-visible{outline:3px solid CanvasText;outline-offset:2px}
+ .tp-sw{forced-color-adjust:none}
 }
 </style>
+<script id="prefs-boot">
+// Theme and appearance, applied before the first paint, so the page never shows the default palette first. Language,
+// theme and appearance are browser-local UI preferences, stored in localStorage beside 'sumsum-language' as 'sumsum-theme'
+// (a palette name) and 'sumsum-appearance' (system, light or dark). Only listed names are used: any other stored value
+// ('constructor', '__proto__', an unknown name, a number, broken JSON) falls back to the default (green, system). While the
+// appearance is System, data-scheme follows prefers-color-scheme, also when it changes. data-start-palette and
+// data-start-appearance on <html> take the place of the stored values (tests and probes). The application script calls
+// sumsumTheme.apply() from the theme picker.
+(() => {
+ const PALETTES = Object.freeze(['green', 'blue', 'plum', 'terracotta', 'sunny', 'graphite']);
+ const APPEARANCES = Object.freeze(['system', 'light', 'dark']);
+ const de = document.documentElement, w = typeof window === 'undefined' ? {} : window;
+ const mq = typeof w.matchMedia === 'function' ? w.matchMedia('(prefers-color-scheme: dark)') : null;
+ const read = key => { try { return JSON.parse(localStorage.getItem(key)); } catch { return null; } };
+ const valid = (v, list) => (typeof v === 'string' && list.includes(v) ? v : list[0]);
+ const meta = (id, value) => { const m = document.getElementById(id); if (m && value) m.setAttribute('content', value); };
+ function apply(palette, appearance) {
+  const p = valid(palette, PALETTES), a = valid(appearance, APPEARANCES), s = a === 'system' ? (mq && mq.matches ? 'dark' : 'light') : a;
+  de.setAttribute('data-palette', p); de.setAttribute('data-appearance', a); de.setAttribute('data-scheme', s);
+  meta('meta-color-scheme', a === 'system' ? 'light dark' : s);
+  // The browser's own toolbar takes the masthead colour.
+  if (typeof getComputedStyle === 'function') meta('meta-theme-color', getComputedStyle(de).getPropertyValue('--brand').trim());
+  return {palette: p, appearance: a, scheme: s};
+ }
+ const start = name => de.getAttribute('data-start-' + name);
+ apply(start('palette') ?? read('sumsum-theme'), start('appearance') ?? read('sumsum-appearance'));
+ if (mq) {
+  const follow = () => { if (de.getAttribute('data-appearance') === 'system') apply(de.getAttribute('data-palette'), 'system'); };
+  if (typeof mq.addEventListener === 'function') mq.addEventListener('change', follow);
+  else if (typeof mq.addListener === 'function') mq.addListener(follow);
+ }
+ w.sumsumTheme = Object.freeze({palettes: PALETTES, appearances: APPEARANCES, apply});
+})();
+</script>
 </head>
 <body>
 <a class="skip" href="#main" id="skip" data-i18n="skip">Skip to content</a>
@@ -858,6 +1045,22 @@ details.about>summary{cursor:pointer;font-weight:700;padding:12px 0;font-size:14
  <div class="wrap mast">
   <nav class="tabs" id="tabs" aria-label="Views"></nav>
   <div class="mast-tools" id="mast-tools">
+   <div class="theme" id="theme-picker">
+    <button class="theme-btn" id="theme-btn" type="button" aria-expanded="false" aria-controls="theme-pop" aria-label="Theme"
+     title="Theme"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+     stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 3.4c-4.9 0-8.6 3.7-8.6 8.4 0 4.7 3.8 8.8 8.3 8.8
+     1 0 1.7-.7 1.7-1.6 0-.4-.2-.8-.4-1.1-.3-.3-.5-.7-.5-1.1 0-.9.8-1.7 1.7-1.7h2c2.7 0 4.5-2 4.5-4.7 0-4-3.9-7-8.7-7Z"/>
+     <circle cx="7.9" cy="11.4" r="1.25" fill="currentColor" stroke="none"/><circle cx="9.6" cy="7.6" r="1.25" fill="currentColor"
+     stroke="none"/><circle cx="13.7" cy="6.9" r="1.25" fill="currentColor" stroke="none"/><circle cx="16.9" cy="9.6" r="1.25"
+     fill="currentColor" stroke="none"/></svg></button>
+    <div class="tp" id="theme-pop" hidden>
+     <p class="tp-h" id="tp-pal-h" data-i18n="themeLabel">Theme</p>
+     <div class="tp-pals" id="tp-pal" role="radiogroup" aria-labelledby="tp-pal-h"></div>
+     <p class="tp-h" id="tp-app-h" data-i18n="appearanceLabel">Appearance</p>
+     <div class="tp-apps" id="tp-app" role="radiogroup" aria-labelledby="tp-app-h"></div>
+     <p class="tp-note" data-i18n="themeNote">Theme and appearance stay in this browser.</p>
+    </div>
+   </div>
    <div class="lang" id="lang" role="radiogroup" dir="ltr" aria-label="Interface language" title="Interface language">
     <button class="lang-opt" id="lang-en" type="button" role="radio" lang="en" aria-label="English" aria-checked="true"
      tabindex="0"><span class="lang-long">English</span><span class="lang-short">EN</span></button>
@@ -892,6 +1095,19 @@ en: {
  breadcrumb: 'Breadcrumb',
  navLabel: 'Views',
  langLabel: 'Interface language',
+ // Theme picker: the palette names and the appearance options.
+ themeLabel: 'Theme',
+ appearanceLabel: 'Appearance',
+ appSystem: 'System',
+ appLight: 'Light',
+ appDark: 'Dark',
+ themeNote: 'Theme and appearance stay in this browser only.',
+ pal_green: 'Green',
+ pal_blue: 'Blue',
+ pal_plum: 'Plum',
+ pal_terracotta: 'Terracotta',
+ pal_sunny: 'Sunny',
+ pal_graphite: 'Graphite',
  navGuide: 'Episode guide',
  navBrowse: 'Browse',
  navStarred: 'Starred',
@@ -1463,6 +1679,18 @@ he: {
  breadcrumb: 'נתיב ניווט',
  navLabel: 'תצוגות',
  langLabel: 'שפת הממשק',
+ themeLabel: 'ערכת צבעים',
+ appearanceLabel: 'מראה',
+ appSystem: 'לפי המערכת',
+ appLight: 'בהיר',
+ appDark: 'כהה',
+ themeNote: 'ערכת הצבעים והמראה נשארים רק בדפדפן הזה.',
+ pal_green: 'ירוק',
+ pal_blue: 'כחול',
+ pal_plum: 'שזיף',
+ pal_terracotta: 'טרקוטה',
+ pal_sunny: 'שמשי',
+ pal_graphite: 'גרפיט',
  navGuide: 'מדריך הפרקים',
  navBrowse: 'עיון',
  navStarred: 'מסומנים בכוכב',
@@ -2306,7 +2534,10 @@ const ICON = {
   'stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="m10 9 5 3-5 3Z"/></svg>',
  // The Browse menu's arrow (turned up while the menu is open).
  chevron: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" ' +
-  'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>'
+  'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>',
+ // The checked palette in the theme picker.
+ check: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" ' +
+  'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>'
 };
 const TAB_ICON = {guide: 'guide', browse: 'uploads', starred: 'star'};
 
@@ -3453,8 +3684,8 @@ function toolbarPad() {
 function mount(moveFocus) {
  // A debounced search typed just before navigating must not render into the view being replaced.
  updateGuideSoon.cancel(); updateUploadsSoon.cancel();
- // Every route change (and language switch) closes the Browse menu.
- menu.open = false;
+ // Every route change (and language switch) closes the Browse menu and the theme picker.
+ menu.open = false; if (picker.open) setPicker(false);
  focusables.clear(); renderTabs(); renderFootLinks(); G.toolbar = null; toolbarPad();
  const v = $('view'); v.replaceChildren();
  (VIEWS[state.view] || VIEWS.guide)(v);
@@ -3477,6 +3708,7 @@ function translateStatic() {
  }
  const d = meta.compiledAt || (meta.generatedAt ? String(meta.generatedAt).slice(0, 10) : '');
  $('compiled').textContent = d ? t('compiled', {d}) : '';
+ renderPicker();
  renderAbout();
 }
 // A click anywhere on the toggle, Space or Enter on an option (each is a button), or an arrow key switches the language.
@@ -3497,6 +3729,86 @@ $('lang').addEventListener('keydown', ev => {
  if (ev.preventDefault) ev.preventDefault();
  switchLang();
 });
+
+/* ================= theme and appearance ================= */
+// The palette and the appearance (System, Light, Dark) are browser-local UI preferences like the language, stored beside it
+// ('sumsum-theme', 'sumsum-appearance'). The inline script at the end of <head> (#prefs-boot) applies them before the first
+// paint, follows the system scheme while the appearance is System, and exposes sumsumTheme: the palette and appearance
+// lists and apply(). Without it the control is hidden and the page keeps the default palette.
+// The picker is a disclosure: the round button's aria-expanded and aria-controls name the popover, which holds two radio
+// groups, Theme (named swatches) and Appearance. Opening it moves focus to the checked palette. Each group is one tab stop,
+// its checked option; the arrow keys move and choose (in Hebrew, Left moves forward), Home and End go to the ends, and a
+// choice applies at once, with the popover still open. Escape closes it and returns focus to the button; an outside click,
+// focus leaving the control and any route change close it.
+const THEME = W && W.sumsumTheme && typeof W.sumsumTheme.apply === 'function' && Array.isArray(W.sumsumTheme.palettes) &&
+ Array.isArray(W.sumsumTheme.appearances) ? W.sumsumTheme : null;
+const APPEARANCE_KEY = {system: 'appSystem', light: 'appLight', dark: 'appDark'};
+const picker = {open: false, pal: [], app: []};
+function markPicker() {
+ const cur = {pal: root.getAttribute('data-palette'), app: root.getAttribute('data-appearance')};
+ for (const kind of ['pal', 'app']) {
+  for (const b of picker[kind]) {
+   const on = b.getAttribute('data-value') === cur[kind];
+   b.setAttribute('aria-checked', String(on)); b.setAttribute('tabindex', on ? '0' : '-1');
+  }
+ }
+}
+function renderPicker() {
+ if (!THEME) { $('theme-picker').hidden = true; return; }
+ const b = $('theme-btn'); b.setAttribute('aria-label', t('themeLabel')); b.setAttribute('title', t('themeLabel'));
+ const option = (kind, value) => {
+  const o = el('button', 'tp-' + kind); o.type = 'button'; o.setAttribute('role', 'radio'); o.setAttribute('id', 'tp-' + kind + '-' + value);
+  o.setAttribute('data-value', value);
+  o.addEventListener('click', () => { choosePref(kind, value); o.focus(); });
+  return o;
+ };
+ picker.pal = THEME.palettes.map(p => {
+  const o = option('pal', p), sw = el('span', 'tp-sw tp-sw-' + p), ck = el('span', 'tp-check');
+  sw.setAttribute('aria-hidden', 'true'); ck.setAttribute('aria-hidden', 'true'); ck.innerHTML = ICON.check;
+  o.append(sw, el('span', 'tp-name', t('pal_' + p)), ck);
+  return o;
+ });
+ picker.app = THEME.appearances.map(a => { const o = option('app', a); o.textContent = t(APPEARANCE_KEY[a]); return o; });
+ $('tp-pal').replaceChildren(...picker.pal); $('tp-app').replaceChildren(...picker.app);
+ markPicker();
+}
+function choosePref(kind, value) {
+ const got = THEME.apply(kind === 'pal' ? value : root.getAttribute('data-palette'), kind === 'app' ? value : root.getAttribute('data-appearance'));
+ if (kind === 'pal') persist('sumsum-theme', got.palette); else persist('sumsum-appearance', got.appearance);
+ markPicker();
+}
+function setPicker(open) {
+ picker.open = !!open && !!THEME;
+ $('theme-btn').setAttribute('aria-expanded', String(picker.open)); $('theme-pop').hidden = !picker.open;
+ if (picker.open) { const on = picker.pal.find(o => o.getAttribute('aria-checked') === 'true') || picker.pal[0]; if (on) on.focus(); }
+}
+$('theme-btn').addEventListener('click', () => setPicker(!picker.open));
+$('theme-picker').addEventListener('keydown', ev => {
+ if (ev.key === 'Escape') {
+  if (!picker.open) return;
+  if (ev.preventDefault) ev.preventDefault();
+  setPicker(false); $('theme-btn').focus();
+  return;
+ }
+ if (ev.target === $('theme-btn')) {
+  if ((ev.key === 'ArrowDown' || ev.key === 'ArrowUp') && !picker.open) { if (ev.preventDefault) ev.preventDefault(); setPicker(true); }
+  return;
+ }
+ const kind = picker.pal.includes(ev.target) ? 'pal' : picker.app.includes(ev.target) ? 'app' : '';
+ if (!kind) return;
+ const list = picker[kind], i = list.indexOf(ev.target), n = list.length, rtl = root.dir === 'rtl';
+ const fwd = ev.key === 'ArrowDown' || ev.key === (rtl ? 'ArrowLeft' : 'ArrowRight');
+ const back = ev.key === 'ArrowUp' || ev.key === (rtl ? 'ArrowRight' : 'ArrowLeft');
+ const j = fwd ? (i + 1) % n : back ? (i - 1 + n) % n : ev.key === 'Home' ? 0 : ev.key === 'End' ? n - 1 : -1;
+ if (j < 0) return;
+ if (ev.preventDefault) ev.preventDefault();
+ choosePref(kind, list[j].getAttribute('data-value')); list[j].focus();
+});
+// Focus moving to another part of the page closes the popover. A click that moves no focus (Safari) is left to the
+// outside-click handler.
+$('theme-picker').addEventListener('focusout', ev => { const to = ev.relatedTarget; if (picker.open && to && !$('theme-picker').contains(to)) setPicker(false); });
+document.addEventListener('click', ev => { if (picker.open && !$('theme-picker').contains(ev.target)) setPicker(false); });
+document.addEventListener('keydown', ev => { if (ev.key === 'Escape' && picker.open && !$('theme-picker').contains(ev.target)) setPicker(false); });
 // The skip link must not change the route hash.
 $('skip').addEventListener('click', ev => { if (ev && ev.preventDefault) ev.preventDefault(); $('main').focus(); });
 

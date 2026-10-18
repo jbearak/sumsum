@@ -2,8 +2,9 @@
 // Dependency-free DOM double for scripts/check-library.cjs. It parses the static markup of a built library,
 // runs the application script in a VM context and fakes only the browser APIs the application uses:
 // createElement, append, replaceChildren, textContent, attributes, events, localStorage, focus, isConnected, timers,
-// window.location (hash routing), window scrolling, Blob downloads and Option. Image src/loading assignments keep their
-// order. Events reach only the element's own listeners (fire, click) unless dispatched with dispatch(), which bubbles to
+// window.location (hash routing), window scrolling, window.matchMedia (prefers-color-scheme), Blob downloads and Option.
+// The inline preferences script in <head> (#prefs-boot: theme and appearance before the first paint) runs first, in the
+// same context, then the application script. Image src/loading assignments keep their order. Events reach only the element's own listeners (fire, click) unless dispatched with dispatch(), which bubbles to
 // the ancestors and then to the document's listeners (document.addEventListener) like a browser event. Browser layout and
 // rendering QA are separate.
 const fs = require('node:fs');
@@ -20,15 +21,20 @@ function readLibrary(htmlPath) {
   const dataText = html.match(/<script id="library-data" type="application\/json">([\s\S]*?)<\/script>/)?.[1];
   const appSource = html.match(/<script>\s*([\s\S]*?)<\/script>/)?.[1];
   assert(dataText && appSource, 'HTML contains embedded data and the application');
-  return {html, dataText, appSource};
+  // The preferences script at the end of <head> (optional: a build without it boots with the default palette).
+  const bootSource = html.match(/<script id="prefs-boot">([\s\S]*?)<\/script>/)?.[1] || '';
+  return {html, dataText, appSource, bootSource};
 }
 
 // options.payload(payload) may return a changed payload (for example without a guide);
 // options.storage shares a Map between boots (persistence across reloads);
 // options.htmlAttrs sets attributes on <html> before start (data-start-lang, data-start-view, ...);
-// options.hash is the initial location hash.
+// options.hash is the initial location hash;
+// options.prefersDark sets the system colour scheme that window.matchMedia('(prefers-color-scheme: dark)') reports
+// (default light); the returned media.set(dark) changes it and notifies the page's listeners, like a system switch;
+// options.noMatchMedia leaves window.matchMedia out; options.noBoot skips the #prefs-boot script.
 function boot(htmlPath, options = {}) {
-  const {html, dataText, appSource} = readLibrary(htmlPath);
+  const {html, dataText, appSource, bootSource} = readLibrary(htmlPath);
   let payload = JSON.parse(dataText);
   if (options.payload) payload = options.payload(payload) || payload;
   // Elements by id are held weakly, like a browser's id lookup: a detached element is not kept alive by its id.
@@ -169,8 +175,16 @@ function boot(htmlPath, options = {}) {
   };
   // Scrolling: scrollY holds the last position, and every scrollTo call is recorded in window.scrolls.
   const windowListeners = {};
+  // prefers-color-scheme: one shared media query list per query string, so a system switch reaches every listener.
+  const media = {dark: !!options.prefersDark, lists: [],
+    set(dark) { this.dark = !!dark; for (const l of this.lists) { l.matches = this.dark; for (const fn of l.listeners) fn({matches: l.matches, media: l.media}); } }};
+  const matchMedia = query => {
+    assert(/prefers-color-scheme:\s*dark/.test(query), 'Only prefers-color-scheme is queried: ' + query);
+    const l = {media: query, matches: media.dark, listeners: [], addEventListener(type, fn) { if (type === 'change') this.listeners.push(fn); }};
+    media.lists.push(l); return l;
+  };
   const window = {
-    location, scrollX: 0, scrollY: 0, scrolls: [],
+    location, scrollX: 0, scrollY: 0, scrolls: [], ...(options.noMatchMedia ? {} : {matchMedia}),
     addEventListener(name, callback) { (windowListeners[name] ??= []).push(callback); },
     scrollTo(x, y) {
       const to = typeof x === 'object' && x ? {x: x.left ?? this.scrollX, y: x.top ?? this.scrollY} : {x: Number(x) || 0, y: Number(y) || 0};
@@ -191,6 +205,7 @@ function boot(htmlPath, options = {}) {
     setTimeout: fn => { const id = ++timerId; timers.set(id, fn); return id; },
     clearTimeout: id => { timers.delete(id); }
   };
+  if (bootSource && !options.noBoot) vm.runInNewContext(bootSource, context, {filename: htmlPath + '#prefs-boot'});
   vm.runInNewContext(appSource, context, {filename: htmlPath});
 
   const flushTimers = () => {
@@ -203,7 +218,7 @@ function boot(htmlPath, options = {}) {
   // Route like a browser: set the hash and dispatch hashchange.
   const navigate = async route => { location._hash = '#/' + route; history.push({type: 'nav', hash: location._hash}); await window.fire('hashchange'); };
   return {document, ids, tree, descendants, storage, downloads, blobs, context, payload, window, location, history,
-    flushTimers, navigate, appSource, html};
+    flushTimers, navigate, appSource, bootSource, html, media};
 }
 
 module.exports = {boot, readLibrary};

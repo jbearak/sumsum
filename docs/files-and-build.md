@@ -47,6 +47,7 @@ Read this before changing data files, scripts or the build. The rules, and the t
 
 - It runs the application in the DOM double from `scripts/dom-double.cjs`, in English and Hebrew, and visits every view and every production, episode, slot and record route.
 - It also boots copies of the same file with the guide removed, with shared storage, and with fixed edge-case and contract fixtures added to its data (labelled numbers, `firstNumber` seasons, licensed listings, possible copies, numbered parts, alternate labels, availability checks), so every build exercises them.
+- It checks the theme tokens and contrast of every palette, light and dark, and drives the theme picker and the `#prefs-boot` script ([library-ui.md](library-ui.md#themes-and-appearance)).
 - It runs builder checks on fixture inputs when `python3` is available.
 - Browser layout and visual review are separate.
 

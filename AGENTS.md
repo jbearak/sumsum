@@ -14,7 +14,7 @@ Detail lives in these docs. Read each one before the work it covers:
 
 - [docs/files-and-build.md](docs/files-and-build.md), before changing data files, scripts or the build: what each file holds, what the builder refuses and warns about, what the checks cover, and Vimeo metadata enrichment.
 - [docs/episode-guide.md](docs/episode-guide.md), before editing the episode guide, a record's guide link or `data/licensed-services.json`: the guide rules and required fields, licensed listings and availability checks.
-- [docs/library-ui.md](docs/library-ui.md), before UI work: views, routes and browser storage.
+- [docs/library-ui.md](docs/library-ui.md), before UI work: views, routes, browser storage, and the theme picker and its palettes.
 - [docs/zen-and-hop.md](docs/zen-and-hop.md), before browser, VPN or Hop work: the Proton settings, Hop discovery, the link collector, and driving Zen from the shell through the accessibility API.
 
 # Working practices
@@ -49,6 +49,10 @@ Fix every builder error and read its warnings. Passing checks do not cover brows
 Merge a new Hop collector report into `data/hop-player-links.json` by id. Never replace the file, and keep existing links and playback evidence verbatim.
 
 Keep `index.html` at its path and keep opening it the same way, as a file in Zen. The user's stars, pasted Vimeo links and watched marks live in that browser's local storage for that location. Before moving the file or changing how it is opened (another browser or profile, or a server instead of `file://`), export a backup from the library's About section.
+
+# UI preferences
+
+Language, theme and appearance are UI preferences kept only in the browser's local storage, and the JSON backup leaves them out. The theme is the colour palette; the appearance is System, Light or Dark. The defaults are English, Green and System. Every colour comes from the palette and scheme tokens at the top of the template's stylesheet. A new palette defines every palette token in a light rule and a dark rule; [docs/library-ui.md](docs/library-ui.md#themes-and-appearance) lists the steps. `node scripts/check-library.cjs` must pass, including its token and contrast checks for every palette in both schemes.
 
 # Editing the episode guide
 

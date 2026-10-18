@@ -1578,9 +1578,16 @@ function checkStrings() {
   }
   for (const [k, en, he] of [['navStarred', 'Starred', 'מסומנים בכוכב'], ['navStarredShort', 'Starred', 'בכוכב'],
     ['starredTitle', 'Starred uploads', 'העלאות מסומנות בכוכב'], ['starredOnly', 'Starred only', 'מסומנים בכוכב בלבד'],
-    ['starAria', 'Star {title}', 'סימון בכוכב: {title}'], ['langLabel', 'Interface language', 'שפת הממשק']]) {
+    ['starAria', 'Star {title}', 'סימון בכוכב: {title}'], ['langLabel', 'Interface language', 'שפת הממשק'],
+    ['themeLabel', 'Theme', 'ערכת צבעים'], ['appearanceLabel', 'Appearance', 'מראה'], ['appSystem', 'System', 'לפי המערכת'],
+    ['appLight', 'Light', 'בהיר'], ['appDark', 'Dark', 'כהה']]) {
     assert.equal(L.en[k], en, 'Label ' + k); assert.equal(L.he[k], he, 'Label (Hebrew) ' + k);
   }
+  // Palette names: English in English, Hebrew in Hebrew (the theme picker's options).
+  for (const k of ek.filter(x => x.startsWith('pal_'))) {
+    assert(/^[A-Z][a-z]+$/.test(L.en[k]) && /^[\u0590-\u05FF][\u0590-\u05FF ]*$/.test(L.he[k]), 'Palette name in each language: ' + k);
+  }
+  assert(/this browser only/.test(L.en.themeNote) && /רק בדפדפן הזה/.test(L.he.themeNote), 'The theme note says the choice stays in this browser');
   assert(/^Starred\b/.test(L.en.starredToast) && /this browser only/.test(L.en.starredToast) && /^סומן בכוכב/.test(L.he.starredToast) &&
     /רק בדפדפן הזה/.test(L.he.starredToast), 'The star toast says the star stays in this browser');
   assert(/star/i.test(L.en.unstarredToast) && /כוכב/.test(L.he.unstarredToast), 'The unstar toast names the star');
@@ -2662,7 +2669,8 @@ async function checkMasthead(H) {
   const header = H.find(n => n.tagName === 'header', H.tree)[0], mast = header.children.find(c => H.cls(c).includes('mast'));
   assert.deepEqual(mast.children.filter(c => c.tagName !== '#text').map(c => c.id), ['tabs', 'mast-tools'],
     'The masthead holds the views nav, then the control group');
-  assert.equal(H.$('mast-tools').children.filter(c => c.tagName !== '#text')[0], H.$('lang'), 'The language toggle is in the control group');
+  assert.deepEqual(H.$('mast-tools').children.filter(c => c.tagName !== '#text').map(c => c.id), ['theme-picker', 'lang'],
+    'The control group holds the theme picker, then the language toggle (at the right edge)');
   assert.equal(H.find(n => n.tagName === 'a' && n.href === '#/guide', header).length, 1, 'One link to the guide in the masthead: its tab');
   const opts = () => H.$('lang').children.filter(c => c.getAttribute && c.getAttribute('role') === 'radio');
   const expectToggle = (ui, where) => {
@@ -2720,6 +2728,159 @@ async function checkMasthead(H) {
   ok('masthead: no brand; language radiogroup named in the UI language, options named in their own language, aria-checked, ' +
     'one tab stop; click (group or either option) and arrows switch, focus the checked option and keep the scroll position; ' +
     'filter DOM order');
+}
+
+// ---------------------------------------------------------------- theme picker and preferences
+// The preferences script applies the stored palette and appearance before the app starts (defaults: green, System), falls
+// back to the defaults for any other stored value, follows the system scheme only under System, and keeps the color-scheme
+// meta in step. The picker is a disclosure (button: aria-expanded, aria-controls) holding two radio groups named by their
+// visible headings, translated, with roving tabindex; arrows (mirrored in Hebrew), Home, End and clicks choose and store;
+// Escape, an outside click, focus leaving and a route change close it; the choice persists across reloads.
+const APP_KEY = {system: 'appSystem', light: 'appLight', dark: 'appDark'};
+async function checkThemePicker(htmlPath) {
+  const prefs = H => { const de = H.document.documentElement; return ['palette', 'appearance', 'scheme'].map(k => de.getAttribute('data-' + k)); };
+  const metaScheme = H => H.$('meta-color-scheme').getAttribute('content');
+  const booted = H => { assert(H.h1() && H.h1().textContent.trim(), 'The app renders'); return H; };
+  let H = booted(harness(boot(htmlPath)));
+  const P = [...H.window.sumsumTheme.palettes], A = [...H.window.sumsumTheme.appearances];
+  assert.deepEqual(prefs(H), ['green', 'system', 'light'], 'Defaults: green and System (here a light system scheme)');
+  assert.equal(metaScheme(H), 'light dark', 'Under System the page offers both schemes');
+  const pals = () => H.$('tp-pal').children.filter(c => c.tagName !== '#text'), apps = () => H.$('tp-app').children.filter(c => c.tagName !== '#text');
+  const open = () => !H.$('theme-pop').hidden;
+  const expectPicker = (ui, where) => {
+    const b = H.$('theme-btn'), [pal, app] = prefs(H);
+    assert(b.tagName === 'button' && b.type === 'button', where + ': the theme control is a button (Enter and Space open it)');
+    assert.equal(b.getAttribute('aria-label'), L[ui].themeLabel, where + ': the button is named "' + L[ui].themeLabel + '"');
+    assert.equal(b.getAttribute('title'), L[ui].themeLabel, where + ': its hint says what it does');
+    assert.equal(b.getAttribute('aria-controls'), 'theme-pop', where + ': it controls the popover');
+    assert.equal(b.getAttribute('aria-expanded'), String(open()), where + ': aria-expanded follows the popover');
+    assert(b.children.filter(c => c.tagName === 'svg').every(c => c.getAttribute('aria-hidden') === 'true'), where + ': the icon is hidden');
+    assert.equal(H.$('tp-pal-h').textContent, L[ui].themeLabel, where + ': the palette group heading');
+    assert.equal(H.$('tp-app-h').textContent, L[ui].appearanceLabel, where + ': the appearance group heading');
+    assert.equal(H.byClass('tp-note', H.$('theme-pop'))[0].textContent, L[ui].themeNote, where + ': the note');
+    for (const [g, h] of [['tp-pal', 'tp-pal-h'], ['tp-app', 'tp-app-h']]) {
+      assert(H.$(g).getAttribute('role') === 'radiogroup' && H.$(g).getAttribute('aria-labelledby') === h, where + ': ' + g + ' is a radiogroup named by its heading');
+    }
+    assert.deepEqual(pals().map(o => o.getAttribute('data-value')), P, where + ': one option per palette, in order');
+    assert.deepEqual(pals().map(accName), P.map(p => L[ui]['pal_' + p]), where + ': palette names in ' + ui);
+    assert.deepEqual(apps().map(accName), A.map(a => L[ui][APP_KEY[a]]), where + ': appearance names in ' + ui);
+    for (const [list, cur] of [[pals(), pal], [apps(), app]]) {
+      for (const o of list) {
+        const on = o.getAttribute('data-value') === cur;
+        assert(o.tagName === 'button' && o.type === 'button' && o.getAttribute('role') === 'radio', where + ': options are radio buttons');
+        assert.equal(o.getAttribute('aria-checked'), String(on), where + ': aria-checked on ' + o.getAttribute('data-value'));
+        assert.equal(o.getAttribute('tabindex'), on ? '0' : '-1', where + ': only the checked option is in the tab order');
+      }
+    }
+    for (const o of pals()) {
+      const [sw, , ck] = o.children;
+      assert(H.cls(sw).includes('tp-sw-' + o.getAttribute('data-value')) && sw.getAttribute('aria-hidden') === 'true' &&
+        ck.getAttribute('aria-hidden') === 'true', where + ': each palette shows its own swatch and a hidden check mark');
+    }
+  };
+  for (const ui of ['en', 'he']) {
+    if (H.document.documentElement.lang !== ui) await H.$('lang').click();
+    assert(!open(), ui + ': the popover starts closed'); expectPicker(ui, ui + ' closed');
+    H.window.scrollY = 200; H.window.scrolls.length = 0; const hash = H.location.hash;
+    await H.$('theme-btn').click();
+    assert(open(), ui + ': the button opens the popover'); expectPicker(ui, ui + ' open');
+    assert.equal(H.document.activeElement, H.$('tp-pal-' + prefs(H)[0]), ui + ': opening focuses the checked palette');
+    const press = key => H.document.activeElement.dispatch('keydown', {key});
+    const fwd = ui === 'he' ? 'ArrowLeft' : 'ArrowRight', back = ui === 'he' ? 'ArrowRight' : 'ArrowLeft';
+    let i = P.indexOf(prefs(H)[0]);
+    for (const [key, step] of [[fwd, 1], ['ArrowDown', 1], [back, -1], ['ArrowUp', -1], ['ArrowUp', -1], ['End', null], [fwd, 1], ['Home', 0], [back, -1]]) {
+      const prevented = await press(key);
+      i = step === null ? P.length - 1 : key === 'Home' ? 0 : (i + step + P.length) % P.length;
+      assert(prevented, `${ui}: ${key} is prevented`);
+      assert.equal(prefs(H)[0], P[i], `${ui}: ${key} chooses ${P[i]}`);
+      assert.equal(H.document.activeElement, H.$('tp-pal-' + P[i]), `${ui}: focus moves with the choice (${key})`);
+      assert.equal(H.storage.get('sumsum-theme'), JSON.stringify(P[i]), `${ui}: ${key} stores the palette`);
+      expectPicker(ui, `${ui} ${key}`);
+    }
+    for (const key of ['a', 'PageDown', 'Tab']) {
+      const before = prefs(H)[0]; await press(key);
+      assert.equal(prefs(H)[0], before, `${ui}: ${key} does not choose`);
+    }
+    await H.$('tp-pal-plum').click();
+    assert(prefs(H)[0] === 'plum' && H.document.activeElement === H.$('tp-pal-plum') && H.storage.get('sumsum-theme') === '"plum"',
+      ui + ': a click chooses, focuses and stores a palette');
+    // The appearance group: System, Light, Dark; data-scheme and the color-scheme meta follow.
+    H.$('tp-app-' + prefs(H)[1]).focus();
+    for (const [a, scheme, metaValue] of [['light', 'light', 'light'], ['dark', 'dark', 'dark'], ['system', 'light', 'light dark']]) {
+      assert(await press(fwd), `${ui}: arrows move in the appearance group`);
+      assert.deepEqual(prefs(H), ['plum', a, scheme], `${ui}: the next appearance is ${a}`);
+      assert.equal(metaScheme(H), metaValue, `${ui}: color-scheme meta under ${a}`);
+      assert.equal(H.storage.get('sumsum-appearance'), JSON.stringify(a), `${ui}: the appearance is stored`);
+      assert.equal(H.document.activeElement, H.$('tp-app-' + a)); expectPicker(ui, `${ui} appearance ${a}`);
+    }
+    H.media.set(true); assert.equal(prefs(H)[2], 'dark', ui + ': under System the page follows a switch to a dark system scheme');
+    H.media.set(false); assert.equal(prefs(H)[2], 'light', ui + ': and back to light');
+    await H.$('tp-app-dark').click(); H.media.set(false);
+    assert.equal(prefs(H)[2], 'dark', ui + ': an explicit Dark ignores the system scheme');
+    H.media.set(true); await H.$('tp-app-light').click();
+    assert.equal(prefs(H)[2], 'light', ui + ': an explicit Light ignores a dark system scheme'); H.media.set(false);
+    assert(H.window.scrollY === 200 && !H.window.scrolls.length && H.location.hash === hash, ui + ': choosing keeps the scroll position and the route');
+    // Closing: Escape inside returns focus to the button; Escape on the button keeps it there; a click on the button,
+    // an outside click, Escape elsewhere, focus leaving and a route change close it. A click inside keeps it open.
+    assert(await press('Escape') && !open() && H.document.activeElement === H.$('theme-btn'), ui + ': Escape closes and returns focus to the button');
+    expectPicker(ui, ui + ' after Escape');
+    assert(await H.$('theme-btn').dispatch('keydown', {key: 'ArrowDown'}) && open() && H.document.activeElement === H.$('tp-pal-plum'),
+      ui + ': ArrowDown on the button opens it on the checked palette');
+    H.$('theme-btn').focus(); await H.$('theme-btn').dispatch('keydown', {key: 'Escape'});
+    assert(!open() && H.document.activeElement === H.$('theme-btn'), ui + ': Escape on the button closes it');
+    await H.$('theme-btn').click(); await H.$('theme-btn').click(); assert(!open(), ui + ': the button toggles the popover');
+    await H.$('theme-btn').click(); await H.$('tp-pal-blue').dispatch('click');
+    assert(open() && prefs(H)[0] === 'blue', ui + ': a click inside chooses and keeps the popover open');
+    await H.view().dispatch('click'); assert(!open(), ui + ': an outside click closes it');
+    await H.$('theme-btn').click(); await H.view().dispatch('keydown', {key: 'Escape'}); assert(!open(), ui + ': Escape elsewhere closes it');
+    await H.$('theme-btn').click();
+    await H.$('tp-pal-blue').dispatch('focusout', {relatedTarget: H.$('tp-app-light')}); assert(open(), ui + ': focus moving inside keeps it open');
+    await H.$('tp-pal-blue').dispatch('focusout', {relatedTarget: null}); assert(open(), ui + ': focus going nowhere keeps it open');
+    await H.$('tp-pal-blue').dispatch('focusout', {relatedTarget: H.$('lang-en')}); assert(!open(), ui + ': focus leaving the control closes it');
+    await H.$('theme-btn').click(); await H.navigate(ui === 'en' ? 'starred' : 'browse'); assert(!open(), ui + ': a route change closes it');
+    // The masthead's ids are unique on a page with the filters (whose theme select is #theme).
+    const ids = H.find(n => n.getAttribute && n.getAttribute('id') !== undefined, H.tree).map(n => n.getAttribute('id'));
+    for (const id of ['theme-picker', 'theme-btn', 'theme-pop', 'tp-pal', 'tp-app', 'tp-pal-h', 'tp-app-h', ...P.map(p => 'tp-pal-' + p), ...A.map(a => 'tp-app-' + a)]) {
+      assert.equal(ids.filter(x => x === id).length, 1, ui + ': one element has the id ' + id);
+    }
+    expectPicker(ui, ui + ' closed again');
+    await H.$('tp-pal-green').click(); await H.$('tp-app-system').click();
+  }
+  if (H.document.documentElement.lang !== 'en') await H.$('lang').click();
+  // Persistence: a reload with the same storage applies the stored choice before the app starts.
+  const storage = H.storage;
+  await H.$('tp-pal-terracotta').click(); await H.$('tp-app-dark').click();
+  H = booted(harness(boot(htmlPath, {storage})));
+  assert.deepEqual(prefs(H), ['terracotta', 'dark', 'dark'], 'The palette and the appearance persist across reloads');
+  assert(H.$('tp-pal-terracotta').getAttribute('aria-checked') === 'true' && H.$('tp-app-dark').getAttribute('aria-checked') === 'true',
+    'The picker shows the stored choice');
+  assert.equal(metaScheme(H), 'dark');
+  // Start attributes take the place of the stored values (an invalid one gives the default, not the stored value).
+  H = booted(harness(boot(htmlPath, {storage, htmlAttrs: {'data-start-palette': 'sunny', 'data-start-appearance': 'light'}})));
+  assert.deepEqual(prefs(H), ['sunny', 'light', 'light'], 'data-start-palette and data-start-appearance win over storage');
+  H = booted(harness(boot(htmlPath, {storage, htmlAttrs: {'data-start-palette': 'constructor', 'data-start-appearance': '__proto__'}})));
+  assert.deepEqual(prefs(H), ['green', 'system', 'light'], 'An invalid start attribute gives the default');
+  // The system scheme, with and without matchMedia.
+  assert.deepEqual(prefs(booted(harness(boot(htmlPath, {prefersDark: true})))), ['green', 'system', 'dark'], 'System follows a dark system scheme at start');
+  assert.deepEqual(prefs(booted(harness(boot(htmlPath, {prefersDark: true, noMatchMedia: true})))), ['green', 'system', 'light'],
+    'Without matchMedia, System is light');
+  // Hostile or broken stored values fall back to the defaults and the app still starts.
+  const hostile = ['constructor', '__proto__', 'toString', 'hasOwnProperty', 'valueOf', 'GREEN', 'Dark', 'dark', 'blue ', 'system'].map(v => JSON.stringify(v))
+    .concat(['{', 'undefined', '42', '{}', '[]', 'null', '"', 'true', '{"__proto__":"blue"}', '["blue"]']);
+  for (const raw of hostile) {
+    const h = booted(harness(boot(htmlPath, {storage: new Map([['sumsum-theme', raw], ['sumsum-appearance', raw === '"system"' ? '"blue"' : raw]])})));
+    const [pal, app] = prefs(h);
+    assert.equal(pal, 'green', `A stored palette ${raw} falls back to green`);
+    assert.equal(app, raw === '"dark"' ? 'dark' : 'system', `A stored appearance ${raw} falls back to System unless it is one`);
+    assert(h.$('tp-pal-green').getAttribute('aria-checked') === 'true', `The picker marks green after a stored ${raw}`);
+  }
+  // Without the preferences script the control is hidden and the default palette stays.
+  H = booted(harness(boot(htmlPath, {noBoot: true})));
+  assert(H.$('theme-picker').hidden && !H.document.documentElement.getAttribute('data-palette'), 'Without the preferences script the theme control is hidden');
+  ok('theme picker: defaults (green, System), the system scheme and its changes, color-scheme meta; button and radio groups named ' +
+    'in EN and HE, roving tabindex, arrows (mirrored in Hebrew), Home, End and clicks choose and store; Escape returns focus; outside ' +
+    'click, Escape elsewhere, focus leaving and route change close; persistence, start attributes, hostile stored values ' +
+    `(${hostile.length}) and a build without the script`);
 }
 
 // ---------------------------------------------------------------- Browse menu and its pages
@@ -3060,6 +3221,188 @@ async function checkRouteAliases(htmlPath, M) {
 }
 
 // Stylesheet rules that the DOM double cannot render.
+// ---------------------------------------------------------------- theme tokens and contrast
+// Colours are custom properties on <html> (library.template.html, "tokens"): a scheme layer (rules that set color-scheme:
+// the shared semantic colours, light on :root and dark on :root[data-scheme=dark]) and a palette layer (green, the default,
+// on :root and :root[data-scheme=dark]; another palette NAME on :root[data-palette=NAME] and
+// :root[data-palette=NAME][data-scheme=dark], shared with its picker swatch .tp-sw-NAME). themeTokens() reads those rules
+// from the top level of the stylesheet and resolves a palette and scheme the way the cascade does: of the rules whose
+// attribute selectors all match, more attributes win, then the later rule. .sweep/titles-he/theme/contrast.cjs prints the
+// contrast table from the same functions.
+const hex6 = h => (h.length === 4 || h.length === 5 ? '#' + h.slice(1).split('').map(x => x + x).join('') : h).toLowerCase();
+const rgbOf = h => hex6(h).slice(1).match(/../g).map(x => parseInt(x, 16));
+// An alpha colour composited over an opaque one.
+const blendOver = (fg, bg) => {
+  const f = rgbOf(fg), b = rgbOf(bg), a = f.length > 3 ? f[3] / 255 : 1;
+  return '#' + [0, 1, 2].map(i => Math.round(f[i] * a + b[i] * (1 - a)).toString(16).padStart(2, '0')).join('');
+};
+const luminance = h => {
+  const [r, g, b] = rgbOf(h).slice(0, 3).map(x => x / 255).map(c => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4));
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+};
+const contrast = (a, b) => { const [x, y] = [luminance(a), luminance(b)].sort((p, q) => q - p); return (x + 0.05) / (y + 0.05); };
+// Top-level statements of a stylesheet: {sel, body} rules and {at, text} blocks (@media, @keyframes), comments removed.
+// cssRules() also lists the rules inside the blocks.
+const cssRules = css => cssTop(css).flatMap(r => (r.at ? cssRules(r.text) : [r]));
+function cssTop(css) {
+  const src = css.replace(/\/\*[\s\S]*?\*\//g, ''), out = [];
+  let i = 0;
+  while (i < src.length) {
+    const open = src.indexOf('{', i); if (open < 0) break;
+    const head = src.slice(i, open).trim(); let depth = 1, j = open + 1;
+    while (j < src.length && depth) { if (src[j] === '{') depth++; else if (src[j] === '}') depth--; j++; }
+    if (head.startsWith('@')) out.push({at: head, text: src.slice(open + 1, j - 1)});
+    else out.push({sel: head, body: src.slice(open + 1, j - 1)});
+    i = j;
+  }
+  return out;
+}
+function themeTokens(css) {
+  const top = cssTop(css), rules = [];
+  top.forEach((r, order) => {
+    if (!r.sel) return;
+    const sels = r.sel.split(',').map(x => x.trim()), roots = sels.filter(x => x.startsWith(':root'));
+    if (!roots.length) return;
+    assert.equal(roots.length, 1, 'One :root selector per token rule: ' + r.sel);
+    const m = /^:root((?:\[data-(?:palette|scheme)=[\w-]+\])*)$/.exec(roots[0]);
+    assert(m, 'Token rules select :root by data-palette and data-scheme only: ' + roots[0]);
+    const attrs = Object.fromEntries([...m[1].matchAll(/\[data-(palette|scheme)=([\w-]+)\]/g)].map(a => [a[1], a[2]]));
+    const tokens = Object.fromEntries([...r.body.matchAll(/--([\w-]+):([^;]+)/g)].map(d => [d[1], d[2].trim()]));
+    rules.push({sel: r.sel, body: r.body, sels, attrs, tokens, order, scheme: /(?:^|;)\s*color-scheme:/.test(r.body), others: sels.filter(x => x !== roots[0])});
+  });
+  const palettes = ['green', ...new Set(rules.map(r => r.attrs.palette).filter(Boolean))];
+  const resolve = (palette, scheme) => {
+    const out = {}, from = {};
+    const hits = rules.filter(r => (!r.attrs.palette || r.attrs.palette === palette) && (!r.attrs.scheme || r.attrs.scheme === scheme))
+      .sort((a, b) => Object.keys(a.attrs).length - Object.keys(b.attrs).length || a.order - b.order);
+    for (const r of hits) for (const [k, v] of Object.entries(r.tokens)) { out[k] = v; from[k] = r; }
+    return {tokens: out, from};
+  };
+  const block = (palette, scheme) => rules.find(r => !r.scheme && (r.attrs.palette || 'green') === palette &&
+    (palette === 'green' ? !r.attrs.palette : true) && (r.attrs.scheme || 'light') === scheme);
+  return {rules, top, palettes, resolve, block, schemeLight: rules.find(r => r.scheme && !r.attrs.scheme && !r.attrs.palette),
+    schemeDark: rules.find(r => r.scheme && r.attrs.scheme === 'dark' && !r.attrs.palette)};
+}
+// A colour expression in the pairs below: a token, a token composited over another ('mast-ctl@brand'), or over a literal
+// thumbnail colour ('scrim@#ffffff').
+function colourOf(t, expr) {
+  const [fg, bg] = expr.split('@'), val = k => {
+    const v = k.startsWith('#') ? k : t[k];
+    assert(typeof v === 'string' && /^#(?:[0-9a-f]{3,4}|[0-9a-f]{6}|[0-9a-f]{8})$/i.test(v), `Token --${k} is a hex colour (${v})`);
+    return hex6(v);
+  };
+  // What a colour sits on is opaque; a translucent colour is named with what it is composited over.
+  assert(!bg || val(bg).length === 7, `--${bg} is opaque (${expr})`);
+  assert(bg || val(fg).length === 7, `--${fg} is opaque, or the pair names what it is composited over (${expr})`);
+  return bg ? blendOver(val(fg), val(bg)) : val(fg);
+}
+// The key pairs, in every palette and scheme: text and its background need 4.5:1 (WCAG 1.4.3), marks, rings, outlines and
+// the toggle thumb 3:1 against what they sit on (WCAG 1.4.11).
+const CONTRAST_PAIRS = [
+  ['body text on the page', 'ink', 'bg', 4.5], ['body text on cards', 'ink', 'surface', 4.5], ['body text on raised rows', 'ink', 'surface-2', 4.5],
+  ['muted text on the page', 'muted', 'bg', 4.5], ['muted text on cards', 'muted', 'surface', 4.5], ['muted text on raised rows', 'muted', 'surface-2', 4.5],
+  ['links on the page', 'link', 'bg', 4.5], ['links on cards', 'link', 'surface', 4.5],
+  ['button text', 'primary-ink', 'primary', 4.5], ['button text, hovered', 'primary-ink', 'primary-hover', 4.5],
+  ['pressed chips, the checked appearance, toasts', 'bg', 'ink', 4.5], ['chip text', 'chip-ink', 'chip', 4.5],
+  ...['whole', 'parts', 'excerpt', 'missing', 'unknown'].map(c => [`tag text on the ${c} tint`, 'chip-ink', c + '-bg', 4.5]),
+  ['strip numbers: whole', 'whole-ink', 'whole', 4.5], ['strip numbers: parts', 'ink', 'parts-bg', 4.5], ['strip numbers: excerpts', 'ink', 'excerpt-bg', 4.5],
+  ['strip numbers: expected', 'muted', 'unknown-bg', 4.5], ['missing numbers and errors on the page', 'missing', 'bg', 4.5],
+  ['missing numbers and errors on cards', 'missing', 'surface', 4.5],
+  ...['modern', 'classic', 'shalom-classic', 'shalom-modern', 'elmo'].map(c => [`series kicker: ${c}`, 'ser-' + c, 'surface', 4.5]),
+  ['host chip on a dark thumbnail', 'host-ink', 'host-bg@#000000', 4.5], ['duration on a white thumbnail', 'scrim-ink', 'scrim@#ffffff', 4.5],
+  ['masthead text', 'mast-ink', 'brand', 4.5], ['tab labels', 'mast-ink-soft', 'brand', 4.5], ['hovered tab labels', 'mast-ink-soft', 'mast-hover@brand', 4.5],
+  ['tab counts', 'mast-ink-soft', 'mast-chip@brand', 4.5], ['the current tab and the checked language', 'mast-current-ink', 'mast-current', 4.5],
+  ['the current tab\'s count', 'mast-current', 'mast-current-ink', 4.5], ['the unchecked language and the theme icon', 'mast-ink-soft', 'mast-ctl@brand', 4.5],
+  ['the open theme button\'s icon', 'mast-current-ink', 'mast-current', 3],
+  ['focus ring on the page', 'focus', 'bg', 3], ['focus ring on cards and the popovers', 'focus', 'surface', 3], ['focus ring on raised rows', 'focus', 'surface-2', 3],
+  ['masthead focus ring', 'mast-focus', 'brand', 3], ['toggle and theme button outline', 'mast-ctl-line@brand', 'brand', 3],
+  ['the toggle thumb on its track', 'mast-current', 'mast-ctl@brand', 3], ['the current Browse divider', 'mast-current-divider@mast-current', 'mast-current', 3],
+  ['the current menu bar', 'primary', 'surface-2', 3], ['buttons on cards', 'primary', 'surface', 3],
+  ...['whole', 'parts', 'excerpt', 'missing', 'unknown'].flatMap(c => [[`${c} marks on cards`, c, 'surface', 3], [`${c} marks on the ${c} tint`, c, c + '-bg', 3]]),
+  ...['ok', 'public', 'vpn', 'lic', 'bad'].map(c => [`access mark: ${c}`, 'acc-' + c, 'surface', 3]), ['the star', 'star-ink', 'surface', 3]
+];
+function contrastRows(T) {
+  const rows = [];
+  for (const palette of T.palettes) for (const scheme of ['light', 'dark']) {
+    const t = T.resolve(palette, scheme).tokens;
+    for (const [label, fg, bg, min] of CONTRAST_PAIRS) {
+      const r = contrast(colourOf(t, fg), colourOf(t, bg));
+      rows.push({palette, scheme, label, fg, bg, min, ratio: r, ok: r >= min});
+    }
+  }
+  return rows;
+}
+
+// Theme tokens: every colour in the stylesheet is a custom property of the token rules; every palette defines every palette
+// token (light) and at least the default's dark tokens; the palette lists of the stylesheet, the preferences script and the
+// strings agree; and the key pairs reach their contrast in every palette and scheme.
+function checkThemeTokens(html, theme) {
+  const css = html.match(/<style>([\s\S]*?)<\/style>/)[1], T = themeTokens(css);
+  // Colour literals appear only in token rules (forced colours use system colours).
+  const literal = /#[0-9a-f]{3,8}\b|\b(?:rgba?|hsla?|hwb|lab|lch|oklab|oklch|color-mix)\(|(?<![\w-])(?:white|black|red|green|blue|yellow|orange|purple|pink|brown|gr[ae]y|silver|navy|teal|maroon|olive|lime|aqua|fuchsia)(?![\w-])/i;
+  const walk = (list, where) => {
+    for (const r of list) {
+      if (r.at) { walk(cssTop(r.text), r.at); continue; }
+      if (where === '' && T.rules.some(x => x.sel === r.sel)) continue;
+      assert(!literal.test(r.body), `Colours are custom properties: ${where ? where + ' ' : ''}${r.sel} {${r.body.slice(0, 80)}}`);
+    }
+  };
+  walk(T.top, '');
+  // Token rules stay at the top level: no scheme media query (data-scheme carries the system scheme) and no data-theme.
+  for (const r of T.top.filter(x => x.at)) assert(!/:root/.test(r.text), 'No token rule inside ' + r.at);
+  assert(!/data-theme|prefers-color-scheme/.test(css.replace(/\/\*[\s\S]*?\*\//g, '')), 'The scheme comes from data-scheme, not data-theme or a media query');
+  // Layers: one scheme rule per scheme (dark sets only what changes), then the palettes.
+  assert(T.schemeLight && T.schemeDark && T.rules.filter(r => r.scheme).length === 2, 'One scheme rule for light (:root) and one for dark');
+  assert(/color-scheme:light(?:;|$)/.test(T.schemeLight.body) && /color-scheme:dark(?:;|$)/.test(T.schemeDark.body), 'color-scheme follows data-scheme');
+  const S = new Set(Object.keys(T.schemeLight.tokens)), keys = r => new Set(Object.keys(r.tokens));
+  for (const k of Object.keys(T.schemeDark.tokens)) assert(S.has(k), 'The dark scheme rule sets only shared tokens: --' + k);
+  const green = T.block('green', 'light'), greenDark = T.block('green', 'dark');
+  assert(green && greenDark, 'Green, the default palette, has a light and a dark rule');
+  const P = keys(green), D = keys(greenDark);
+  for (const k of P) assert(!S.has(k), 'A token is either shared or a palette token: --' + k);
+  for (const k of D) assert(P.has(k), 'The default dark rule sets only palette tokens: --' + k);
+  // Every custom property the stylesheet uses is defined (locals are set by rules or, --tb-h, by the script with a fallback).
+  const used = new Set([...css.replace(/\/\*[\s\S]*?\*\//g, '').matchAll(/var\(--([\w-]+)/g)].map(m => m[1]));
+  const local = new Set([...cssRules(css).filter(r => !T.rules.some(x => x.sel === r.sel))
+    .flatMap(r => [...r.body.matchAll(/--([\w-]+):/g)].map(m => m[1])), 'tb-h']);
+  for (const k of used) assert(S.has(k) || P.has(k) || local.has(k), 'Token defined: --' + k);
+  for (const k of [...S, ...P]) assert(used.has(k), 'Token used: --' + k);
+  // Palettes: the stylesheet, the preferences script (the picker's list) and the strings name the same palettes, in order.
+  assert.deepEqual([...theme.palettes], T.palettes, 'The preferences script lists the stylesheet\'s palettes');
+  assert.deepEqual([...theme.appearances], ['system', 'light', 'dark'], 'Appearances: System, Light, Dark');
+  for (const lg of ['en', 'he']) assert.deepEqual(Object.keys(L[lg]).filter(k => k.startsWith('pal_')).map(k => k.slice(4)), T.palettes, 'Palette names: ' + lg);
+  assert(T.palettes.length >= 6 && T.palettes[0] === 'green', 'At least six palettes, green first (the default)');
+  for (const p of T.palettes) {
+    const lt = T.block(p, 'light'), dk = T.block(p, 'dark');
+    assert(lt && dk, `Palette ${p} has a light and a dark rule`);
+    for (const k of P) assert(k in lt.tokens, `Palette ${p} (light) defines --${k}`);
+    for (const k of D) assert(k in dk.tokens, `Palette ${p} (dark) defines --${k}`);
+    for (const k of keys(dk)) assert(P.has(k) || S.has(k), `Palette ${p} (dark) sets only known tokens: --${k}`);
+    for (const k of keys(lt)) assert(P.has(k) || S.has(k), `Palette ${p} (light) sets only known tokens: --${k}`);
+    // A shared colour a palette overrides in light is overridden in dark too, or the light value would show in dark.
+    for (const k of keys(lt)) if (k in T.schemeDark.tokens) assert(k in dk.tokens, `Palette ${p} overrides --${k} in dark too`);
+    // Its picker swatch shares both rules.
+    assert(lt.others.includes('.tp-sw-' + p) && dk.others.includes('[data-scheme=dark] .tp-sw-' + p), `The ${p} swatch takes the ${p} tokens`);
+    // Resolved like the cascade: every used token has a value, and a palette token comes from the palette's own rules.
+    for (const sc of ['light', 'dark']) {
+      const {tokens, from} = T.resolve(p, sc);
+      for (const k of used) if (!local.has(k)) assert(k in tokens, `${p} ${sc}: --${k} resolves`);
+      for (const k of P) assert(p === 'green' || from[k].attrs.palette === p, `${p} ${sc}: --${k} comes from the ${p} rules`);
+      for (const k of D) assert(from[k].attrs.scheme === sc || sc === 'light', `${p} ${sc}: --${k} comes from the ${sc} rule`);
+    }
+  }
+  // The toolbar colour before the script runs: the default masthead.
+  assert.equal((html.match(/<meta name="theme-color" content="([^"]*)" id="meta-theme-color">/) || [])[1], T.resolve('green', 'light').tokens.brand,
+    'theme-color starts as the default masthead colour');
+  assert(/<meta name="color-scheme" content="light dark" id="meta-color-scheme">/.test(html), 'color-scheme starts as "light dark" (System)');
+  const rows = contrastRows(T), bad = rows.filter(r => !r.ok);
+  assert.deepEqual(bad.map(r => `${r.palette} ${r.scheme}: ${r.label} (--${r.fg} on --${r.bg}) ${r.ratio.toFixed(2)} < ${r.min}`), [],
+    'Contrast in every palette and scheme');
+  ok(`theme tokens: ${T.palettes.length} palettes (${T.palettes.join(', ')}) define ${P.size} palette tokens, light and dark, over ${S.size} shared ` +
+    `ones; colours only in tokens; ${rows.length} contrast pairs pass (${CONTRAST_PAIRS.length} per palette and scheme)`);
+  return T;
+}
+
 function checkCss(html) {
   const css = html.match(/<style>([\s\S]*?)<\/style>/)[1].replace(/\/\*[\s\S]*?\*\//g, '');
   const rules = [...css.matchAll(/([^{}]+)\{([^{}]*)\}/g)].map(m => ({sel: m[1].trim(), body: m[2]}));
@@ -3078,19 +3421,12 @@ function checkCss(html) {
   assert(!/\.strip\.inferred \.cell\.gap\{[^}]*opacity/.test(css), 'Inferred gap numbers are not faded');
   assert(/\.toolbar\.more-open\{position:static\}/.test(css) && /scroll-padding-top:calc\(var\(--tb-h/.test(css),
     'Focus scrolling leaves room for the sticky toolbar');
-  // Strip number contrast (WCAG 1.4.3) in light and dark tokens.
-  const tokens = body => Object.fromEntries([...body.matchAll(/--([\w-]+):(#[0-9a-f]{3,8})/gi)].map(m => [m[1], m[2]]));
-  const light = tokens(rules.find(r => r.sel === ':root').body);
-  const dark = {...light, ...tokens(rules.find(r => r.sel === ':root[data-theme=dark]').body)};
-  const lum = hex => {
-    const h = hex.slice(1), v = h.length === 3 ? h.split('').map(c => c + c) : h.slice(0, 6).match(/../g);
-    const [r, g, b] = v.map(x => parseInt(x, 16) / 255).map(c => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4));
-    return 0.2126 * r + 0.7152 * g + 0.0722 * b;
-  };
-  const ratio = (a, b) => { const [x, y] = [lum(a), lum(b)].sort((p, q) => q - p); return (x + 0.05) / (y + 0.05); };
+  // Strip number contrast (WCAG 1.4.3) in every palette, light and dark.
+  const TT = themeTokens(css), schemes = TT.palettes.flatMap(p => ['light', 'dark'].map(sc => [p + ' ' + sc, TT.resolve(p, sc).tokens]));
+  const ratio = (a, b) => contrast(hex6(a).slice(0, 7), hex6(b).slice(0, 7));
   const cell = sel => rules.find(r => r.sel === sel).body;
   assert(/color:var\(--whole-ink\)/.test(cell('.cell.cov-whole')) && /color:var\(--muted\)/.test(cell('.cell.exp')));
-  for (const [name, t] of [['light', light], ['dark', dark]]) {
+  for (const [name, t] of schemes) {
     for (const [fg, bg] of [['whole-ink', 'whole'], ['muted', 'unknown-bg'], ['muted', 'bg'], ['missing', 'bg']]) {
       assert(ratio(t[fg], t[bg]) >= 4.5, `${name}: strip numbers --${fg} on --${bg} reach 4.5:1 (${ratio(t[fg], t[bg]).toFixed(2)})`);
     }
@@ -3246,12 +3582,9 @@ function checkCss(html) {
     'Forced colours draw the separator in a system colour');
   assert(/padding-inline-end:3px/.test(body('.tab-split>.tab-browse')) && /padding-inline:3px 10px/.test(body('.tab-more')),
     'The arrow sits close to the label, so the pair reads as one tab');
-  const blend = (fg, bg) => {
-    const c = h => h.slice(1).match(/../g).map(x => parseInt(x, 16)), f = c(fg), b = c(bg), al = f.length > 3 ? f[3] / 255 : 1;
-    return '#' + [0, 1, 2].map(i => Math.round(f[i] * al + b[i] * (1 - al)).toString(16).padStart(2, '0')).join('');
-  };
-  const six = h => (h.length === 4 ? '#' + h.slice(1).split('').map(x => x + x).join('') : h);
-  for (const [name, t] of [['light', light], ['dark', dark]]) {
+  const blend = (fg, bg) => blendOver(hex6(fg), hex6(bg).slice(0, 7));
+  const six = hex6;
+  for (const [name, t] of schemes) {
     const T = k => six(t[k]), track = blend(t['mast-ctl'], T('brand'));
     for (const [what, fg, bg, min] of [['tab labels', T('mast-ink-soft'), T('brand'), 4.5],
       ['the unchecked language', T('mast-ink-soft'), track, 4.5], ['the checked language and the current tab', T('mast-current-ink'), T('mast-current'), 4.5],
@@ -3267,6 +3600,28 @@ function checkCss(html) {
     assert(alpha(t['mast-divider']) < 0x80 && ratio(blend(t['mast-divider'], T('brand')), T('brand')) > 1.5,
       `${name}: the hover separator is faint but visible`);
   }
+  // The theme picker: a fixed-size round button (no text, so the same box in both languages), a popover pinned to the control
+  // group's right edge (the group is pinned right in both directions) below the band, above the sticky toolbar, with the
+  // page direction and the page focus ring; the popover fades in only without reduced motion; forced colours mark the open
+  // button and the checked options without colour and keep the swatches as samples.
+  assert(/position:relative/.test(body('.mast-tools')) && /align-self:stretch/.test(body('.mast-tools')), 'The control group is positioned and spans the band');
+  const tbtn = body('.theme-btn'), tpop = body('.tp'), tz = Number((tpop.match(/z-index:(\d+)/) || [])[1]);
+  assert(/(?:^|;)width:40px/.test(tbtn) && /(?:^|;)height:40px/.test(tbtn) && /\.theme-btn\{width:36px;height:36px\}/.test(phone),
+    'The theme button is 40 px, 36 px at 480 px and below');
+  assert(/position:absolute/.test(tpop) && /(?:^|;)right:0(?:;|$)/.test(tpop) && !/inset-inline|(?:^|;)left:/.test(tpop) && tz > 4 &&
+    /top:calc\(100% \+ \d+px\)/.test(tpop) && /width:min\(\d+px,calc\(100vw - \d+px\)\)/.test(tpop), 'The popover drops from the right edge of the controls');
+  assert(/top:calc\(100% \+ \d+px\)/.test(p760('.tp')), 'On phones the popover clears the band too');
+  assert(/direction:rtl/.test(body('html[dir=rtl] .tp')), 'The popover takes the page direction');
+  assert(/outline-color:var\(--focus\)/.test(body('.masthead .tp :focus-visible')), 'The popover uses the page focus ring');
+  assert(/\.tp\{animation:tp-in/.test(motion) && rules.filter(r => r.sel === '.tp' && /animation/.test(r.body)).length === 1, 'The popover fades in only without reduced motion');
+  assert(/min-height:44px/.test(body('.tp-pal')), 'Palette options are 44 px targets');
+  assert(forcedRules.some(r => r.sels.includes('.theme-btn[aria-expanded=true]') && /outline:\d/.test(r.body)) &&
+    forcedRules.some(r => r.sels.includes('.tp-pal[aria-checked=true]') && /outline:\d/.test(r.body)) &&
+    forcedRules.some(r => r.sels.includes('.tp-app[aria-checked=true]') && /outline:\d/.test(r.body)) &&
+    forcedRules.some(r => r.sels.includes('.tp-pal[aria-checked=true] .tp-name') && /underline/.test(r.body)) &&
+    forcedRules.some(r => r.sels.includes('.tp-sw') && /forced-color-adjust:none/.test(r.body)), 'Forced colours mark the theme picker\'s state');
+  assert(/visibility:visible/.test(body('.tp-pal[aria-checked=true] .tp-check')) && /visibility:hidden/.test(body('.tp-check')),
+    'The checked palette has a check mark, not only a colour');
   ok('CSS: positioned scroll containers, alt-free generated glyphs, wrapping kicker labels, strip contrast, toolbar room, unclipped ' +
     'focus rings, forced-colors state marks, wrapping tile labels, search box padding, phone-width Watch labels, notes and host chips, ' +
     'wrapping guide tags on upload cards, breaking List titles, wrapping uploader names, failed Watch links, unbroken number ranges; ' +
@@ -3562,6 +3917,7 @@ async function run() {
   await checkHebrew(H, M);
   await checkPersistence(htmlPath, app.storage, starred);
   await checkMasthead(H);
+  await checkThemePicker(htmlPath);
   await checkLicensed(htmlPath, H, M);
   if (M.hasGuide) { await checkBrowseMenu(H, M); await checkBrowsePages(H, M); }
   await sweep(H, M);
@@ -3571,12 +3927,17 @@ async function run() {
   await checkRouteAliases(htmlPath, M);
   await checkRobustness(htmlPath, M);
   checkCss(app.html);
+  checkThemeTokens(app.html, app.window.sumsumTheme);
   checkBuilder();
   console.log(`PASS ${path.basename(htmlPath)} (${M.hasGuide ? 'with episode guide' : 'no episode guide'}):`);
   for (const line of passed) console.log('  - ' + line);
 }
-run().catch(error => {
-  console.error(`FAIL ${path.basename(htmlPath)} after ${passed.length} passing groups:`);
-  for (const line of passed) console.error('  - ' + line);
-  console.error(error); process.exitCode = 1;
-});
+// Required as a module (.sweep/titles-he/theme/contrast.cjs), it runs nothing and lends its theme-token functions.
+if (require.main === module) {
+  run().catch(error => {
+    console.error(`FAIL ${path.basename(htmlPath)} after ${passed.length} passing groups:`);
+    for (const line of passed) console.error('  - ' + line);
+    console.error(error); process.exitCode = 1;
+  });
+}
+module.exports = {themeTokens, contrastRows, CONTRAST_PAIRS, contrast, cssTop};
