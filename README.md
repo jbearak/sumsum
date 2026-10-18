@@ -16,7 +16,7 @@ git clone --branch t3/expand-rechov-catalog-improve-ui https://github.com/jbeara
 
 The interface is in English. The English/עברית switch at the top of the page changes it to Hebrew, laid out right to left.
 
-The Episode guide goes through each series episode by episode. Browse lists every video, clips and songs included, with filters for series, type, theme and character. Videos open on their original site in a new tab.
+The Episode guide goes through each series episode by episode. Browse lists every video, clips and songs included, with filters for series, type, where it plays, theme and character. Videos open on their original site in a new tab.
 
 ## Where the videos are
 
@@ -25,7 +25,7 @@ The Episode guide goes through each series episode by episode. Browse lists ever
 - hoopla, a streaming service that is free with a card from a participating public library. You sign in to hoopla with the card. Anyone who lives, works, goes to school or owns property in New York State can apply online for a free Queens Public Library eCard. Westchester County library cards work too; in hoopla, choose "Westchester Library System" rather than your own library's name. New York Public Library and Brooklyn Public Library cards do not work. Elsewhere, look up your own library in hoopla. Each library sets a small monthly borrowing limit.
 - Apple TV's US store and Prime Video, where you buy or rent each programme with an account.
 
-hoopla, Apple TV and Prime Video are library or paid services, not free uploads. So far their listings are mostly the 2010 Shalom Sesame series, so use the "Where it plays" filter to see what a service has before you sign up. Library rules, fees and limits change. The "How to watch on hoopla" box on hoopla listings gives every fact's source and the date it was checked.
+hoopla, Apple TV and Prime Video are library or paid services, not free uploads. So far their listings are mostly the 2010 Shalom Sesame series, so use the "Where it plays" filter in Browse to see what a service has before you sign up. Library rules, fees and limits change. The "How to watch on hoopla" box on hoopla listings gives every fact's source and the date it was checked.
 
 ## Coverage and evidence
 
