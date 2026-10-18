@@ -137,6 +137,11 @@ function expectHeroNote(r, acc, lang, local = '') {
   return '';
 }
 const recTitleEn = r => r.titleEn || r.titleHe || r.title || r.originalTitle || L.en.untitled;
+// titleHeEditorial: our Hebrew translation for an item with no published Hebrew title. Hebrew titles fall back to it before the
+// English title; English titles never use it, and a published titleHe (on an episode, storyHe too) comes first.
+const heEdOf = x => (typeof x.titleHeEditorial === 'string' && x.titleHeEditorial.trim() ? x.titleHeEditorial : '');
+const recTitleIn = (r, lang) => (lang === 'he' ? r.titleHe || heEdOf(r) || r.titleEn : r.titleEn || r.titleHe) || r.title ||
+  r.originalTitle || tr(lang, 'untitled');
 // The tile's short Watch label: a licensed listing names its service and need ("hoopla · library card"; "Licensed" without a
 // described service), else the host word; parts and excerpts say so, and so does a link that failed an availability check
 // (R4-01), except on the phone List label (list), which has no room for it.
@@ -268,10 +273,11 @@ function model(payload) {
   const codeText = (p, season, nText, lang = 'en') => (label(p, lang) ? tr(lang, 'codeLabel', {label: label(p, lang), n: nText}) :
     season != null ? tr(lang, 'codeSE', {s: fmtNum(season, lang), n: nText}) : tr(lang, 'codeN', {n: nText}));
   const nounOf = p => ({'short-series': 'installment', 'talk-show': 'program', 'home-video': 'tape'}[p.format] || 'episode');
-  // A Hebrew story name from another source (storyHe) heads the episode in Hebrew; English keeps the editorial titleEn.
+  // A Hebrew story name from another source (storyHe) heads the episode in Hebrew; English keeps the editorial titleEn. Without a
+  // published Hebrew title, Hebrew headings use the editorial Hebrew title (titleHeEditorial).
   const storyOf = e => (typeof e.storyHe === 'string' && e.storyHe.trim() ? e.storyHe : '');
   const epTitle = (e, lang = 'en') => {
-    const p = prodById.get(e.production), tt = lang === 'he' ? storyOf(e) || e.titleHe || e.titleEn : e.titleEn || e.titleHe;
+    const p = prodById.get(e.production), tt = lang === 'he' ? storyOf(e) || e.titleHe || heEdOf(e) || e.titleEn : e.titleEn || e.titleHe;
     if (tt) return tt;
     if (e.number == null) return tr(lang, 'untitled');
     if (label(p, lang)) return code(e, lang);
@@ -445,6 +451,22 @@ function assertCleanText(H, where) {
   const s = H.text();
   assert(!/\bundefined\b|\bNaN\b|\[object Object\]/.test(s), `${where}: no undefined/NaN in rendered text`);
   for (const ph of PLACEHOLDERS) assert(!s.includes(ph), `${where}: no unfilled placeholder ${ph}`);
+}
+// The value of a facts row (record facts, the episode identity card) labelled with a string key, or null.
+function factIn(H, lang, key) {
+  const dt = H.find(n => n.tagName === 'dt' && n.textContent === tr(lang, key))[0], kids = dt && dt.parentElement.children;
+  return dt ? kids[kids.indexOf(dt) + 1] : null;
+}
+// titleHeEditorial has its own labelled row ("Editorial Hebrew title") whenever it exists, in both languages. In English it is
+// never the heading, the second line or another title row, so it is never taken for an original or alternate title. (A research
+// note may quote the same words; checkEditorialTitles() checks on unique fixture values that it appears nowhere else.)
+function assertEditorialRow(H, value, lang, where) {
+  const dd = factIn(H, lang, 'heEdTitle');
+  assert.equal(dd ? dd.textContent : '', value, where + ': the editorial Hebrew title row, only with titleHeEditorial');
+  if (!value || lang !== 'en') return;
+  const rows = dd.parentElement.children.filter(n => n.tagName === 'dd' && n !== dd);
+  const shown = [H.h1(), ...H.byClass('lede', H.byClass('hero')[0]), ...rows].filter(n => n.textContent === value);
+  assert.deepEqual(shown.map(n => n.tagName), [], where + ': in English the editorial Hebrew title is not a heading, second line or other row');
 }
 
 // ---------------------------------------------------------------- uploads (both modes)
@@ -1380,6 +1402,7 @@ async function sweep(H, M) {
         }
         const enFact = factOf('engTitle');
         assert.equal(enFact ? enFact.textContent : '', e.titleEn || '', where + ': the English title fact, labelled editorial');
+        assertEditorialRow(H, heEdOf(e), lang, where);
         // Alternate labels: in the hero and, with their sources, in the identity card.
         const alts = M.altLabels(e);
         assert.equal(H.byClass('alsolab').length, alts.length ? 1 : 0, where + ': "Also labelled" only with alternate labels');
@@ -1449,6 +1472,10 @@ async function sweep(H, M) {
       }
       if (kind === 'record') {
         const r = M.recById.get(id), a = expectAccess(r, localOf(r));
+        // The heading: the published Hebrew title, else the editorial Hebrew title, else the English title in Hebrew; never the
+        // editorial Hebrew title in English, where it has only its labelled row.
+        assert.equal(head.textContent, recTitleIn(r, lang), where + ': record heading');
+        assertEditorialRow(H, heEdOf(r), lang, where);
         const checked = ['country-restricted', 'unavailable'].includes(checkOf(r));
         assert.equal(H.fk('rec-host').textContent, expectHostLabel(r, lang, localOf(r)), where + ': host label');
         assert.equal(H.fk('rec-access').textContent, expectAccessText(r, lang, localOf(r)), where + ': access line');
@@ -1588,6 +1615,12 @@ function checkStrings() {
     assert(/^[A-Z][a-z]+$/.test(L.en[k]) && /^[\u0590-\u05FF][\u0590-\u05FF ]*$/.test(L.he[k]), 'Palette name in each language: ' + k);
   }
   assert(/this browser only/.test(L.en.themeNote) && /רק בדפדפן הזה/.test(L.he.themeNote), 'The theme note says the choice stays in this browser');
+  // Editorial Hebrew titles are labelled as ours wherever their row appears, and About says that both editorial title languages are ours.
+  assert.equal(L.en.heEdTitle, 'Editorial Hebrew title', 'Label heEdTitle');
+  assert.equal(L.he.heEdTitle, 'כותרת עברית (תרגום מערכת)', 'Label (Hebrew) heEdTitle');
+  assert(/^English titles, Hebrew titles where no Hebrew title was published, .* are editorial\./.test(L.en.about3) &&
+    /^הכותרות באנגלית, הכותרות בעברית במקום שלא פורסמה כותרת בעברית, .* הן עריכה שלנו\./.test(L.he.about3) && /published title/.test(L.en.about3),
+    'About says that the English titles and the Hebrew titles where none was published are editorial');
   assert(/^Starred\b/.test(L.en.starredToast) && /this browser only/.test(L.en.starredToast) && /^סומן בכוכב/.test(L.he.starredToast) &&
     /רק בדפדפן הזה/.test(L.he.starredToast), 'The star toast says the star stays in this browser');
   assert(/star/i.test(L.en.unstarredToast) && /כוכב/.test(L.he.unstarredToast), 'The unstar toast names the star');
@@ -1662,7 +1695,8 @@ function checkData(M, payload) {
 // evidence details that do and do not agree. Injected into a copy of the payload, so both builds exercise them.
 const EDGE = {idless: 'https://www.youtube.com/watch?v=EdgeCase001', weird: 'ia/RS%20S03E50#x?y', prod: 'edge/prod?x#1 y',
   ep1: 'edge/ep?s=1#e1 %', ep3: 'edge-ep-3', seasons: 'edge-seasons', known: 'edge-seasons-known', noname: 'edge-noname',
-  iaSpace: 'https://archive.org/details/edge-item-2/Rechov Sumsum 001.mp4', ietv: 'edge-ietv', related: 'edge-related', story: 'edge-story'};
+  iaSpace: 'https://archive.org/details/edge-item-2/Rechov Sumsum 001.mp4', ietv: 'edge-ietv', related: 'edge-related', story: 'edge-story',
+  edited: 'edge-edited', editedShalom: 'edge-edited-shalom'};
 function edgePayload(p) {
   const add = r => { p.records.push({themes: [], characters: [], ...r}); return p.records.at(-1); };
   const idless = add({id: EDGE.idless, url: EDGE.idless, series: 'classic', kind: 'episode', title: 'Edge title-only programme 42',
@@ -1843,6 +1877,37 @@ function edgePayload(p) {
     storySourceHe: 'תווית קובץ בארכיון לבדיקה (ניסוח המעלה)', uploads: [{recordId: storyRec.id, role: 'whole-candidate'}]});
   story(2, {storyHe: 'סיפור בלי כותרת באנגלית', storySourceEn: "Edge archive file label 'עונה 1 פרק 45'"});
   story(3, {titleEn: 'Edge story blank', storyHe: '  ', storySourceEn: 'Edge ignored source'});
+  // Editorial Hebrew titles (titleHeEditorial): our translation for an item with no published Hebrew title. Episode 1 has an upload
+  // with one, 2 has no English title, 3 and 4 have a published titleHe or storyHe beside one (the builder refuses that; the app
+  // shows the published title), and 5's is blank (refused too; ignored). The Shalom Sesame episode is searched by its English
+  // title. Each value has a nonsense word (זק...) that occurs nowhere else, for search and for "shown nowhere else" checks.
+  const edRec = add({id: 'edge-ed-rec', url: 'https://www.youtube.com/watch?v=EdgeHeEdRc1', series: 'classic', kind: 'episode',
+    titleEn: 'Edge editorial upload', originalTitle: 'Edge Upload As Published', titleHeEditorial: 'העלאה בעריכת המערכת זקהעלאה',
+    durationSeconds: 1610, production: EDGE.edited, guideEpisodeId: EDGE.edited + '-1'});
+  add({id: 'edge-ed-clip', url: 'https://www.youtube.com/watch?v=EdgeHeEdCl1', series: 'shalom-modern', kind: 'clip',
+    titleEn: 'Edge editorial clip', titleHeEditorial: 'קטע בעריכת המערכת זקקטע', durationSeconds: 95});
+  add({id: 'edge-ed-pub', url: 'https://www.youtube.com/watch?v=EdgeHeEdPb1', series: 'classic', kind: 'clip',
+    titleEn: 'Edge editorial beside published', titleHe: 'כותרת שפורסמה להעלאה', titleHeEditorial: 'זקמוסתר העלאה'});
+  add({id: 'edge-ed-blank', url: 'https://www.youtube.com/watch?v=EdgeHeEdBl1', series: 'classic', kind: 'clip',
+    titleEn: 'Edge editorial blank', titleHeEditorial: '   '});
+  const edQueued = add({id: 'edge-ed-queued', url: 'https://www.youtube.com/watch?v=EdgeHeEdQu1', series: 'classic', kind: 'unverified',
+    titleEn: 'Edge editorial queued', titleHeEditorial: 'העלאה ממתינה בעריכת המערכת זקתור', durationSeconds: 1500});
+  g.productions.push({id: EDGE.edited, series: 'classic', format: 'core', order: 0.6, years: '1984', nameEn: 'Edge edited series',
+    nameHe: 'סדרה בעריכה לבדיקה', expectedTotal: 5, totalsEvidence: [], seasons: []});
+  const edited = (n, extra) => g.episodes.push({id: EDGE.edited + '-' + n, production: EDGE.edited, season: null, number: n,
+    confidence: 'documented', uploads: [], ...extra});
+  edited(1, {titleEn: 'Edge edited episode', titleHeEditorial: 'פרק בעריכת המערכת זקפרק',
+    uploads: [{recordId: edRec.id, role: 'whole-candidate'}]});
+  edited(2, {titleHeEditorial: 'פרק בלי כותרת באנגלית זקבלי'});
+  edited(3, {titleEn: 'Edge edited published', titleHe: 'כותרת שפורסמה לפרק', titleHeEditorial: 'זקמוסתר פרק'});
+  edited(4, {titleEn: 'Edge edited story', titleHe: 'סדרה בעריכה <4>', storyHe: 'סיפור שפורסם לבדיקה', storySourceEn: 'Edge file label',
+    titleHeEditorial: 'זקמוסתר סיפור'});
+  edited(5, {titleEn: 'Edge edited blank', titleHeEditorial: '  '});
+  g.unidentified[EDGE.edited] = [edQueued.id];
+  g.productions.push({id: EDGE.editedShalom, series: 'shalom-classic', format: 'core', order: 12.5, years: '1986',
+    nameEn: 'Edge edited Shalom Sesame', nameHe: 'שלום סומסום בעריכה לבדיקה', expectedTotal: 1, totalsEvidence: [], seasons: []});
+  g.episodes.push({id: EDGE.editedShalom + '-1', production: EDGE.editedShalom, season: null, number: 1, confidence: 'documented',
+    titleEn: 'Edge Shalom edited', titleHeEditorial: 'שלום בעריכת המערכת זקשלום', uploads: []});
   return p;
 }
 
@@ -2068,6 +2133,7 @@ async function checkEdgeCases(htmlPath) {
   assert.deepEqual(langIssues(H.view(), 'en'), [], 'A Hebrew quote inside an English note is tagged lang="he"');
   await checkContractEdges(H, M);
   await checkStoryNames(H, M);
+  await checkEditorialTitles(H, M);
   return N;
 }
 
@@ -2415,6 +2481,133 @@ async function checkStoryNames(H, M) {
   await H.$('lang').click();
   ok('story names: Hebrew headings, tiles, rows, Missing episodes rows and record links use storyHe; English keeps titleEn; the identity card keeps ' +
     'the catalogue title and names the source; search, YouTube search and export use it; blank values ignored');
+}
+
+// Editorial Hebrew titles (titleHeEditorial) on fixed fixtures. In Hebrew, headings, document.title, tiles and their labels, list
+// rows, Missing episodes and to-do rows, Videos to identify, upload cards and rows, record links, Up next, Starred and star labels
+// use them where there is no published Hebrew title; a published titleHe or storyHe comes first and a blank value is ignored. In
+// English they appear only in the labelled row on the record page and the identity card. Search finds them in both languages;
+// the published-title lines and the YouTube search words leave them out; the to-do export names the field.
+async function checkEditorialTitles(H, M) {
+  const enc = encodeURIComponent, eid = n => EDGE.edited + '-' + n, ep = id => M.eps.find(e => e.id === id);
+  const [e1, e2, e3, e4, e5] = [1, 2, 3, 4, 5].map(n => ep(eid(n))), es = ep(EDGE.editedShalom + '-1');
+  const [rec, clip, pubRec, blankRec, queued] = ['edge-ed-rec', 'edge-ed-clip', 'edge-ed-pub', 'edge-ed-blank', 'edge-ed-queued']
+    .map(id => M.recById.get(id));
+  const eps = [e1, e2, e3, e4, e5, es], recs = [rec, clip, pubRec, blankRec, queued];
+  const lede = () => H.byClass('lede', H.byClass('hero')[0])[0];
+  const pub = r => r.originalTitle || r.titleHe || r.titleEn || r.title || '';
+  const ytHref = (p, words) => 'https://www.youtube.com/results?search_query=' + enc(p + ' ' + words);
+  // The model: the published Hebrew title, else the editorial one, else English, in Hebrew only; a blank value is ignored.
+  assert.deepEqual(eps.map(e => M.epTitle(e, 'he')), [e1.titleHeEditorial, e2.titleHeEditorial, e3.titleHe, e4.storyHe, e5.titleEn,
+    es.titleHeEditorial], 'The model heads Hebrew episodes with the published, else the editorial, else the English title');
+  assert.equal(M.epTitle(e2, 'en'), tr('en', 'untitledN', {noun: tr('en', 'noun_episode'), n: '2'}), 'and never with the editorial one in English');
+  assert.deepEqual(recs.map(r => recTitleIn(r, 'he')), [rec.titleHeEditorial, clip.titleHeEditorial, pubRec.titleHe, blankRec.titleEn,
+    queued.titleHeEditorial], 'Hebrew record titles: published, else editorial, else English');
+  const pages = async lang => {
+    for (const e of eps) {
+      await H.navigate('episode/' + enc(e.id)); const where = lang + ' editorial episode ' + e.id, title = M.epTitle(e, lang);
+      assert.equal(H.h1().textContent, title, where + ': heading');
+      assert(H.document.title.startsWith(title + ' · '), where + ': document.title follows the heading');
+      assertEditorialRow(H, heEdOf(e), lang, where);
+      // The second line is the other language's title: a published Hebrew title in English (never the editorial one), the
+      // English title in Hebrew.
+      const alt = lang === 'he' ? e.titleEn : (e.storyHe || e.titleHe);
+      assert.equal(lede() ? lede().textContent : undefined, alt && alt !== title ? alt : undefined, where + ': second line');
+      assert.deepEqual(langIssues(H.view(), lang), [], where + ': language of parts');
+    }
+    for (const r of recs) {
+      await H.navigate('record/' + enc(r.id)); const where = lang + ' editorial record ' + r.id, title = recTitleIn(r, lang);
+      assert.equal(H.h1().textContent, title, where + ': heading');
+      assert(H.document.title.startsWith(title + ' · '), where + ': document.title follows the heading');
+      assertEditorialRow(H, heEdOf(r), lang, where);
+      // The published title keeps its line and its row; neither ever shows the editorial title.
+      assert.equal(lede() ? lede().textContent : undefined, pub(r) !== title ? pub(r) : undefined, where + ': the published title line');
+      assert.equal(factIn(H, lang, 'origTitle').textContent, pub(r), where + ': the "Title as published" row');
+      assert.equal(H.fk('rec-star').getAttribute('aria-label'), tr(lang, 'starAria', {title}), where + ': the star label');
+      assert.deepEqual(langIssues(H.view(), lang), [], where + ': language of parts');
+    }
+  };
+  // English: the English titles everywhere; the editorial Hebrew title only in its labelled row.
+  await pages('en');
+  const marks = recs.concat(eps).map(heEdOf).filter(Boolean);
+  for (const route of ['guide/' + EDGE.edited + '?layout=album', 'guide/' + EDGE.edited + '?layout=list', 'guide/' + EDGE.editedShalom,
+    'browse?q=Edge%20editorial', 'browse/missing', 'browse/unidentified', 'todo']) {
+    await H.navigate(route); const attrs = H.find(n => n.getAttribute).flatMap(n => ['aria-label', 'title'].map(a => n.getAttribute(a) || ''));
+    for (const m of marks) {
+      assert(!H.text().includes(m) && !attrs.some(a => a.includes(m)) && !H.document.title.includes(m),
+        `en #/${route}: the editorial Hebrew title "${m}" is not shown in English`);
+    }
+  }
+  // Search finds editorial Hebrew titles: uploads by their own or their episode's, episodes by their own or an upload's.
+  for (const [q, id] of [['זקהעלאה', rec.id], ['זקקטע', clip.id], ['זקפרק', rec.id], ['זקתור', queued.id]]) {
+    await H.navigate('browse?q=' + enc(q)); H.flushTimers();
+    assert(H.has('card-' + id, H.view()), `Browse search finds the editorial Hebrew title "${q}"`);
+    assert.equal(H.fk('card-' + id).textContent, M.recById.get(id).titleEn, 'and the English card keeps the English title');
+  }
+  for (const [q, id] of [['זקפרק', e1.id], ['זקבלי', e2.id], ['זקהעלאה', e1.id], ['זקשלום', es.id]]) {
+    await H.navigate('guide?layout=album&q=' + enc(q)); H.flushTimers();
+    assert(H.has('ep-' + id, H.view()), `The guide search finds the editorial Hebrew title "${q}"`);
+  }
+  // Missing episodes: the YouTube search uses the published or English title, else the number, never the editorial title.
+  await H.navigate('browse/missing');
+  const finds = () => [e2, es].map(e => H.extLinks(H.fk('td-' + e.id).parentElement.parentElement)[0].href);
+  const want = [ytHref('רחוב סומסום', 'פרק 2'), ytHref('Shalom Sesame', es.titleEn)];
+  assert.deepEqual(finds(), want, 'The YouTube search leaves the editorial Hebrew title out');
+  await H.navigate('todo'); await H.fk('td-export').click();
+  const todo = await H.blobJson(), row = id => todo.missing.find(x => x.id === id);
+  assert.deepEqual([row(e2.id).titleHeEditorial, row(e2.id).titleHe, row(e5.id).titleHeEditorial, row(e3.id).titleHe],
+    [e2.titleHeEditorial, null, null, e3.titleHe], 'The to-do export names titleHeEditorial apart from titleHe (null for a blank one)');
+  assert.equal(row(e2.id).search, want[0], 'and its search link leaves it out');
+  // Hebrew: the editorial titles head and name the items with no published Hebrew title.
+  await H.$('lang').click();
+  await pages('he');
+  await H.navigate('guide/' + EDGE.edited + '?layout=album');
+  for (const e of [e1, e2, e3, e4, e5]) {
+    const a = H.fk('ep-' + e.id); assert.equal(a.textContent, M.epTitle(e, 'he'), 'Hebrew tiles: ' + e.id);
+    assert(a.getAttribute('aria-label').includes(M.epTitle(e, 'he')), 'and their labels: ' + e.id);
+  }
+  await H.navigate('guide/' + EDGE.edited + '?layout=list');
+  for (const e of [e1, e2, e3]) assert.equal(H.fk('row-' + e.id).textContent, M.epTitle(e, 'he'), 'Hebrew list rows: ' + e.id);
+  await H.navigate('browse/missing');
+  for (const e of [e2, es]) assert.equal(H.fk('td-' + e.id).textContent, e.titleHeEditorial, 'Hebrew Missing episodes rows: ' + e.id);
+  assert.deepEqual(finds(), want, 'The Hebrew page searches YouTube with the same words');
+  await H.navigate('todo');
+  assert.equal(H.fk('td-' + e1.id).textContent, e1.titleHeEditorial, 'Hebrew to-do rows (whole links to check)');
+  await H.navigate('browse/unidentified');
+  assert.equal(H.fk('tq-' + queued.id).textContent, queued.titleHeEditorial, 'Hebrew Videos to identify rows');
+  await H.navigate('guide/' + EDGE.edited);
+  assert.equal(H.fk('q-' + queued.id).textContent, queued.titleHeEditorial, 'Hebrew queue items on the production page');
+  await H.navigate('episode/' + enc(e1.id));
+  assert(H.fk('ur-' + rec.id).textContent.endsWith(rec.titleHeEditorial), 'Hebrew upload rows on the episode page');
+  assert(H.fk('ep-watch').getAttribute('aria-label').includes(', ' + e1.titleHeEditorial + ' ('), 'and the Watch link names the episode by it');
+  await H.navigate('browse?q=' + enc('זקהעלאה')); H.flushTimers();
+  const card = H.fk('card-' + rec.id), body = card.parentElement.parentElement;
+  assert.equal(card.textContent, rec.titleHeEditorial, 'Hebrew upload cards');
+  assert.equal(H.byClass('u-pub', body)[0].textContent, rec.originalTitle, 'with the published title under it');
+  await H.navigate('record/' + enc(rec.id));
+  const links = H.find(a => a.tagName === 'a' && a.href === '#/episode/' + enc(e1.id)).map(a => a.textContent);
+  assert(links.length && links.every(x => x.endsWith(e1.titleHeEditorial)),
+    'The record page names its episode by the editorial title: ' + links.join(' | '));
+  await H.fk('rec-star').click(); await H.navigate('starred');
+  assert.equal(H.fk('card-' + rec.id).textContent, rec.titleHeEditorial, 'Hebrew Starred cards');
+  await H.navigate('record/' + enc(rec.id)); await H.fk('rec-star').click();
+  // Up next offers core episodes with a public whole link; the edited episode is one of them.
+  await H.navigate('guide');
+  const nextIs = () => H.has('next-ep', H.view()) && H.fk('next-ep').href === '#/episode/' + enc(e1.id);
+  for (let k = 0; k < 2000 && H.has('next-skip', H.view()) && !nextIs(); k++) await H.fk('next-skip').click();
+  assert.equal(H.fk('next-ep').textContent, e1.titleHeEditorial, 'Hebrew Up next');
+  assert(H.fk('next-watch').getAttribute('aria-label').includes(', ' + e1.titleHeEditorial + ' ('), 'and its Watch label');
+  for (const [q, id] of [['זקהעלאה', rec.id], ['זקפרק', rec.id]]) {
+    await H.navigate('browse?q=' + enc(q)); H.flushTimers();
+    assert(H.has('card-' + id, H.view()), `Hebrew browse search finds "${q}"`);
+  }
+  await H.navigate('guide?layout=album&q=' + enc('זקבלי')); H.flushTimers();
+  assert(H.has('ep-' + e2.id, H.view()), 'Hebrew guide search finds an editorial title');
+  await H.$('lang').click();
+  ok('editorial Hebrew titles: Hebrew headings, document.title, tiles, rows, Missing episodes, to-do and Videos to identify rows, upload ' +
+    'cards and rows, record links, Up next, Starred and star labels use titleHeEditorial without a published Hebrew title; titleHe and ' +
+    'storyHe come first; blank values ignored; English shows it only in the labelled row; search finds it; the published-title ' +
+    'lines and YouTube search words leave it out; the export names it');
 }
 
 // Starred counts include only stars that match a record; unknown values in the hash are dropped; old #/saved links work.
@@ -3851,6 +4044,41 @@ function builderChecks(builder, dir) {
   builds('a title that has the story', run(recs, {guide: storyEp({titleHe: 'רחוב סומסום <1> - משחק כדורסל'})}),
     /fx-ep \(titleHe already contains storyHe\)/);
   builds('a story name without a catalogue title', run(recs, {guide: storyEp({titleHe: undefined})}), /fx-ep \(no titleHe\)/);
+  // Editorial Hebrew titles (titleHeEditorial): non-empty text without surrounding whitespace, on a record or episode with no
+  // published Hebrew title (titleHe; on an episode, storyHe too). null is absent; a value with no Hebrew letter is a warning.
+  const edYt = 'https://www.youtube.com/watch?v=AAAAAAAAAA1', edBad = [['empty', ''], ['blank', '  '], ['padded', ' כותרת בעריכה'],
+    ['trailing newline', 'כותרת בעריכה\n'], ['number', 5], ['object', {he: 'כותרת'}], ['list', ['כותרת']], ['false', false]];
+  const edOk = run([rec('fx-ed', edYt, {titleHeEditorial: 'כותרת בעריכה'}), rec('fx-ed0', 'https://www.youtube.com/watch?v=AAAAAAAAAA2',
+    {titleHeEditorial: null})]);
+  assert.equal(edOk.status, 0, edOk.text); assert(!/no Hebrew letter/.test(edOk.text), 'No warning for a Hebrew editorial title');
+  const edBuilt = JSON.parse(edOk.out.match(/<script id="library-data" type="application\/json">([\s\S]*?)<\/script>/)[1]);
+  assert.equal(edBuilt.records.find(r => r.id === 'fx-ed').titleHeEditorial, 'כותרת בעריכה', 'The builder embeds titleHeEditorial');
+  for (const [label, value] of edBad) {
+    fails(run([rec('fx-ed', edYt, {titleHeEditorial: value})]),
+      /fixture-records\.json, entry 1: titleHeEditorial must be a non-empty string without leading or trailing whitespace/,
+      'record titleHeEditorial: ' + label);
+    fails(run(recs, {guide: guide({titleEn: 'Fixture episode', titleHeEditorial: value})}),
+      /episode 'fx-ep': titleHeEditorial must be a non-empty string without leading or trailing whitespace/, 'episode titleHeEditorial: ' + label);
+  }
+  fails(run([rec('fx-ed', edYt, {titleHe: 'כותרת שפורסמה', titleHeEditorial: 'כותרת בעריכה'})]),
+    /entry 1: titleHeEditorial fills only a missing published Hebrew title, but this item has titleHe;/, 'record titleHeEditorial beside titleHe');
+  // Entries for one URL merge, so one entry's editorial title must not meet another's published one.
+  fails(run([rec('fx-ed', edYt, {titleHeEditorial: 'כותרת בעריכה'}), rec('fx-ed', edYt, {titleHe: 'כותרת שפורסמה'})]),
+    /record 'fx-ed' \(fixture-records\.json, entry 1, merged with another entry for its URL\): titleHeEditorial fills only a missing published/,
+    'record titleHeEditorial merged with a titleHe');
+  builds('a record titleHeEditorial without a Hebrew letter', run([rec('fx-ed', edYt, {titleHeEditorial: 'Elmo 2'})]),
+    /Warning: 1 records have a titleHeEditorial with no Hebrew letter.*: fx-ed/);
+  builds('an episode titleHeEditorial', run(recs, {guide: guide({titleEn: 'Fixture episode', titleHeEditorial: 'פרק בעריכה'})}),
+    /Editorial Hebrew titles \(titleHeEditorial\): 1 episodes/);
+  builds('an episode titleHeEditorial beside a blank titleHe', run(recs, {guide: guide({titleHe: '', titleHeEditorial: 'פרק בעריכה'})}));
+  for (const [label, extra, pattern] of [['titleHe', {titleHe: 'כותרת שפורסמה'}, /this item has titleHe;/],
+    ['storyHe', {titleHe: undefined}, /this item has storyHe;/], ['titleHe and storyHe', {}, /this item has titleHe and storyHe;/]]) {
+    const episode = label === 'titleHe' ? guide({...extra, titleHeEditorial: 'פרק בעריכה'}) : storyEp({...extra, titleHeEditorial: 'פרק בעריכה'});
+    fails(run(recs, {guide: episode}), new RegExp("episode 'fx-ep': titleHeEditorial fills only a missing published Hebrew title, but " +
+      pattern.source), 'episode titleHeEditorial beside ' + label);
+  }
+  builds('an episode titleHeEditorial without a Hebrew letter', run(recs, {guide: guide({titleHeEditorial: '1986'})}),
+    /1 episodes have a titleHeEditorial with no Hebrew letter.*: fx-ep/);
   builds('a source without a url', run(recs, {guide: guide({sources: [{label: 'Printed catalogue'}]})}));
   fails(run(recs, {guide: guide({sources: [{label: ' '}]})}), /source 1: a source without a url needs a label/, 'guide: empty source');
   // A url that is present must be renderable, in sources and totals evidence as in altLabels ('' and non-strings included).
@@ -3897,7 +4125,8 @@ function builderChecks(builder, dir) {
   ok('builder: duplicate ids, lone surrogates, invalid JSON, NaN and Infinity, unrenderable tags and URLs, URLs with spaces, ' +
     'reserved ids, non-text display fields, nameless productions, guide value types and evidence details refused with located ' +
     'messages; one URL in two spellings merges; outside-season and same-video warnings; failed builds keep the previous output; ' +
-    'access, format and role values, part numbers, firstNumber, number labels, alternate labels, story names and source and totals URLs ' +
+    'access, format and role values, part numbers, firstNumber, number labels, alternate labels, story names, editorial Hebrew titles ' +
+    '(text without padding, never beside a published Hebrew title, also after a merge) and source and totals URLs ' +
     'validated; ' +
     'availability checks, malformed season keys and totals claims without a source refused; the embedded data is escaped; ' +
     'licensed services embedded, and malformed services files (models, hosts, EN/HE text, links, sources and their dates, ' +

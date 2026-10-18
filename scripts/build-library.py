@@ -46,6 +46,11 @@ COVERAGES = {"whole-candidate", "parts-only", "excerpt-only", "missing"}
 EVIDENCE = ["metadata-checked", "playback-started", "complete-playback-reviewed", "reference-compared"]
 # Optional episode fields for a story name quoted from another source; see validate_guide().
 STORY_FIELDS = ("storyHe", "storySourceEn", "storySourceHe")
+# Optional record and episode field: our Hebrew translation of the editorial English title (or of the original title) for an
+# item with no published Hebrew title; see editorial_he_problem().
+EDITORIAL_HE = "titleHeEditorial"
+# A Hebrew letter (alef to tav, and the presentation forms); points, cantillation and punctuation alone are not a title.
+HEBREW_LETTER_RE = re.compile(r"[\u05D0-\u05EA\uFB1D-\uFB4F]")
 CLAIM_RE = re.compile(r"^(>=|≥|>|<)?\s*\d+$")
 EMPTY_GUIDE = {"productions": [], "episodes": [], "unidentified": {}}
 
@@ -208,6 +213,31 @@ def text_problems(obj, fields, where):
     """Display fields must be strings (or absent/null): an object would render as "[object Object]"."""
     return [f"{where}: {field} must be a string or null, got {type(obj[field]).__name__}"
             for field in fields if obj.get(field) is not None and not isinstance(obj[field], str)]
+
+
+def editorial_he_problem(obj, where, published):
+    """titleHeEditorial is our Hebrew translation of the editorial English title (or of the original title) for a record or
+    episode that has no published Hebrew title. The Hebrew interface shows it where it would otherwise fall back to English and
+    labels it as ours; it is never a published title, so it only fills that gap and is refused beside one of the `published`
+    fields (titleHe; on an episode, storyHe too). null means absent; a present value is non-empty text without leading or
+    trailing whitespace. Returns a located error, or None."""
+    value = obj.get(EDITORIAL_HE)
+    if value is None:
+        return None
+    if not isinstance(value, str) or not value.strip() or value != value.strip():
+        return (f"{where}: {EDITORIAL_HE} must be a non-empty string without leading or trailing whitespace, or absent; "
+                f"got {value!r}")[:400]
+    present = [field for field in published if obj.get(field)]
+    if present:
+        return (f"{where}: {EDITORIAL_HE} fills only a missing published Hebrew title, but this item has "
+                f"{' and '.join(present)}; keep the published title and remove {EDITORIAL_HE}")
+    return None
+
+
+def editorial_he_unlettered(obj):
+    """A valid titleHeEditorial with no Hebrew letter (a Latin or digits-only value is probably not a translation)."""
+    value = obj.get(EDITORIAL_HE)
+    return isinstance(value, str) and bool(value.strip()) and not HEBREW_LETTER_RE.search(value)
 
 
 def merge_records(existing, incoming):
@@ -474,7 +504,7 @@ def validate_guide(guide, records, source):
             if first is not None and not (is_int(first) and first >= 1):
                 err(f"{sw}: firstNumber must be a positive integer (the season's first episode number), got {first!r}")
     episodes, linked, possible, slot_owner, outside = {}, {}, {}, {}, {}
-    alt_legacy, story_notes = [], []
+    alt_legacy, story_notes, editorial_notes = [], [], []
     # Declared numbering ranges per (production, season), for the firstNumber range warning.
     ranges = {}
     for pid, p in productions.items():
@@ -544,6 +574,13 @@ def validate_guide(guide, records, source):
                 story_notes.append(f"{eid} (storyHe repeats titleHe)")
             elif story.strip() in title_he:
                 story_notes.append(f"{eid} (titleHe already contains storyHe)")
+        # titleHeEditorial: our Hebrew translation of titleEn for an episode with no published Hebrew title (see
+        # editorial_he_problem); a published titleHe or storyHe takes its place.
+        problem = editorial_he_problem(e, where, ("titleHe", "storyHe"))
+        if problem:
+            err(problem)
+        elif editorial_he_unlettered(e):
+            editorial_notes.append(eid)
         sources = e.get("sources", [])
         if not isinstance(sources, list) or any(not isinstance(s, dict) for s in sources):
             err(f"{where}: sources must be objects with an optional public http(s) url")
@@ -654,6 +691,10 @@ def validate_guide(guide, records, source):
     if story_notes:
         warnings.append(f"{len(story_notes)} episodes with storyHe need a look (it is for a catalogue title without a story name): "
                         + "; ".join(story_notes[:5]) + (" ..." if len(story_notes) > 5 else ""))
+    if editorial_notes:
+        warnings.append(f"{len(editorial_notes)} episodes have a {EDITORIAL_HE} with no Hebrew letter (it is a Hebrew "
+                        "translation of the editorial title): " + ", ".join(editorial_notes[:5])
+                        + (" ..." if len(editorial_notes) > 5 else ""))
     if out_of_range:
         warnings.append(f"{len(out_of_range)} numbered episodes fall outside their season's firstNumber range: "
                         + "; ".join(out_of_range[:5]) + (" ..." if len(out_of_range) > 5 else ""))
@@ -956,6 +997,10 @@ def validate_record_fields(r, where):
         if r.get(field) is not None and not isinstance(r[field], str):
             raise ValueError(f"{where}: {field} must be a string")
     problems = text_problems(r, RECORD_TEXT, where)
+    # titleHeEditorial: our Hebrew translation of titleEn (or of originalTitle) for an upload with no published Hebrew title.
+    editorial = editorial_he_problem(r, where, ("titleHe",))
+    if editorial:
+        problems.append(editorial)
     notes = r.get("notes")
     if notes is not None and not (isinstance(notes, str) or (isinstance(notes, dict) and all(
             k in ("en", "he") and (v is None or isinstance(v, str)) for k, v in notes.items()))):
@@ -1052,6 +1097,16 @@ def main():
             origin.setdefault(r["id"], (r["url"], where))
             seen[key] = r
             records.append(r)
+    # Merging fills empty fields from later entries for the same URL, so one entry's titleHeEditorial can meet another's titleHe.
+    for r in records:
+        problem = editorial_he_problem(r, f"record {r['id']!r} ({origin[r['id']][1]}, merged with another entry for its URL)",
+                                       ("titleHe",))
+        if problem:
+            raise ValueError(problem)
+    unlettered = [r["id"] for r in records if editorial_he_unlettered(r)]
+    if unlettered:
+        notices.append(f"Warning: {len(unlettered)} records have a {EDITORIAL_HE} with no Hebrew letter (it is a Hebrew "
+                       f"translation of the editorial title): {', '.join(unlettered[:5])}" + (" ..." if len(unlettered) > 5 else ""))
     discovered = apply_player_links(ROOT / "data/hop-player-links.json", records)
     same_video = {}
     for r in records:
@@ -1121,6 +1176,9 @@ def main():
         Path(tmp).unlink(missing_ok=True)
         raise
     print(f"Built {args.output}: {len(records)} records")
+    edited = sum(isinstance(r.get(EDITORIAL_HE), str) for r in records)
+    if edited:
+        print(f"Editorial Hebrew titles ({EDITORIAL_HE}): {edited} records")
     if discovered:
         checked = sum(r.get("playbackVerified") is True for r in records)
         without_vpn = sum(r.get("playbackVerified") is True and r.get("playbackWithoutVpn") is True for r in records)
@@ -1137,6 +1195,9 @@ def main():
         stories = sum(isinstance(e.get("storyHe"), str) and bool(e["storyHe"].strip()) for e in guide["episodes"])
         if stories:
             print(f"  Hebrew story names from other sources (storyHe): {stories} episodes")
+        edited = sum(isinstance(e.get(EDITORIAL_HE), str) for e in guide["episodes"])
+        if edited:
+            print(f"  Editorial Hebrew titles ({EDITORIAL_HE}): {edited} episodes")
         for warning in guide_warnings:
             print(f"  Warning: {warning}")
     if services is not None:

@@ -55,6 +55,7 @@ Keep `index.html` at its path and keep opening it the same way, as a file in Zen
 [docs/episode-guide.md](docs/episode-guide.md) has the rest of the rules. These matter most:
 
 - `titleHe` is the identifying source's title, verbatim. A `storyHe` is quoted verbatim from a source named in `storySourceEn`. Never compose, shorten or translate one.
+- `titleHeEditorial` is our Hebrew translation of the editorial English title, or of the original title, for a record or episode with no published Hebrew title. The Hebrew interface shows it in place of the English title and labels it as ours. Never put it in `titleHe`; the builder refuses it beside `titleHe` or `storyHe`.
 - Link an upload with a role: `whole-candidate`, `alternate-edition`, `part`, `excerpt` or `possible`. A `possible` copy is unresolved and never counts toward coverage, the totals or the Watch button.
 - `coverage` must agree with the upload roles. Claim `complete-playback-reviewed` or `reference-compared` only for a recorded check of the exact URL, named in `evidenceDetail`.
 - Licensed listings (`access: "licensed"`) can make an episode a whole candidate, but they are not free uploads or playback evidence.
@@ -68,7 +69,7 @@ Keep `index.html` at its path and keep opening it the same way, as a file in Zen
 - Do not infer a full episode from duration alone or from Hop's generic use of the word פרק. A short installment can be complete within its own series without being a complete core Rechov Sumsum broadcast.
 - Distinguish metadata checked, playback startup observed, complete playback reviewed, and completeness compared against a reference edition. Record the exact URL, date and evidence for a stronger claim.
 - A Vimeo playback start seen outside the VPN (Word of the day: A hug) does not verify other Vimeo links or complete playback. Public oEmbed metadata confirms titles and durations, not playback or an uncut episode. YouTube copies that returned country restrictions or generic errors are not VPN-free alternatives.
-- Preserve original titles, uploader names, source URLs, privacy hashes and stable catalog ids. English titles and theme and character tags may be editorial; do not present them as publisher-supplied facts.
+- Preserve original titles, uploader names, source URLs, privacy hashes and stable catalog ids. English titles and theme and character tags may be editorial, and `titleHeEditorial` always is; do not present them as publisher-supplied facts.
 - Name an archive.org uploader by the public "Uploaded by" name on the item's details page, with its `@screenname` page as `uploaderUrl`, or "Unknown (archive.org)" when the page shows Unknown. The item metadata's `uploader` field is a private email address; never derive a name from it.
 - Use primary sources for production totals where available. Keep contradictory totals and uncertain mappings explicit, and record an unconfirmed lead as a lead, not a fact. Annual regulator accounting and current website counts do not establish a lifetime production total.
 - When a gap is filled or a mapping is resolved, update `data/episode-guide.json`, [TODO.md](TODO.md), the relevant research note and the episode audit. Acquisition and completeness verification are separate tasks.

@@ -1380,6 +1380,7 @@ en: {
  storyName: 'Story name',
  storySource: 'Source: {src}',
  engTitle: 'English title (editorial)',
+ heEdTitle: 'Editorial Hebrew title',
  conf_documented: 'Documented identity',
  conf_provisional: 'Provisional identity',
  'conf_uploader-label': 'Uploader\'s label only',
@@ -1533,7 +1534,8 @@ en: {
  about2: 'Coverage says what kind of link exists. Evidence says how far it was checked: metadata checked, playback started, ' +
   'watched in full, or compared with a reference edition. A whole-program link stays unverified until someone watches it in ' +
   'full.',
- about3: 'English titles and theme and character tags are editorial. Each upload keeps its published title and uploader.',
+ about3: 'English titles, Hebrew titles where no Hebrew title was published, and theme and character tags are editorial. ' +
+  'Each upload keeps its published title and uploader.',
  about4: 'Hop pages need an Israeli connection. Direct Vimeo links found on Hop pages open on Vimeo, outside the Hop-only VPN ' +
   'rule; their playback is recorded link by link. Some official YouTube uploads were blocked or unavailable in checks from ' +
   'outside Israel.',
@@ -1959,6 +1961,7 @@ he: {
  storyName: 'שם הסיפור',
  storySource: 'מקור: {src}',
  engTitle: 'כותרת באנגלית (עריכה שלנו)',
+ heEdTitle: 'כותרת עברית (תרגום מערכת)',
  conf_documented: 'זהות מתועדת',
  conf_provisional: 'זהות זמנית',
  'conf_uploader-label': 'לפי תיאור המעלה בלבד',
@@ -2108,7 +2111,8 @@ he: {
   'כפולות וחלקים ממוספרים שייכים כולם לפרק אחד.',
  about2: 'כיסוי מתאר איזה קישור קיים. ראיות מתארות עד כמה נבדק: מטא־נתונים, תחילת ניגון, צפייה מלאה או השוואה למהדורת ייחוס. ' +
   'קישור לתכנית שלמה נשאר לא מאומת עד שמישהו צופה בו במלואו.',
- about3: 'הכותרות באנגלית ותגיות הנושאים והדמויות הן עריכה שלנו. כל העלאה שומרת את הכותרת ואת שם המעלה כפי שפורסמו.',
+ about3: 'הכותרות באנגלית, הכותרות בעברית במקום שלא פורסמה כותרת בעברית, ותגיות הנושאים והדמויות הן עריכה שלנו. ' +
+  'כל העלאה שומרת את הכותרת ואת שם המעלה כפי שפורסמו.',
  about4: 'עמודי הופ דורשים חיבור ישראלי. קישורי Vimeo ישירים שנמצאו בעמודי הופ נפתחים ב־Vimeo, מחוץ לכלל ה־VPN שחל על הופ ' +
   'בלבד; הניגון שלהם מתועד לכל קישור בנפרד. חלק מהעלאות YouTube הרשמיות נחסמו או לא היו זמינות בבדיקות מחוץ לישראל.',
  about5: 'הכוכבים, קישורי ה־Vimeo שהדבקתם וסימוני הצפייה מאוחסנים רק בדפדפן הזה. ייצאו גיבוי לפני העברת הקובץ או החלפת דפדפן.',
@@ -2997,8 +3001,14 @@ const guideStatus = r => (matchedIds.has(r.id) ? 'matched' : queueOf.has(r.id) ?
 // every upload. Defined from the guide data, never from a duration.
 const awaitingId = r => { const s = guideStatus(r); return s === 'queue' || s === 'possible'; };
 const ID_STATUS = ['matched', 'none'];
+// titleHeEditorial: our Hebrew translation of the editorial English title (or of the original) for a record or episode with
+// no published Hebrew title. Hebrew titles use it where they would otherwise fall back to English. It is never a published
+// title: English never shows it as an original or alternate title, publishedTitle() and the YouTube search words leave it out,
+// and the record page and the identity card show it only in a row labelled as ours (heEdTitle).
+const heEdOf = x => (typeof x.titleHeEditorial === 'string' && x.titleHeEditorial.trim() ? x.titleHeEditorial : '');
 // Some sources supply only a generic `title` (the builder accepts it); it is the fallback after the language titles.
-const recTitle = r => pick(r.titleEn, r.titleHe) || r.title || r.originalTitle || t('untitled');
+const recTitle = r => (lang === 'he' ? r.titleHe || heEdOf(r) || r.titleEn : r.titleEn || r.titleHe) || r.title || r.originalTitle ||
+ t('untitled');
 const publishedTitle = r => r.originalTitle || r.titleHe || r.titleEn || r.title || '';
 // Notes are a string or {en, he}; research notes stay searchable (some records are identified only there).
 const noteTexts = n => (typeof n === 'string' ? [n] : n && typeof n === 'object' ? [n.en, n.he].filter(x => typeof x === 'string') : []);
@@ -3036,9 +3046,9 @@ function recSearch(r) {
  const tags = [...(r.themes || []), ...(r.characters || [])].flatMap(v => [...tagText(v),
   ...(typeof v === 'string' ? names[v.toLowerCase()] || [] : [])]);
  const se = Number.isInteger(r.episodeNumber) ? (r.season != null ? 's' + r.season + 'e' : 'e') + r.episodeNumber : '';
- const s = alias(normalize([r.titleEn, r.titleHe, r.title, r.originalTitle, r.uploader, r.subseriesEn, r.subseriesHe, r.id, se,
-  ...(SERIES[r.series] || []), ...tags, ...noteTexts(r.notes),
-  ...(recLinks.get(r.id) || []).flatMap(x => [x.e.titleEn, x.e.titleHe, x.e.storyHe])]
+ const s = alias(normalize([r.titleEn, r.titleHe, heEdOf(r), r.title, r.originalTitle, r.uploader, r.subseriesEn, r.subseriesHe, r.id,
+  se, ...(SERIES[r.series] || []), ...tags, ...noteTexts(r.notes),
+  ...(recLinks.get(r.id) || []).flatMap(x => [x.e.titleEn, x.e.titleHe, x.e.storyHe, heEdOf(x.e)])]
   .filter(x => typeof x === 'string' || typeof x === 'number').join(' ')));
  searchCache.set(key, s); return s;
 }
@@ -3098,9 +3108,11 @@ const numLabel = p => (p ? pick(typeof p.numberLabelEn === 'string' ? p.numberLa
 // catalogue title (titleHe) has none. Hebrew headings use it; English headings keep the editorial titleEn. The identity card
 // keeps the catalogue title and names the story's source.
 const storyOf = e => (typeof e.storyHe === 'string' && e.storyHe.trim() ? e.storyHe : '');
+// The published Hebrew title (a story name or the identifying source's title). Without one, Hebrew headings use the editorial
+// Hebrew title (heEdOf); English shows only a published one as the second line (epAlt).
 const heTitle = e => storyOf(e) || e.titleHe || '';
 function epTitle(e) {
- const p = prodById.get(e.production); const tt = lang === 'he' ? heTitle(e) || e.titleEn : e.titleEn || e.titleHe;
+ const p = prodById.get(e.production); const tt = lang === 'he' ? heTitle(e) || heEdOf(e) || e.titleEn : e.titleEn || e.titleHe;
  if (tt) return tt;
  if (e.number == null) return t('untitled');
  if (numLabel(p)) return codeOf(p, e.season, e.number);
@@ -3276,11 +3288,11 @@ function numberTokens(e) {
 function epSearch(e) {
  const key = 'e|' + e.id; if (searchCache.has(key)) return searchCache.get(key);
  const p = prodById.get(e.production);
- const s = alias(normalize([e.titleEn, e.titleHe, e.storyHe, e.id, e.number, ...numberTokens(e),
+ const s = alias(normalize([e.titleEn, e.titleHe, e.storyHe, heEdOf(e), e.id, e.number, ...numberTokens(e),
   p && p.nameEn, p && p.nameHe, e.airDate, e.noteEn, e.noteHe,
   ...(Array.isArray(e.altLabels) ? e.altLabels : []).flatMap(a => (a && typeof a === 'object' ? [a.labelEn, a.labelHe, a.label,
    a.sourceLabel] : [])),
-  ...upsOf(e).flatMap(u => [u.r.titleEn, u.r.titleHe, u.r.title, u.r.originalTitle, u.r.uploader])]
+  ...upsOf(e).flatMap(u => [u.r.titleEn, u.r.titleHe, heEdOf(u.r), u.r.title, u.r.originalTitle, u.r.uploader])]
   .filter(x => typeof x === 'string' || typeof x === 'number').join(' ')));
  searchCache.set(key, s); return s;
 }
@@ -4670,7 +4682,9 @@ function identityCard(e, p) {
   [t('confidence'), CONFS.includes(e.confidence) ? t('conf_' + e.confidence) : ''],
   // With a story name from another source, the Hebrew title is named for what it is: the verbatim catalogue title.
   [t(storyOf(e) ? 'catTitle' : 'hebTitle'), e.titleHe ? auto('span', '', e.titleHe) : ''], [t('storyName'), storyFact(e)],
-  [t('engTitle'), e.titleEn ? auto('span', '', e.titleEn) : '']]));
+  [t('engTitle'), e.titleEn ? auto('span', '', e.titleEn) : ''],
+  // Our Hebrew translation, in its own row so that it is never taken for a published title.
+  [t('heEdTitle'), heEdOf(e) ? auto('span', '', heEdOf(e)) : '']]));
  // Items keep the page direction, so every bullet sits on the start edge; each item's text is its own dir=auto isolate.
  const list = () => {
   const ul = el('ul'); ul.style.margin = '0'; ul.style.paddingInlineStart = '0'; ul.style.listStylePosition = 'inside';
@@ -4913,6 +4927,7 @@ VIEWS.record = function mountRecord(v) {
  const fc = el('section', 'card'), prod = r.production && prodById.get(r.production);
  fc.append(facts([[t('origTitle'), auto('span', '', publishedTitle(r))],
   [t('engTitle'), r.titleEn && r.titleEn !== publishedTitle(r) ? auto('span', '', r.titleEn) : ''],
+  [t('heEdTitle'), heEdOf(r) ? auto('span', '', heEdOf(r)) : ''],
   [t('uploader'), r.uploader ? auto('span', '', r.uploader) : ''], [t('sourceType'), t(r.sourceType === 'official' ? 'official' : 'community')],
   [t('seriesLbl'), pick(...(SERIES[r.series] || [r.series]))], [t('subseries'), pick(r.subseriesEn, r.subseriesHe)],
   [t('recProduction'), prod ? go(prodRoute(prod.id), prodName(prod)) : typeof r.production === 'string' ? en('span', '', r.production) : ''],
@@ -5492,7 +5507,7 @@ function todoSlotRow(p, m) {
 }
 function todoExport(D) {
  const ep = e => ({id: e.id, production: e.production, season: e.season ?? null, number: e.number ?? null, titleHe: e.titleHe || null,
-  storyHe: storyOf(e) || null, titleEn: e.titleEn || null, coverage: covOf(e), evidence: evOf(e),
+  storyHe: storyOf(e) || null, titleEn: e.titleEn || null, titleHeEditorial: heEdOf(e) || null, coverage: covOf(e), evidence: evOf(e),
   uploads: upsOf(e).map(u => ({recordId: u.r.id, role: u.role, url: destination(u.r), ...(u.part ? {part: u.part} : {})})),
   possibleCopies: possOf(e).map(u => ({recordId: u.r.id, url: destination(u.r)})),
   search: ytSearchUrl(prodById.get(e.production), epSearchWords(e))});
