@@ -38,7 +38,7 @@ Record each production total in `totalsEvidence`, including conflicting claims. 
 
 ## Availability checks
 
-A recorded availability check is a status string, or an object `{method, checkedAt, status?, result}`. A check that found the item listed carries no status; a failed or limited one must carry one of these statuses, and the library reads only the status:
+A record's `availabilityCheck` is a status string, or an object `{method, checkedAt, status?, result}`; `validate_record_fields()` in `scripts/build-library.py` refuses an unknown status. A check that found the item listed carries no status; a failed or limited one must carry one of these statuses, and the library reads only the status:
 
 | Status | Meaning | Pair with |
 | --- | --- | --- |

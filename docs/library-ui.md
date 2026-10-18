@@ -20,7 +20,7 @@ The Research to-do page (`#/todo`, formerly To find) is linked from the footer a
 
 The file works without a server and opens playback on the original host. Stars, pasted Vimeo links and watched marks live in local storage; [AGENTS.md](../AGENTS.md#files-and-build) says how to keep them. The JSON backup controls are in the library's "About, evidence levels and backup" section.
 
-The UI preferences live in local storage too, as `sumsum-language`, `sumsum-theme` and `sumsum-appearance`. The backup leaves them out, because it holds what the user collected (pasted links, stars and watched marks), not how the page looks.
+The UI preferences live in local storage too, as `sumsum-language`, `sumsum-theme`, `sumsum-appearance` and `sumsum-guide-layout` (the guide's Album, Numbers or List layout; `data-start-layout` overrides it). The backup leaves them out, because it holds what the user collected (pasted links, stars and watched marks), not how the page looks.
 
 ## Themes and appearance
 

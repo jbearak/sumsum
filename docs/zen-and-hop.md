@@ -15,9 +15,9 @@ The official Proton VPN Firefox extension is installed and pinned in Zen, signed
 1. Switch Zen to Home and open the pinned Proton VPN extension.
 2. Confirm the connection to Israel, Tel Aviv, and the Hop-only Include rule.
 3. Open the official Hop collection or video page in a Home tab. Without the Israeli connection, Hop's region restriction can hide the player.
-4. Take the embedded Vimeo URL from the Hop page, with its complete privacy hash and any required parameters; a numeric video id alone can be insufficient. Keep the Hop source URL alongside it.
-5. Open the direct Vimeo URL in another Home tab, or use the library's Vimeo action. Vimeo is outside the VPN rule, so the Hop tunnel can stay connected.
-6. Record playback evidence separately from metadata and episode completeness. If a link fails, check its exact URL, privacy hash and current availability before changing VPN routing.
+4. Take the embedded Vimeo URL as [AGENTS.md](../AGENTS.md#zen-proton-vpn-and-hop) requires, with any required parameters; a numeric video id alone can be insufficient.
+5. Open it in another Home tab, or with the library's Vimeo action. Vimeo is outside the VPN rule, so the Hop tunnel can stay connected.
+6. Record playback evidence separately from metadata and episode completeness.
 
 Hop's discovery pages are [Rechov Sumsum](https://hop.co.il/shows/%D7%A8%D7%97%D7%95%D7%91-%D7%A1%D7%95%D7%9E%D7%A1%D7%95%D7%9D/) and [Elmo's Israeli talk show](https://hop.co.il/shows/%D7%AA%D7%9B%D7%A0%D7%99%D7%AA-%D7%94%D7%90%D7%99%D7%A8%D7%95%D7%97-%D7%A9%D7%9C-%D7%90%D7%9C%D7%9E%D7%95/).
 

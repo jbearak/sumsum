@@ -2,9 +2,7 @@
 
 Maintain a local, interactive video-link library for classic and modern Rechov Sumsum, classic and modern Shalom Sesame, and Elmo's Israeli talk show, תכנית האירוח של אלמו. Collect episode and clip links, source metadata, and evidence about completeness and availability. Store links and metadata, never video media.
 
-The library is `index.html`, a self-contained file generated from `library.template.html` and `data/`. Preserve filtering by series, program type, theme and character, dynamic filter counts, and longest-first duration sorting. Full episodes and complete installments of short series are separate categories.
-
-Its UI preferences are the language (English by default, with a Hebrew toggle and RTL layout), the colour theme or palette (Green by default) and the appearance (System by default, or Light or Dark). Every colour comes from the palette and scheme tokens at the top of the template's stylesheet; to add a palette, follow [docs/library-ui.md](docs/library-ui.md#themes-and-appearance).
+The library is `index.html`, a self-contained file generated from `library.template.html` and `data/`. Preserve filtering by series, program type, theme and character, dynamic filter counts, longest-first duration sorting, and the UI preferences, such as language (English by default, with a Hebrew toggle and RTL layout), palette (Green by default) and appearance (System by default, or Light or Dark). Full episodes and complete installments of short series are separate categories.
 
 Before acquisition or coverage work, read [TODO.md](TODO.md): episode totals, coverage gaps and the acquisition checklist. Before changing a claim, read the [research/](research/) note that cites its evidence and limits.
 
@@ -50,7 +48,7 @@ Fix every builder error and read its warnings. Passing checks do not cover brows
 
 Merge a new Hop collector report into `data/hop-player-links.json` by id. Never replace the file, and keep existing links and playback evidence verbatim.
 
-Keep `index.html` at its path and keep opening it the same way, as a file in Zen. The user's stars, pasted Vimeo links and watched marks live in that browser's local storage for that location, as do the UI preferences. Before moving the file or changing how it is opened (another browser or profile, or a server instead of `file://`), export a backup from the library's About section; the backup leaves out the UI preferences.
+Keep `index.html` at its path and keep opening it the same way, as a file in Zen. The user's stars, pasted Vimeo links and watched marks live in that browser's local storage for that location. Before moving the file or changing how it is opened (another browser or profile, or a server instead of `file://`), export a backup from the library's About section.
 
 # Editing the episode guide
 
@@ -66,10 +64,10 @@ Keep `index.html` at its path and keep opening it the same way, as a file in Zen
 
 - Count upload URLs separately from distinct episode identities. Alternate hosts, duplicate editions and numbered parts do not add episodes.
 - Keep original Rechov Sumsum, the 1998 Rechov Sumsum/Shara'a Simsim co-production, the modern core seasons, short series and home-video compilations distinct when calculating coverage.
-- Number the original series and the 1998 co-production by the IETV programme numbers in the NLI catalogue. Their uploader and archive.org season/episode labels, such as "S2E58", follow broadcast or collector order: keep them as alternate labels and evidence in `altLabels`, never in `number`. A label may supply a number only in a production without a documented numbering, when it is the only evidence of the episode, with `confidence: "uploader-label"`.
+- Number the original series and the 1998 co-production by the IETV programme numbers in the NLI catalogue. Uploader and archive.org season/episode labels, such as "S2E58", follow broadcast or collector order: keep them as alternate labels and evidence in `altLabels`, not in `number` ([one exception](docs/episode-guide.md#episode-identity-and-titles)).
 - Do not infer a full episode from duration alone or from Hop's generic use of the word פרק. A short installment can be complete within its own series without being a complete core Rechov Sumsum broadcast.
 - Distinguish metadata checked, playback startup observed, complete playback reviewed, and completeness compared against a reference edition. Record the exact URL, date and evidence for a stronger claim.
-- One playback start observed outside the VPN, of Word of the Day: A hug on Vimeo, does not verify other Vimeo links or complete playback. Public oEmbed metadata confirms titles and durations, not playback or an uncut episode. YouTube copies that returned country restrictions or generic errors are not VPN-free alternatives.
+- A Vimeo playback start seen outside the VPN (Word of the day: A hug) does not verify other Vimeo links or complete playback. Public oEmbed metadata confirms titles and durations, not playback or an uncut episode. YouTube copies that returned country restrictions or generic errors are not VPN-free alternatives.
 - Preserve original titles, uploader names, source URLs, privacy hashes and stable catalog ids. English titles and theme and character tags may be editorial; do not present them as publisher-supplied facts.
 - Name an archive.org uploader by the public "Uploaded by" name on the item's details page, with its `@screenname` page as `uploaderUrl`, or "Unknown (archive.org)" when the page shows Unknown. The item metadata's `uploader` field is a private email address; never derive a name from it.
 - Use primary sources for production totals where available. Keep contradictory totals and uncertain mappings explicit, and record an unconfirmed lead as a lead, not a fact. Annual regulator accounting and current website counts do not establish a lifetime production total.
