@@ -4,10 +4,10 @@ Read this before editing `data/episode-guide.json`, a record's `production` or `
 
 ## Episode identity and titles
 
-- An episode is identified by its documented number or title: the IETV programme number for the original series and the 1998 co-production, the DVD number for 2012, Hop's listing number for the Elmo talk show, or the documented title. Hebrew titles are quoted as published. English titles are editorial.
+- An episode is identified by its documented number or title: the IETV programme number for the original series and the 1998 co-production, the DVD number for 2012, Hop's listing number for the Elmo talk show, or the documented title. Hebrew titles are quoted as published. English titles are editorial unless a source publishes one (the Shalom Sesame series, Sisu's English DVD titles for 2006); keep a published English title verbatim.
 - `titleHe` is the identifying source's title, verbatim. For the original series and the 1998 co-production it is the NLI IETV catalogue title.
 - When that title has no story name (`רחוב סומסום <44>`), you may put a Hebrew story name quoted verbatim from another source in `storyHe`. Name that source in `storySourceEn` (required) and `storySourceHe`, for example `archive.org file label (uploader's wording)`. Never compose, shorten or translate a story name into `storyHe`.
-- The Hebrew interface heads the episode with `storyHe`. The English interface uses the editorial `titleEn`, or `titleHe` without one. The episode page's identity card keeps `titleHe` as the "Catalogue title" and shows the story name with its source.
+- The Hebrew interface heads the episode with `storyHe`. The English interface uses `titleEn` (editorial or published), or `titleHe` without one. The episode page's identity card keeps `titleHe` as the "Catalogue title" and shows the story name with its source.
 - The builder refuses an empty or non-string value, a `storyHe` without `storySourceEn`, and a source without `storyHe`. It warns when `titleHe` is missing or already contains the story name.
 - Uploader and archive season/episode labels, such as archive.org "S2E58", are alternate labels. Put them in `altLabels`, never in `number`.
 
@@ -36,7 +36,7 @@ Record each production total in `totalsEvidence` with its source and confidence,
 
 ## Availability checks
 
-A recorded availability check is the string `country-restricted` or `unavailable`, or an object `{method, checkedAt, status, result}`. The library reads only `status`:
+A recorded availability check is a status string, or an object `{method, checkedAt, status?, result}`. A check that found the item listed carries no status; a failed or limited one must carry one of these statuses, and the library reads only the status:
 
 | Status | Meaning | Pair with |
 | --- | --- | --- |
@@ -44,7 +44,7 @@ A recorded availability check is the string `country-restricted` or `unavailable
 | `unavailable` | A generic error, a content-claim block or an unspecified restriction | `access: "unavailable"` |
 | `region-limited` | A free stream limited to its service area by a location check | |
 
-The `result` text is evidence for people. Record every failed check with a status, so that it never shows as a public link.
+The `result` text is evidence for people. The status is what keeps a failed check from showing as a public link.
 
 ## After a change
 

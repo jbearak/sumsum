@@ -47,7 +47,7 @@ Hop's discovery pages are [Rechov Sumsum](https://hop.co.il/shows/%D7%A8%D7%97%D
 
 Screen capture from T3 Code raises a macOS prompt to "bypass the private window picker". That permission is the user's decision; never click it. Without that permission, capture shows only T3's own windows.
 
-The macOS accessibility API works instead, because System Events has Accessibility permission. Run these commands with the sandbox disabled.
+The macOS accessibility API works instead. System Events has Accessibility permission (it does the toolbar click below), and the Swift helper needs the app that runs it to be trusted too. Run these commands with the sandbox disabled.
 
 - [ax.swift](ax.swift) is a small helper that walks `AXChildren` quickly. Compile it with `swiftc -o "$TMPDIR/ax" docs/ax.swift`. `ax dump <app> [depth] [filter]` prints the tree; `ax press <app> <label substring>` presses the first match. It also has `click <x> <y>` and `setvalue <app> <substring> <value>`. AppleScript's `entire contents` is too slow on large pages and times out.
 - Proton's toolbar button label reads "Proton VPN: Unprotected" or "Proton VPN: Protected - IL#nnn". AXPress on that button did not open the popup; a System Events click at its centre did.

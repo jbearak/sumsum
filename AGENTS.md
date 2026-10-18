@@ -4,7 +4,7 @@ Maintain a local, interactive video-link library for classic and modern Rechov S
 
 The library is `index.html`, a self-contained file generated from `library.template.html` and `data/`. Its default UI is English, with a Hebrew toggle and RTL layout. Preserve filtering by series, program type, theme and character, dynamic filter counts, and longest-first duration sorting. Full episodes and complete installments of short series are separate categories.
 
-[TODO.md](TODO.md) has the episode totals, coverage gaps and acquisition checklist. The notes in [research/](research/) give the evidence and its limits.
+Before acquisition or coverage work, read [TODO.md](TODO.md): episode totals, coverage gaps and the acquisition checklist. Before changing a claim, read the [research/](research/) note that cites its evidence and limits.
 
 # Keeping this file current
 
@@ -28,7 +28,7 @@ The user set these on 2026-10-18.
 
 # Zen, Proton VPN and Hop
 
-- Use the existing Zen browser in its Home workspace, the user's personal workspace, not Work. Home, Work and Gmail are workspaces in one profile; do not create a new profile. Keep project tabs in Home and preserve unrelated tabs and workspaces.
+- Use the existing Zen browser in its Home workspace, the user's personal workspace, not Work. Home, Work and Gmail are workspaces in one profile; do not create a new profile. Keep project and setup tabs in Home and preserve unrelated tabs and workspaces.
 - With browser or computer-control tools, select the existing Zen window. Shell requests, other browsers and the in-app browser do not go through Zen's Proton extension.
 - The Proton VPN extension in Zen connects to Israel, Tel Aviv, chosen by city rather than by server number. Split tunneling is on in Include mode, with only `hop.co.il` and its subdomains included; Vimeo, YouTube and everything else stay outside. Keep this rule, and do not add broad website rules as a workaround. Check the current connection before regional work, because it has been found disconnected despite auto-connect.
 - Collect Hop links yourself rather than handing the work to the user (the user, 2026-10-18). Zen's extension is the established route. A computer-wide VPN is acceptable for this task only.
@@ -44,7 +44,7 @@ python3 scripts/build-library.py
 node scripts/check-library.cjs
 ```
 
-The builder stops on a guide that breaks the contract. Fix the errors and read the warnings. The checks run the app in a DOM double, in English and Hebrew; browser layout and visual review are separate.
+Fix every builder error and read its warnings. Passing checks do not cover browser layout or visual review.
 
 Merge a new Hop collector report into `data/hop-player-links.json` by id. Never replace the file, and keep existing links and playback evidence verbatim.
 
