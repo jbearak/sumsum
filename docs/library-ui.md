@@ -14,8 +14,8 @@ Browse (`#/browse`) lists every upload with the filters. The old All uploads rou
 
 Identified videos and Videos to identify together hold every upload. Both are defined from the guide data, never from durations.
 
-The Research to-do page (`#/todo`, formerly To find) is linked from the footer and from the Browse menu's pages. It holds the whole links to check by playback and the JSON export, whose file name and format still say `sumsum-to-find`.
+The Research to-do page (`#/todo`, formerly To find) is linked from the footer and from the Videos to identify and Missing episodes pages. It holds the whole links to check by playback and the JSON export, whose file name and format still say `sumsum-to-find`.
 
 ## Browser storage
 
-The file works without a server and opens playback on the original host. Stars, pasted Vimeo links and watched marks are stored in the browser's local storage, which is tied to the file's location. Keep the file path and browser context stable. Export a JSON backup from the library's About section before moving the file or changing how it is opened.
+The file works without a server and opens playback on the original host. Stars, pasted Vimeo links and watched marks live in local storage; [AGENTS.md](../AGENTS.md#files-and-build) says how to keep them. The JSON backup controls are in the library's "About, evidence levels and backup" section.

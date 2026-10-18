@@ -39,14 +39,13 @@ Hop's discovery pages are [Rechov Sumsum](https://hop.co.il/shows/%D7%A8%D7%97%D
 [scripts/collect-hop-links.js](../scripts/collect-hop-links.js) runs in the console of an accessible Hop tab in Zen Home. It reads public Hop pages from the same origin and produces a JSON report, left in `window.hopCollectorResult` and offered as a download. It downloads no video media.
 
 - Its manifest is embedded in the script. Keep it in the same order as `data/hop-url-manifest.json` and `data/hop-records.json` when adding pages.
-- Merge a new report into `data/hop-player-links.json` by id. Never replace the file with a report; keep existing links and playback evidence verbatim.
-- Every manifest page had its Vimeo link as of 2026-10-18. [TODO.md](../TODO.md#collecting-links-for-hop-pages-added-later) has the steps for pages added later.
+- Every manifest page had its Vimeo link as of 2026-10-18. [TODO.md](../TODO.md#collecting-links-for-hop-pages-added-later) has the steps for pages added later, including how to merge a report under the rule in [AGENTS.md](../AGENTS.md#files-and-build).
 
-Zen's extension with the Hop-only rule is the established route. A computer-wide VPN is acceptable for this task only. No Proton desktop app was installed as of 2026-10-18, so that route would first need an install and sign-in.
+[AGENTS.md](../AGENTS.md#zen-proton-vpn-and-hop) allows a computer-wide VPN for this task. No Proton desktop app was installed as of 2026-10-18, so that route would first need an install and sign-in.
 
 ## Driving Zen from the shell
 
-Screen capture from T3 Code raises a macOS prompt to "bypass the private window picker". That permission is the user's decision; never click it. It would show only T3's own windows anyway.
+Screen capture from T3 Code raises a macOS prompt to "bypass the private window picker". That permission is the user's decision; never click it. Without that permission, capture shows only T3's own windows.
 
 The macOS accessibility API works instead, because System Events has Accessibility permission. Run these commands with the sandbox disabled.
 

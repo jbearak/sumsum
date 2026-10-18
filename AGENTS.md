@@ -21,7 +21,7 @@ Detail lives in these docs. Read each one before the work it covers:
 
 The user set these on 2026-10-18.
 
-- Commit finished work at reasonable checkpoints on the working branch without waiting to be asked, once the build and checks pass. For example, commit what is done before starting the next big piece of work. In multi-agent workflows, each stage that changes project files commits its own work. `.sweep/` is gitignored scratch. Scan staged files for credentials first. Use imperative, sentence-case subjects like the existing commits. Do not amend, rebase, reset or use a bare `git stash`.
+- Commit finished work on the working branch at reasonable checkpoints without waiting to be asked, for example before starting the next big piece of work. When the template, `data/` or `scripts/` changed, the build and checks must pass first. In multi-agent workflows, each stage that changes project files commits its own changes, staged by path rather than with `git add -A`. Scan staged files for credentials. Use imperative, sentence-case subjects like the existing commits. Do not amend, rebase, reset or use a bare `git stash`.
 - `origin` is the private GitHub repository `git@github.com:jbearak/sumsum.git`. Push only when the user asks.
 - Review substantial changes with one Claude review round, then a Codex review loop with GPT-6.1-Sol (T3 `delegate_task`, provider `codex`, model `gpt-6.1-sol`). Repeat it until there is no valid feedback or very high confidence that the work is ready to commit or merge. Another Claude review may then check that confidence. Do not cap the rounds at a small fixed number. Each Codex round is a fresh `delegate_task` carrying the original brief, prior findings, responses and unresolved objections. Verify each finding adversarially before fixing it, and commit fixes at checkpoints.
 - Take the time the work needs. Do not trim verification or set time targets to go faster. The user's worry about long runs is crashed agents, not elapsed time, so when work runs long, check that agents are alive (transcript growth, tool activity) and report it.
@@ -33,7 +33,7 @@ The user set these on 2026-10-18.
 - The Proton VPN extension in Zen connects to Israel, Tel Aviv, chosen by city rather than by server number. Split tunneling is on in Include mode, with only `hop.co.il` and its subdomains included; Vimeo, YouTube and everything else stay outside. Keep this rule, and do not add broad website rules as a workaround. Check the current connection before regional work, because it has been found disconnected despite auto-connect.
 - Collect Hop links yourself rather than handing the work to the user (the user, 2026-10-18). Zen's extension is the established route. A computer-wide VPN is acceptable for this task only.
 - Find Vimeo links through Hop and play them on Vimeo. Take the URL embedded in the Hop page with its complete privacy hash, keep the Hop source URL beside it, and open the Vimeo URL directly. If a link fails, check its exact URL, hash and current availability before changing VPN routing.
-- Logins are in 1Password. Use the existing signed-in session, and reauthenticate through 1Password's supported account or browser flow. Never put passwords, session tokens, cookies or proxy credentials in project files, logs, commits or generated HTML.
+- Logins are in 1Password. Use the existing signed-in session when available; if reauthentication is needed, use 1Password through the supported account or browser flow. Never put passwords, session tokens, cookies or proxy credentials in project files, logs, commits or generated HTML.
 
 # Files and build
 
@@ -46,15 +46,14 @@ node scripts/check-library.cjs
 
 The builder stops on a guide that breaks the contract. Fix the errors and read the warnings. The checks run the app in a DOM double, in English and Hebrew; browser layout and visual review are separate.
 
-Merge a new Hop collector report into `data/hop-player-links.json` by id. Never replace the file, and keep existing links and playback evidence.
+Merge a new Hop collector report into `data/hop-player-links.json` by id. Never replace the file, and keep existing links and playback evidence verbatim.
 
-Keep `index.html` at its path. The user's stars, pasted Vimeo links and watched marks live in the browser's local storage for that location, so export a backup from the library before moving the file.
+Keep `index.html` at its path and keep opening it the same way, as a file in Zen. The user's stars, pasted Vimeo links and watched marks live in that browser's local storage for that location. Before moving the file or changing how it is opened (another browser or profile, or a server instead of `file://`), export a backup from the library's About section.
 
 # Editing the episode guide
 
 [docs/episode-guide.md](docs/episode-guide.md) has the full contract. These rules matter most:
 
-- Put uploader and archive season/episode labels, such as archive.org "S2E58", in `altLabels`, never in `number`.
 - `titleHe` is the identifying source's title, verbatim. A `storyHe` is quoted verbatim from a source named in `storySourceEn`. Never compose, shorten or translate one.
 - Link an upload with a role: `whole-candidate`, `alternate-edition`, `part`, `excerpt` or `possible`. A `possible` copy is unresolved and never counts toward coverage, the totals or the Watch button.
 - `coverage` must agree with the upload roles. Claim `complete-playback-reviewed` or `reference-compared` only for a recorded check of the exact URL, named in `evidenceDetail`.
@@ -65,7 +64,7 @@ Keep `index.html` at its path. The user's stars, pasted Vimeo links and watched 
 
 - Count upload URLs separately from distinct episode identities. Alternate hosts, duplicate editions and numbered parts do not add episodes.
 - Keep original Rechov Sumsum, the 1998 Rechov Sumsum/Shara'a Simsim co-production, the modern core seasons, short series and home-video compilations distinct when calculating coverage.
-- Number the original series and the 1998 co-production by the IETV programme numbers in the NLI catalogue. archive.org and uploader season/episode labels follow broadcast or collector order; they are alternate labels and evidence, not identities.
+- Number the original series and the 1998 co-production by the IETV programme numbers in the NLI catalogue. Uploader and archive.org season/episode labels, such as "S2E58", follow broadcast or collector order: keep them as alternate labels and evidence in `altLabels`, never in `number`.
 - Do not infer a full episode from duration alone or from Hop's generic use of the word פרק. A short installment can be complete within its own series without being a complete core Rechov Sumsum broadcast.
 - Distinguish metadata checked, playback startup observed, complete playback reviewed, and completeness compared against a reference edition. Record the exact URL, date and evidence for a stronger claim.
 - One observed playback start, of Word of the Day: A hug on Vimeo, does not verify other Vimeo links or complete playback. Public oEmbed metadata confirms titles and durations, not playback or an uncut episode. YouTube copies that returned country restrictions or generic errors are not VPN-free alternatives.
