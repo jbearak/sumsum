@@ -150,6 +150,16 @@ def enrich_catalog(catalog_path, report, metadata_by_url, youtube_path):
     return updated
 
 
+def project_path(path, root):
+    """The report path as recorded in the cache: relative to the project root when it lies inside it, so the
+    committed cache never carries a machine-specific absolute path (a report elsewhere is named by its file name)."""
+    resolved = Path(path).resolve()
+    try:
+        return resolved.relative_to(root).as_posix()
+    except ValueError:
+        return resolved.name
+
+
 def main():
     root = Path(__file__).resolve().parent.parent
     parser = argparse.ArgumentParser(description=__doc__)
@@ -187,7 +197,7 @@ def main():
     summary = {"uniqueUrls": len(urls), "successful": sum(r.get("status") == "ok" for r in items),
                "failed": sum(r.get("status") != "ok" for r in items)}
     output = {"generatedAt": now(), "source": "Vimeo public oEmbed", "endpoint": ENDPOINT,
-              "collectorReport": str(args.report), "mediaDownloaded": False,
+              "collectorReport": project_path(args.report, root), "mediaDownloaded": False,
               "summary": summary, "items": items}
     write_json(args.output, output)
     updated = enrich_catalog(args.catalog, report, metadata, args.youtube)
