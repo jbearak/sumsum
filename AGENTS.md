@@ -13,7 +13,7 @@ This file records the project's rules and the user's working preferences. Record
 Detail lives in these docs. Read each one before the work it covers:
 
 - [docs/files-and-build.md](docs/files-and-build.md), before changing data files, scripts or the build: what each file holds, what the builder refuses and warns about, what the checks cover, and Vimeo metadata enrichment.
-- [docs/episode-guide.md](docs/episode-guide.md), before editing the episode guide, a record's guide link or `data/licensed-services.json`: the full guide contract, licensed listings and availability checks.
+- [docs/episode-guide.md](docs/episode-guide.md), before editing the episode guide, a record's guide link or `data/licensed-services.json`: the guide rules and required fields, licensed listings and availability checks.
 - [docs/library-ui.md](docs/library-ui.md), before UI work: views, routes and browser storage.
 - [docs/zen-and-hop.md](docs/zen-and-hop.md), before browser, VPN or Hop work: the Proton settings, Hop discovery, the link collector, and driving Zen from the shell through the accessibility API.
 
@@ -52,7 +52,7 @@ Keep `index.html` at its path and keep opening it the same way, as a file in Zen
 
 # Editing the episode guide
 
-[docs/episode-guide.md](docs/episode-guide.md) has the full contract. These rules matter most:
+[docs/episode-guide.md](docs/episode-guide.md) has the rest of the rules and the required fields. These matter most:
 
 - `titleHe` is the identifying source's title, verbatim. A `storyHe` is quoted verbatim from a source named in `storySourceEn`. Never compose, shorten or translate one.
 - Link an upload with a role: `whole-candidate`, `alternate-edition`, `part`, `excerpt` or `possible`. A `possible` copy is unresolved and never counts toward coverage, the totals or the Watch button.

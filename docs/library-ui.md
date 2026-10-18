@@ -1,6 +1,6 @@
 # Library views, routes and storage
 
-Read this before changing `library.template.html`. What the UI must preserve is in [AGENTS.md](../AGENTS.md#project-purpose).
+Read this before changing `library.template.html`. What the UI must preserve is in [AGENTS.md](../AGENTS.md#project-purpose). Display rules tied to the guide data are in [episode-guide.md](episode-guide.md): episode headings and the Catalogue title, the licensed service named on Watch labels, access lines, filters and notes, and the availability status the library reads.
 
 ## Views and routes
 

@@ -4,24 +4,11 @@ Read this before browser, VPN or Hop work. The rules are in [AGENTS.md](../AGENT
 
 ## Zen's Home workspace
 
-Home, Work and Gmail are workspaces in one Zen browser profile. Home is the user's personal workspace; the user corrected an earlier attempt that used Work. It is not a separate profile named Personal.
-
-The Proton extension and its domain rule apply across that profile. Selecting Home does not create a separate VPN configuration, and a Hop link opened from another workspace also goes through the tunnel.
+Home is not a separate profile named Personal; the user corrected an earlier attempt that used Work. The Proton extension and its domain rule apply across the whole profile. Selecting Home creates no separate VPN configuration, and a Hop link opened from another workspace also goes through the tunnel.
 
 ## Proton VPN extension
 
-The official Proton VPN Firefox extension is installed and pinned in Zen, signed into the user's account with VPN Plus.
-
-| Setting | Intended value |
-| --- | --- |
-| Location | Israel, **Tel Aviv** |
-| Split tunneling | Enabled, **Include mode** |
-| Included websites | **Only `hop.co.il`, including all its subdomains** |
-| Auto-connect | Enabled |
-
-Vimeo, YouTube and unrelated websites stay outside the include list. Other applications do not use the extension's tunnel.
-
-Assigned servers change: IL#734 and then IL#759 on 2026-10-17, IL#751 on 2026-10-18. On 2026-10-18 the extension was found disconnected despite auto-connect, and was reconnected to Tel Aviv from Recents.
+The official Proton VPN Firefox extension is installed and pinned in Zen, signed into the user's account with VPN Plus, with auto-connect on. Its location and split-tunneling rule are in [AGENTS.md](../AGENTS.md#zen-proton-vpn-and-hop). Other applications do not use its tunnel. Assigned servers change: IL#734 and then IL#759 on 2026-10-17, and IL#751 on 2026-10-18, when the extension was found disconnected and was reconnected to Tel Aviv from Recents.
 
 ## Discover through Hop, play through the host
 
