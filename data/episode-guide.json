@@ -17182,6 +17182,7 @@
       "season": null,
       "number": 1,
       "titleEn": "The Land of Israel",
+      "titleHeEditorial": "ארץ ישראל",
       "airDate": "1986",
       "confidence": "documented",
       "sources": [
@@ -17241,6 +17242,7 @@
       "season": null,
       "number": 2,
       "titleEn": "Tel Aviv",
+      "titleHeEditorial": "תל אביב",
       "airDate": "1986",
       "confidence": "documented",
       "sources": [
@@ -17295,6 +17297,7 @@
       "season": null,
       "number": 3,
       "titleEn": "Kibbutz",
+      "titleHeEditorial": "קיבוץ",
       "airDate": "1986",
       "confidence": "documented",
       "sources": [
@@ -17354,6 +17357,7 @@
       "season": null,
       "number": 4,
       "titleEn": "The People of Israel",
+      "titleHeEditorial": "עם ישראל",
       "airDate": "1986",
       "confidence": "documented",
       "sources": [
@@ -17409,6 +17413,7 @@
       "season": null,
       "number": 5,
       "titleEn": "Jerusalem",
+      "titleHeEditorial": "ירושלים",
       "airDate": "1986",
       "confidence": "documented",
       "sources": [
@@ -17476,6 +17481,7 @@
       "season": null,
       "number": 6,
       "titleEn": "Chanukah",
+      "titleHeEditorial": "חנוכה",
       "airDate": "1990",
       "confidence": "documented",
       "sources": [
@@ -17563,6 +17569,7 @@
       "season": null,
       "number": 7,
       "titleEn": "Sing Around the Seasons",
+      "titleHeEditorial": "שרים את עונות השנה",
       "airDate": "1990",
       "confidence": "documented",
       "sources": [
@@ -17607,6 +17614,7 @@
       "season": null,
       "number": 8,
       "titleEn": "Journey to Secret Places",
+      "titleHeEditorial": "מסע למקומות סודיים",
       "airDate": "1990",
       "confidence": "documented",
       "sources": [
@@ -17657,6 +17665,7 @@
       "season": null,
       "number": 9,
       "titleEn": "Aleph-Bet Telethon",
+      "titleHeEditorial": "טלתון האלף־בית",
       "airDate": "1991",
       "confidence": "documented",
       "sources": [
@@ -17724,6 +17733,7 @@
       "season": null,
       "number": 10,
       "titleEn": "Passover",
+      "titleHeEditorial": "פסח",
       "airDate": "1991",
       "confidence": "documented",
       "sources": [
@@ -17807,6 +17817,7 @@
       "season": null,
       "number": 11,
       "titleEn": "Kids Sing Israel",
+      "titleHeEditorial": "ילדים שרים את ישראל",
       "airDate": "1991",
       "confidence": "documented",
       "sources": [
@@ -17866,6 +17877,7 @@
       "season": null,
       "number": 1,
       "titleEn": "Welcome to Israel",
+      "titleHeEditorial": "ברוכים הבאים לישראל",
       "airDate": "2010",
       "confidence": "documented",
       "sources": [
@@ -17958,6 +17970,7 @@
       "season": null,
       "number": 2,
       "titleEn": "Chanukah: The Missing Menorah",
+      "titleHeEditorial": "חנוכה: החנוכייה שנעלמה",
       "airDate": "2010",
       "confidence": "documented",
       "sources": [
@@ -18058,6 +18071,7 @@
       "season": null,
       "number": 3,
       "titleEn": "Shabbat Shalom, Grover!",
+      "titleHeEditorial": "שבת שלום, כרובי!",
       "airDate": "2011",
       "confidence": "documented",
       "sources": [
@@ -18136,6 +18150,7 @@
       "season": null,
       "number": 4,
       "titleEn": "Grover Plants a Tree",
+      "titleHeEditorial": "כרובי נוטע עץ",
       "airDate": "2011",
       "confidence": "documented",
       "sources": [
@@ -18190,6 +18205,7 @@
       "season": null,
       "number": 5,
       "titleEn": "Mitzvah on the Street",
+      "titleHeEditorial": "מצווה ברחוב",
       "airDate": "2011",
       "confidence": "documented",
       "sources": [
@@ -18268,6 +18284,7 @@
       "season": null,
       "number": 6,
       "titleEn": "Be Happy, It's Purim!",
+      "titleHeEditorial": "שמחו, היום פורים!",
       "airDate": "2011",
       "confidence": "documented",
       "sources": [
@@ -18326,6 +18343,7 @@
       "season": null,
       "number": 7,
       "titleEn": "It's Passover, Grover!",
+      "titleHeEditorial": "הגיע פסח, כרובי!",
       "airDate": "2011",
       "confidence": "documented",
       "sources": [
@@ -18388,6 +18406,7 @@
       "season": null,
       "number": 8,
       "titleEn": "Grover Learns Hebrew",
+      "titleHeEditorial": "כרובי לומד עברית",
       "airDate": "2011",
       "confidence": "documented",
       "sources": [
@@ -18458,6 +18477,7 @@
       "season": null,
       "number": 9,
       "titleEn": "Countdown to Shavuot",
+      "titleHeEditorial": "ספירה לאחור לשבועות",
       "airDate": "2011",
       "confidence": "documented",
       "sources": [
@@ -18516,6 +18536,7 @@
       "season": null,
       "number": 10,
       "titleEn": "The Sticky Shofar",
+      "titleHeEditorial": "השופר הדביק",
       "airDate": "2011",
       "confidence": "documented",
       "sources": [
@@ -18578,6 +18599,7 @@
       "season": null,
       "number": 11,
       "titleEn": "Monsters in the Sukkah",
+      "titleHeEditorial": "מפלצות בסוכה",
       "airDate": "2011",
       "confidence": "documented",
       "sources": [
@@ -18640,6 +18662,7 @@
       "season": null,
       "number": 12,
       "titleEn": "Adventures in Israel",
+      "titleHeEditorial": "הרפתקאות בישראל",
       "airDate": "2011",
       "confidence": "documented",
       "sources": [

@@ -3006,6 +3006,29 @@ const ID_STATUS = ['matched', 'none'];
 // title: English never shows it as an original or alternate title, publishedTitle() and the YouTube search words leave it out,
 // and the record page and the identity card show it only in a row labelled as ours (heEdTitle).
 const heEdOf = x => (typeof x.titleHeEditorial === 'string' && x.titleHeEditorial.trim() ? x.titleHeEditorial : '');
+// An editorial Hebrew title is written for a right-to-left line, so the element that shows one is RTL even when the title
+// starts with a Latin word or a bracket ("Crackmaster (בדיבוב לעברית)", "[VHS] שלום סומסום ..."), where dir=auto would lay
+// it out left to right; and its number ranges are left-to-right isolates ("תכניות 1–5"), as in heNote() and iso().
+// edRtl(node, text) makes node show the editorial title `text` that way.
+const NUM_RANGE_G = new RegExp(NUM_RANGE.source, 'g');
+function edRtl(node, text) {
+ node.setAttribute('dir', 'rtl'); partLang(node, text);
+ if (!NUM_RANGE.test(text)) { if (node.textContent !== text) node.textContent = text; return node; }
+ const parts = []; let at = 0;
+ for (const m of text.matchAll(NUM_RANGE_G)) {
+  if (m.index > at) parts.push(txt(text.slice(at, m.index)));
+  parts.push(ltr(m[0], 'num-range')); at = m.index + m[0].length;
+ }
+ if (at < text.length) parts.push(txt(text.slice(at)));
+ node.replaceChildren(...parts); return node;
+}
+// A title element for record or episode x: in the Hebrew interface, an element whose text is x's editorial Hebrew title gets
+// edRtl(); any other title gets `other` (dir=auto by default), so a published title takes the direction of its first strong
+// letter, as on its host.
+function titleDir(node, x, other = dirAuto) {
+ const ed = lang === 'he' ? heEdOf(x) : '';
+ return ed && node.textContent === ed ? edRtl(node, ed) : other(node);
+}
 // Some sources supply only a generic `title` (the builder accepts it); it is the fallback after the language titles.
 const recTitle = r => (lang === 'he' ? r.titleHe || heEdOf(r) || r.titleEn : r.titleEn || r.titleHe) || r.title || r.originalTitle ||
  t('untitled');
@@ -4035,7 +4058,7 @@ function urlBanner(vid) {
   b.append(txt(t('urlHit') + ' '));
   hit.slice(0, 3).forEach((r, i) => {
    if (i) b.append(txt(' · '));
-   const a = dirAuto(go(recRoute(r.id), recTitle(r))); b.append(a);
+   const a = titleDir(go(recRoute(r.id), recTitle(r)), r); b.append(a);
   });
  } else b.append(txt(t('urlMiss', {id: refShown(vid)})));
  return b;
@@ -4182,7 +4205,7 @@ function upNext() {
  const sec = el('section', 'next'); sec.setAttribute('aria-labelledby', 'next-h');
  const art = thumb(b.r.thumbnailUrl, 300, 169); const d = duration(b.r.durationSeconds); if (d) art.append(ltr(d, 'u-dur'));
  const body = el('div', 'next-body'); const h = el('h2', '', t('nextTitle')); h.setAttribute('id', 'next-h');
- const tt = el('p', 'next-title'); const a = dirAuto(go(epRoute(e.id), epTitle(e))); fk(a, 'next-ep');
+ const tt = el('p', 'next-title'); const a = titleDir(go(epRoute(e.id), epTitle(e)), e); fk(a, 'next-ep');
  tt.append(a);
  body.append(h, tt, el('p', 'note', [prodName(p), epCode(e)].filter(Boolean).join(' · ')), accessLine(b.r));
  const actions = el('div', 'next-act'); actions.append(fk(watchLink(b, false, 'btn', epTitle(e)), 'next-watch'));
@@ -4371,7 +4394,7 @@ function productionSection(p, Q, filtered) {
     uh.setAttribute('id', uid); box.append(uh);
     const u = el('div', 'unnum'); u.setAttribute('role', 'group'); u.setAttribute('aria-labelledby', uid);
     for (const e of un) {
-     const a = go(epRoute(e.id), ''); a.append(glyph(covOf(e)), auto('span', '', epTitle(e)));
+     const a = go(epRoute(e.id), ''); a.append(glyph(covOf(e)), titleDir(el('span', '', epTitle(e)), e));
      a.setAttribute('aria-label', epTitle(e) + '. ' + covLabel(e)); u.append(a);
     }
     box.append(u);
@@ -4456,7 +4479,7 @@ function tile(e, p) {
  if (e.number != null) { const n = el('span', 'num'); n.setAttribute('aria-hidden', 'true'); n.textContent = fmtN(e.number); art.append(n); }
  if (watched.has(e.id)) { const w = el('span', 'seen', '✓'); w.setAttribute('aria-hidden', 'true'); art.append(w); }
  const body = el('span', 'tile-body');
- const a = go(epRoute(e.id), epTitle(e), 'tile-title'); a.setAttribute('dir', 'auto'); fk(a, 'ep-' + e.id);
+ const a = titleDir(go(epRoute(e.id), epTitle(e), 'tile-title'), e, n => { n.setAttribute('dir', 'auto'); return n; }); fk(a, 'ep-' + e.id);
  const alts = altText(e);
  a.setAttribute('aria-label', [epCode(e), epTitle(e), alts ? t('alsoLabelled') + ': ' + alts : '', covLabel(e, true),
   t('evidenceLabel', {level: evName(e)}), watched.has(e.id) ? t('seenBadge') : ''].filter(Boolean).join('. '));
@@ -4492,7 +4515,7 @@ function linksSummary(e) {
 function epRow(e, p) {
  const tr = el('tr'), b = bestLink(e);
  tr.append(el('td', 'c-no', e.number != null ? fmtN(e.number) : '–'));
- const tt = el('td', 'c-title'); const a = dirAuto(go(epRoute(e.id), epTitle(e))); fk(a, 'row-' + e.id);
+ const tt = el('td', 'c-title'); const a = titleDir(go(epRoute(e.id), epTitle(e)), e); fk(a, 'row-' + e.id);
  tt.append(a);
  const alt = epAlt(e); if (alt) tt.append(auto('span', 'alt', alt));
  const alts = altText(e);
@@ -4524,7 +4547,7 @@ function queueBlock(p, ids, scoped) {
 function queueItem(r) {
  const li = el('li', 'qitem'); const th = el('span', 'qthumb'); const qi = imgEl(r.thumbnailUrl, 224, 126); if (qi) th.append(qi);
  const d = duration(r.durationSeconds); if (d) th.append(ltr(d, 'u-dur'));
- const tx = el('span', 'qtext'); const a = dirAuto(go(recRoute(r.id), recTitle(r))); fk(a, 'q-' + r.id);
+ const tx = el('span', 'qtext'); const a = titleDir(go(recRoute(r.id), recTitle(r)), r); fk(a, 'q-' + r.id);
  const by = el('span'); if (r.uploader) by.append(bdi(r.uploader), txt(' · ')); by.append(txt(hostLabel(r)));
  tx.append(a, by); li.append(th, tx); return li;
 }
@@ -4554,7 +4577,7 @@ VIEWS.episode = function mountEpisode(v) {
   const d = duration(tr.durationSeconds); if (d) art.append(ltr(d, 'u-dur'));
  } else art = numberArt(e, 'u-art ph', false);
  const info = el('div');
- info.append(el('p', 'kicker', [prodName(p), epCode(e)].filter(Boolean).join(' · ')), h1(epTitle(e)));
+ info.append(el('p', 'kicker', [prodName(p), epCode(e)].filter(Boolean).join(' · ')), titleDir(h1(epTitle(e)), e, n => n));
  const alt = epAlt(e); if (alt) info.append(auto('p', 'lede', alt));
  const alts = altText(e);
  if (alts) { const al = el('p', 'alsolab'); al.append(el('strong', '', t('alsoLabelled') + ': '), altNodes(e)); info.append(al); }
@@ -4684,7 +4707,7 @@ function identityCard(e, p) {
   [t(storyOf(e) ? 'catTitle' : 'hebTitle'), e.titleHe ? auto('span', '', e.titleHe) : ''], [t('storyName'), storyFact(e)],
   [t('engTitle'), e.titleEn ? auto('span', '', e.titleEn) : ''],
   // Our Hebrew translation, in its own row so that it is never taken for a published title.
-  [t('heEdTitle'), heEdOf(e) ? auto('span', '', heEdOf(e)) : '']]));
+  [t('heEdTitle'), heEdOf(e) ? edRtl(el('span'), heEdOf(e)) : '']]));
  // Items keep the page direction, so every bullet sits on the start edge; each item's text is its own dir=auto isolate.
  const list = () => {
   const ul = el('ul'); ul.style.margin = '0'; ul.style.paddingInlineStart = '0'; ul.style.listStylePosition = 'inside';
@@ -4720,7 +4743,10 @@ function uploadRow(r, role, partNo, partCount, epCheck) {
  art.append(el('span', 'u-host', hostLabel(r)));
  const body = el('div', 'urow-body'); const h = el('h4');
  const a = go(recRoute(r.id), partNo ? t('partOf', {i: fmtN(partNo), n: fmtN(partCount)}) + ' · ' : '');
- a.setAttribute('dir', 'auto'); a.append(langText(recTitle(r))); fk(a, 'ur-' + r.id); h.append(a); body.append(h);
+ // A part prefix comes first; the title itself is an RTL span when it is the editorial Hebrew title.
+ const ed = lang === 'he' && heEdOf(r) && recTitle(r) === heEdOf(r);
+ a.setAttribute('dir', ed ? 'rtl' : 'auto'); a.append(ed ? edRtl(el('span'), heEdOf(r)) : langText(recTitle(r))); fk(a, 'ur-' + r.id);
+ h.append(a); body.append(h);
  const pub = publishedTitle(r); if (pub && normalize(pub) !== normalize(recTitle(r))) body.append(auto('p', 'u-pub', pub));
  const m = el('p', 'urow-meta'); m.append(el('span', '', t('role_' + role))); if (r.uploader) m.append(bdi(r.uploader));
  m.append(el('span', '', t(r.sourceType === 'official' ? 'official' : 'community')), el('span', '', t('upCheck', {level: t('ev_' + recEv(r))})));
@@ -4876,7 +4902,7 @@ const topTier = sg => sg.filter(s => s.score === sg[0].score);
 function codeTitle(e) {
  const f = document.createDocumentFragment(), c = epCode(e);
  if (c) f.append(bdi(c), txt(' · '));
- f.append(bdi(epTitle(e))); return f;
+ f.append(titleDir(bdi(epTitle(e)), e, n => n)); return f;
 }
 function suggestionLink(sg, compact = false) {
  if (sg.e) {
@@ -4898,7 +4924,7 @@ VIEWS.record = function mountRecord(v) {
  if (links.length && (matchedIds.has(r.id) || !qp)) {
   const e = links[0].e;
   v.append(crumbs([go('guide', t('guideTitle')), go(prodRoute(e.production), prodName(prodById.get(e.production))),
-   dirAuto(go(epRoute(e.id), epTitle(e)))]));
+   titleDir(go(epRoute(e.id), epTitle(e)), e)]));
  } else if (qp) v.append(crumbs([go('guide', t('guideTitle')), go(prodRoute(qp), prodName(prodById.get(qp)))]));
  // An upload outside the guide is catalogued, so it is filed under Identified videos.
  else v.append(crumbs(hasGuide ? [go('browse', t('navBrowse')), go('browse/identified', t('navIdentified'))] : [go('browse', t('navBrowse'))]));
@@ -4908,7 +4934,7 @@ VIEWS.record = function mountRecord(v) {
  art.append(fk(el('span', 'u-host', hostLabel(r)), 'rec-host')); media.append(art);
  const info = el('div');
  info.append(el('p', 'u-kicker', [pick(...(SERIES[r.series] || [r.series])), pick(r.subseriesEn, r.subseriesHe)].filter(Boolean).join(' · ')),
-  h1(recTitle(r)));
+  titleDir(h1(recTitle(r)), r, n => n));
  const pub = publishedTitle(r); if (pub && normalize(pub) !== normalize(recTitle(r))) info.append(auto('p', 'lede', pub));
  const prim = el('div', 'primary'); if (destination(r)) prim.append(fk(recWatch(r, 'btn big'), 'rec-watch'));
  const hopPage = [r.hopUrl, r.url].map(safeUrl).find(u => u && isHopUrl(u) && !/\/wp-json\//.test(u));
@@ -4927,7 +4953,7 @@ VIEWS.record = function mountRecord(v) {
  const fc = el('section', 'card'), prod = r.production && prodById.get(r.production);
  fc.append(facts([[t('origTitle'), auto('span', '', publishedTitle(r))],
   [t('engTitle'), r.titleEn && r.titleEn !== publishedTitle(r) ? auto('span', '', r.titleEn) : ''],
-  [t('heEdTitle'), heEdOf(r) ? auto('span', '', heEdOf(r)) : ''],
+  [t('heEdTitle'), heEdOf(r) ? edRtl(el('span'), heEdOf(r)) : ''],
   [t('uploader'), r.uploader ? auto('span', '', r.uploader) : ''], [t('sourceType'), t(r.sourceType === 'official' ? 'official' : 'community')],
   [t('seriesLbl'), pick(...(SERIES[r.series] || [r.series]))], [t('subseries'), pick(r.subseriesEn, r.subseriesHe)],
   [t('recProduction'), prod ? go(prodRoute(prod.id), prodName(prod)) : typeof r.production === 'string' ? en('span', '', r.production) : ''],
@@ -4978,7 +5004,7 @@ function recordGuideCard(r, links, qp) {
   const ul = el('ul'); ul.style.margin = '0'; ul.style.paddingInlineStart = '18px';
   for (const {e, role} of links) {
    const li = el('li'), a = go(epRoute(e.id), [prodName(prodById.get(e.production)), epCode(e)].filter(Boolean).join(' · ') + ' · ');
-   a.append(bdi(epTitle(e)));
+   a.append(titleDir(bdi(epTitle(e)), e, n => n));
    const src = evSource(e), ck = src && src.r.id === r.id ? ' · ' + t('upEpCheck', {level: t('ev_' + src.level)}) : '';
    li.append(a, el('span', 'note', ' · ' + t('roleAs', {role: t('role_' + role)}) + ck));
    ul.append(li);
@@ -5269,7 +5295,7 @@ function uploadCard(r) {
  art.append(el('span', 'u-host', hostLabel(r)));
  const body = el('div', 'u-body');
  body.append(el('p', 'u-kicker', [pick(...(SERIES[r.series] || [r.series])), pick(r.subseriesEn, r.subseriesHe)].filter(Boolean).join(' · ')));
- const h = el('h3', 'u-title'); const a = dirAuto(go(recRoute(r.id), recTitle(r))); fk(a, 'card-' + r.id);
+ const h = el('h3', 'u-title'); const a = titleDir(go(recRoute(r.id), recTitle(r)), r); fk(a, 'card-' + r.id);
  h.append(a); body.append(h);
  const pub = publishedTitle(r);
  if (pub && normalize(pub) !== normalize(recTitle(r))) { const p = auto('p', 'u-pub', pub); p.setAttribute('title', pub); body.append(p); }
@@ -5439,7 +5465,7 @@ function groupRows(sid, groups) {
 function todoEpRow(e, watchIt) {
  const p = prodById.get(e.production), li = el('li', 'trow'), tr = epThumbRecord(e);
  li.append(tr ? thumb(tr.thumbnailUrl, 192, 108) : numberArt(e, 'u-art ph', false));
- const m = el('div', 'trow-main'); const a = dirAuto(go(epRoute(e.id), epTitle(e))); fk(a, 'td-' + e.id);
+ const m = el('div', 'trow-main'); const a = titleDir(go(epRoute(e.id), epTitle(e)), e); fk(a, 'td-' + e.id);
  m.append(a);
  const n = upsOf(e).length + possOf(e).length;
  m.append(el('span', 'trow-sub', [epCode(e), covLabel(e), n ? t('linked', {what: linksSummary(e)}) : ''].filter(Boolean).join(' · ')));
@@ -5454,7 +5480,7 @@ function todoRecRow(r) {
  const li = el('li', 'trow'); const art = thumb(r.thumbnailUrl, 192, 108); const d = duration(r.durationSeconds);
  if (d) art.append(ltr(d, 'u-dur'));
  li.append(art);
- const m = el('div', 'trow-main'); const a = dirAuto(go(recRoute(r.id), recTitle(r))); fk(a, 'tq-' + r.id); m.append(a);
+ const m = el('div', 'trow-main'); const a = titleDir(go(recRoute(r.id), recTitle(r)), r); fk(a, 'tq-' + r.id); m.append(a);
  const sub = el('span', 'trow-sub'); if (r.uploader) sub.append(bdi(r.uploader), txt(' · '));
  sub.append(txt(hostLabel(r) + ' · '), ltr(d || t('durationUnknown'))); m.append(sub);
  // A possible copy names the episodes it may be; otherwise every equally likely best match is shown, never just the first.

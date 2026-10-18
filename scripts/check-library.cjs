@@ -1881,6 +1881,7 @@ function edgePayload(p) {
   // with one, 2 has no English title, 3 and 4 have a published titleHe or storyHe beside one (the builder refuses that; the app
   // shows the published title), and 5's is blank (refused too; ignored). The Shalom Sesame episode is searched by its English
   // title. Each value has a nonsense word (זק...) that occurs nowhere else, for search and for "shown nowhere else" checks.
+  // Episode 2's value and the edge-ed-latin clip's start with a Latin word or bracket and have a number range (laid out RTL).
   const edRec = add({id: 'edge-ed-rec', url: 'https://www.youtube.com/watch?v=EdgeHeEdRc1', series: 'classic', kind: 'episode',
     titleEn: 'Edge editorial upload', originalTitle: 'Edge Upload As Published', titleHeEditorial: 'העלאה בעריכת המערכת זקהעלאה',
     durationSeconds: 1610, production: EDGE.edited, guideEpisodeId: EDGE.edited + '-1'});
@@ -1892,13 +1893,15 @@ function edgePayload(p) {
     titleEn: 'Edge editorial blank', titleHeEditorial: '   '});
   const edQueued = add({id: 'edge-ed-queued', url: 'https://www.youtube.com/watch?v=EdgeHeEdQu1', series: 'classic', kind: 'unverified',
     titleEn: 'Edge editorial queued', titleHeEditorial: 'העלאה ממתינה בעריכת המערכת זקתור', durationSeconds: 1500});
+  add({id: 'edge-ed-latin', url: 'https://www.youtube.com/watch?v=EdgeHeEdLt1', series: 'shalom-modern', kind: 'clip',
+    titleEn: 'Edge editorial Latin first', titleHeEditorial: 'Edgemaster (תכניות 1–5) זקלטיני', durationSeconds: 80});
   g.productions.push({id: EDGE.edited, series: 'classic', format: 'core', order: 0.6, years: '1984', nameEn: 'Edge edited series',
     nameHe: 'סדרה בעריכה לבדיקה', expectedTotal: 5, totalsEvidence: [], seasons: []});
   const edited = (n, extra) => g.episodes.push({id: EDGE.edited + '-' + n, production: EDGE.edited, season: null, number: n,
     confidence: 'documented', uploads: [], ...extra});
   edited(1, {titleEn: 'Edge edited episode', titleHeEditorial: 'פרק בעריכת המערכת זקפרק',
     uploads: [{recordId: edRec.id, role: 'whole-candidate'}]});
-  edited(2, {titleHeEditorial: 'פרק בלי כותרת באנגלית זקבלי'});
+  edited(2, {titleHeEditorial: '[VHS] פרק בלי כותרת באנגלית 1–5 זקבלי'});
   edited(3, {titleEn: 'Edge edited published', titleHe: 'כותרת שפורסמה לפרק', titleHeEditorial: 'זקמוסתר פרק'});
   edited(4, {titleEn: 'Edge edited story', titleHe: 'סדרה בעריכה <4>', storyHe: 'סיפור שפורסם לבדיקה', storySourceEn: 'Edge file label',
     titleHeEditorial: 'זקמוסתר סיפור'});
@@ -2527,8 +2530,27 @@ async function checkEditorialTitles(H, M) {
       assert.deepEqual(langIssues(H.view(), lang), [], where + ': language of parts');
     }
   };
+  // An editorial Hebrew title is written for a right-to-left line: the element showing it is RTL even when the title starts with
+  // a Latin word or a bracket (dir=auto would lay it out left to right), and a number range in it is an LTR isolate, as in Hebrew
+  // notes; its text is unchanged. Published titles keep dir=auto.
+  const latin = M.recById.get('edge-ed-latin');
+  const edSpan = dd => dd && dd.children.find(c => c && c.tagName === 'span');
+  const rtlTitle = (n, value, where) => {
+    assert(n, where + ': shown');
+    assert.equal(n.textContent, value, where + ': text');
+    assert.equal(n.getAttribute('dir'), 'rtl', where + ': laid out right to left');
+    const range = (value.match(/\d+\s*–\s*\d+/) || [])[0];
+    const iso = n.children.filter(c => c && c.getAttribute && c.getAttribute('dir') === 'ltr').map(c => c.textContent);
+    assert.deepEqual(iso, range ? [range] : [], where + ': its number range is an LTR isolate');
+  };
   // English: the English titles everywhere; the editorial Hebrew title only in its labelled row.
   await pages('en');
+  for (const [route, x] of [['record/' + enc(latin.id), latin], ['episode/' + enc(e2.id), e2]]) {
+    await H.navigate(route); const span = edSpan(factIn(H, 'en', 'heEdTitle'));
+    rtlTitle(span, x.titleHeEditorial, 'en #/' + route + ': the editorial Hebrew title row');
+    assert.equal(span.getAttribute('lang'), 'he', 'en #/' + route + ': and is Hebrew');
+    assert.notEqual(H.h1().getAttribute('dir'), 'rtl', 'en #/' + route + ': the English heading keeps dir=auto');
+  }
   const marks = recs.concat(eps).map(heEdOf).filter(Boolean);
   for (const route of ['guide/' + EDGE.edited + '?layout=album', 'guide/' + EDGE.edited + '?layout=list', 'guide/' + EDGE.editedShalom,
     'browse?q=Edge%20editorial', 'browse/missing', 'browse/unidentified', 'todo']) {
@@ -2561,6 +2583,19 @@ async function checkEditorialTitles(H, M) {
   // Hebrew: the editorial titles head and name the items with no published Hebrew title.
   await H.$('lang').click();
   await pages('he');
+  await H.navigate('episode/' + enc(e2.id)); rtlTitle(H.h1(), e2.titleHeEditorial, 'Hebrew bracket-first editorial heading');
+  rtlTitle(edSpan(factIn(H, 'he', 'heEdTitle')), e2.titleHeEditorial, 'and its labelled row');
+  await H.navigate('episode/' + enc(e1.id)); rtlTitle(H.h1(), e1.titleHeEditorial, 'Hebrew editorial heading without a range');
+  await H.navigate('episode/' + enc(e3.id));
+  assert.equal(H.h1().getAttribute('dir'), 'auto', 'A published Hebrew title heading keeps dir=auto');
+  await H.navigate('record/' + enc(latin.id)); rtlTitle(H.h1(), latin.titleHeEditorial, 'Hebrew Latin-first editorial record heading');
+  await H.navigate('browse?q=' + enc('זקלטיני')); H.flushTimers();
+  rtlTitle(H.fk('card-' + latin.id), latin.titleHeEditorial, 'Hebrew Latin-first editorial upload card');
+  await H.navigate('guide/' + EDGE.edited + '?layout=album');
+  rtlTitle(H.fk('ep-' + e2.id), e2.titleHeEditorial, 'Hebrew editorial tile');
+  assert.equal(H.fk('ep-' + e3.id).getAttribute('dir'), 'auto', 'A published Hebrew title tile keeps dir=auto');
+  await H.navigate('guide/' + EDGE.edited + '?layout=list'); rtlTitle(H.fk('row-' + e2.id), e2.titleHeEditorial, 'Hebrew editorial list row');
+  await H.navigate('browse/missing'); rtlTitle(H.fk('td-' + e2.id), e2.titleHeEditorial, 'Hebrew editorial Missing episodes row');
   await H.navigate('guide/' + EDGE.edited + '?layout=album');
   for (const e of [e1, e2, e3, e4, e5]) {
     const a = H.fk('ep-' + e.id); assert.equal(a.textContent, M.epTitle(e, 'he'), 'Hebrew tiles: ' + e.id);
@@ -2607,7 +2642,8 @@ async function checkEditorialTitles(H, M) {
   ok('editorial Hebrew titles: Hebrew headings, document.title, tiles, rows, Missing episodes, to-do and Videos to identify rows, upload ' +
     'cards and rows, record links, Up next, Starred and star labels use titleHeEditorial without a published Hebrew title; titleHe and ' +
     'storyHe come first; blank values ignored; English shows it only in the labelled row; search finds it; the published-title ' +
-    'lines and YouTube search words leave it out; the export names it');
+    'lines and YouTube search words leave it out; the export names it; it is laid out RTL, also when it starts with a Latin word ' +
+    'or bracket, with its number ranges as LTR isolates, while published titles keep dir=auto');
 }
 
 // Starred counts include only stars that match a record; unknown values in the hash are dropped; old #/saved links work.
