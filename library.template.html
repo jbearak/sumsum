@@ -20,7 +20,7 @@
      :root[data-palette=NAME] (every palette token) and :root[data-palette=NAME][data-scheme=dark] (at least the tokens
      the default dark block sets), and its swatch in the theme picker (.tp-sw-NAME) shares both blocks. A palette may also
      override a shared colour, in both of its blocks: the palettes other than green tint the unknown greys (--unknown,
-     --unknown-bg) to their own surfaces. AGENTS.md ("UI preferences") says how to add one;
+     --unknown-bg) to their own surfaces. docs/library-ui.md ("Themes and appearance") says how to add one;
      scripts/check-library.cjs checks the tokens and their contrast in every palette and scheme. */
 :root{color-scheme:light;
  --font:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans Hebrew","Arial Hebrew",Arial,sans-serif;
@@ -95,7 +95,7 @@
  --brand:#7c2d1a;--primary:#a63f22;--primary-ink:#fff;--primary-hover:#86321a;
  --accent:#f2b544;--focus:#1d5fb3;--link:#1c58a0;--chip:#f1e5db;--chip-ink:#5c4237;
  --art-veil:#fffcf9cc;--shadow:0 1px 2px #3a1a100f,0 6px 18px #3a1a100d;
- --mast-ink:#fff;--mast-ink-soft:#fbe9e1;--mast-hover:#ffffff18;--mast-chip:#ffffff26;
+ --mast-ink:#fff;--mast-ink-soft:#fff4ef;--mast-hover:#ffffff18;--mast-chip:#ffffff26;
  --mast-current:#fff;--mast-current-ink:#7c2d1a;--mast-ctl:#ffffff14;--mast-ctl-hover:#ffffff26;--mast-ctl-line:#ffffff80;
  --mast-focus:#f2b544;--mast-divider:#ffffff59;--mast-current-divider:#7c2d1a99;
  --unknown:#887d76;--unknown-bg:#f3eee9}
@@ -148,7 +148,8 @@
 
 /* ---------- base ---------- */
 *{box-sizing:border-box}
-html{background:var(--bg)}
+/* The gutter is kept on short pages too, so classic scrollbars never move the masthead between routes. */
+html{background:var(--bg);scrollbar-gutter:stable}
 body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 var(--font);-webkit-text-size-adjust:100%}
 button,input,select{font:inherit;color:inherit}
 button{cursor:pointer}
@@ -184,6 +185,7 @@ html[dir=rtl] .tabs{direction:rtl}
 .tab-count{font-size:11px;font-weight:700;background:var(--mast-chip);border-radius:99px;padding:1px 7px;
  font-variant-numeric:tabular-nums}
 .tab[aria-current] .tab-count{background:var(--mast-current-ink);color:var(--mast-current)}
+.tab-count .cnt-short{display:none}
 /* Browse is a split control: the label opens #/browse; the arrow button discloses a menu of the three Browse pages. At rest
    the two halves read as one tab, "Browse ˅", with no divider and the arrow close to the label. Each half is its own
    control: hovering lights only the half under the pointer, and hovering or focusing either half shows a faint short
@@ -282,7 +284,7 @@ html[dir=rtl] .tp{direction:rtl}
 .kicker{font-size:11.5px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin:0}
 [dir=rtl] .kicker,[dir=rtl] .rail-fam,[dir=rtl] .u-kicker,[dir=rtl] .fmt,[dir=rtl] .fh{letter-spacing:0}
 
-/* ---------- glyphs, pips, chips, tags ---------- */
+/* ---------- glyphs, evidence badges, chips, tags ---------- */
 .glyph{--c:var(--unknown);--f:0%;display:inline-block;width:12px;height:12px;border-radius:50%;border:2px solid var(--c);
  background:conic-gradient(var(--c) var(--f),transparent 0);flex:none;vertical-align:-1px}
 .g-whole{--c:var(--whole);--f:100%}
@@ -291,11 +293,10 @@ html[dir=rtl] .tp{direction:rtl}
 .g-missing{--c:var(--missing);--f:0%}
 .g-slot{--c:var(--unknown);border-style:dotted}
 .g-gap{--c:var(--unknown);border-style:dashed;border-radius:3px}
-.pips{display:inline-flex;gap:2px;align-items:flex-end;flex:none}
-.pips i{width:5px;border-radius:1px;background:var(--line-strong)}
-.pips i:nth-child(1){height:5px}.pips i:nth-child(2){height:8px}.pips i:nth-child(3){height:11px}.pips i:nth-child(4){height:14px}
-.pips i.on{background:var(--ink)}
-.pips.none i{background:transparent;border:1px dashed var(--line-strong)}
+/* Evidence is said in words (request 06: the four rising bars read as signal strength). A badge marks the levels above the
+   baseline on tiles and compact rows; it is text, with no check mark, so it never looks like the user's own Watched mark. */
+.ev-badge{display:inline-block;min-width:0;font-size:10.5px;font-weight:700;line-height:1.3;border-radius:5px;padding:1px 6px;
+ background:var(--chip);color:var(--chip-ink);white-space:normal;overflow-wrap:normal}
 .chip{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line-strong);background:var(--surface);
  border-radius:99px;padding:4px 12px;font-size:13px;font-weight:650;min-height:36px;line-height:1.2}
 .chip:hover{border-color:var(--ink)}
@@ -569,7 +570,11 @@ details.legend>summary{cursor:pointer;padding:9px 14px;font-size:13px;font-weigh
 .tile-alt{font-size:11px;color:var(--muted);line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;
  overflow:hidden;overflow-wrap:anywhere}
 .tile-meta{display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--muted);margin-top:auto}
-.tile-meta .pips{margin-inline-start:auto}
+.tile-meta .ev-badge{margin-inline-start:auto;flex:0 1 auto}
+/* A badge that does not fit beside the coverage word goes to its own line, so neither is broken. */
+.tile-meta.has-ev{flex-wrap:wrap;row-gap:3px}
+/* On a phone the List hides its Evidence column, so a row shows the badge of a stronger level under its title. */
+.eptable .c-title .ev-inline{display:none}
 .tile-act{position:relative;z-index:2;padding:0 8px 8px}
 .tbtn{display:flex;flex-wrap:wrap;align-items:center;align-content:center;justify-content:center;justify-content:safe center;
  gap:1px 5px;width:100%;min-height:34px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface-2);
@@ -605,7 +610,7 @@ details.legend>summary{cursor:pointer;padding:9px 14px;font-size:13px;font-weigh
 .eptable .c-title a{font-weight:650;color:var(--ink);text-decoration:none}
 .eptable .c-title a:hover{text-decoration:underline}
 .eptable .alt{display:block;font-size:12px;color:var(--muted)}
-.eptable .c-cov,.eptable .c-ev{white-space:nowrap}
+.eptable .c-cov{white-space:nowrap}
 .cell-flex{display:inline-flex;gap:7px;align-items:center}
 .eptable .c-act{text-align:end;white-space:nowrap}
 /* List rows carry the long Watch label and the tile's short one; phones show the short one (the link name stays long). */
@@ -869,8 +874,15 @@ details.about>summary{cursor:pointer;font-weight:700;padding:12px 0;font-size:14
  .tab-ico{display:block;line-height:0}
  .tab-ico svg{width:20px;height:20px}
  .tab .long{display:none}.tab .short{display:inline}
- .tab-count{position:absolute;inset-block-start:2px;inset-inline-start:calc(50% + 6px);min-width:16px;padding:0 4px;
+ /* The badge sits on the icon's top corner, so a three-character "99+" stays inside a 320 px phone's tab. Over 99 it
+    reads "99+"; the full count stays in the accessible name, visually hidden. */
+ .tab-count{position:absolute;inset-block-start:2px;inset-inline-start:calc(50% + 2px);min-width:16px;padding:0 3px;
   font-size:9.5px;line-height:15px;text-align:center}
+ .tab-count.capped{padding:0 2px;letter-spacing:-.3px}
+ /* Over the icon the chip tint sits on the masthead colour, so the icon's lines do not show through the count. */
+ .tab-count{background:linear-gradient(var(--mast-chip),var(--mast-chip)),var(--brand)}
+ .tab-count .cnt-full{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap}
+ .tab-count .cnt-short{display:inline}
  /* The menu spans the masthead (positioned) below its band, so it stays on screen in both directions. */
  .tab-split{position:static}
  .tab-split>.tab-browse{flex:1 1 auto;padding-inline-end:3px}
@@ -899,6 +911,7 @@ details.about>summary{cursor:pointer;font-weight:700;padding:12px 0;font-size:14
  .fline .fh{min-width:0;width:100%}
  .tiles{grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
  .eptable .c-ev,.eptable .c-links{display:none}
+ .eptable .c-title .ev-inline{display:table;margin-top:3px}
  .urow{grid-template-columns:112px minmax(0,1fr)}
  .urow-actions{grid-column:1/-1;justify-content:space-between}
  .ugrid{grid-template-columns:1fr 1fr;gap:12px}
@@ -924,7 +937,14 @@ details.about>summary{cursor:pointer;font-weight:700;padding:12px 0;font-size:14
  /* One palette per row: two columns would cut a long name ("Terracotta") beside its swatch and check mark. */
  .tp-pals{grid-template-columns:minmax(0,1fr)}
  .lang-opt{min-height:30px;padding:0 5px;font-size:12px}
+ /* The ring stays 2 px outside the option, clear of the other option's label beside it. */
+ .lang-opt:focus-visible{outline-offset:-1px}
  .lang-long{display:none}.lang-short{display:inline}
+ /* The popover is placed from the masthead band, whose box leaves out a classic scrollbar (100vw counts it), so it never runs
+    past the left edge: 10 px in from both sides of the band, at most 360 px wide, against the right side, 8 px below the
+    band's 4 px border. */
+ .mast-tools{position:static}
+ .tp{left:10px;right:10px;width:auto;max-width:360px;margin-left:auto;top:calc(100% + 12px)}
  .tiles{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
  .tile-body{padding:6px 7px 4px;gap:3px}
  .tile-title{font-size:12px}
@@ -983,7 +1003,9 @@ details.about>summary{cursor:pointer;font-weight:700;padding:12px 0;font-size:14
  /* The open Browse arrow and the current Browse page keep a non-colour mark. Hover backgrounds do not show in forced colours,
     so a short system-colour separator keeps the label and the arrow apart. */
  .tab-more[aria-expanded=true]{outline:2px solid CanvasText;outline-offset:-4px}
- .tab-more::before{opacity:1;forced-color-adjust:none;background:CanvasText}
+ .tab-more::before,.tab-split.cur>.tab-more::before{opacity:1;forced-color-adjust:none;background:CanvasText}
+ /* The current mark sits inside the Browse label's 3 px end padding, so it never crosses the label's last letter. */
+ .tab-split>.tab-browse[aria-current]{outline-offset:-2px}
  .bm-item[aria-current] .bm-label,.foot-links a[aria-current]{text-decoration:underline;text-decoration-thickness:2px;
   text-underline-offset:4px}
  .bm-item[aria-current]{border-inline-start-color:Highlight}
@@ -1068,6 +1090,19 @@ details.about>summary{cursor:pointer;font-weight:700;padding:12px 0;font-size:14
      tabindex="-1"><span class="lang-long">עברית</span><span class="lang-short">עב</span></button>
     <span class="lang-thumb" aria-hidden="true"></span>
    </div>
+   <script id="lang-boot">
+   // The toggle shows the stored language from the first paint. The application script comes after the embedded data, so
+   // without this the page would first draw English checked and then slide the thumb over. Same choice as the application:
+   // data-start-lang, else the stored 'sumsum-language'; anything but Hebrew leaves the markup's English.
+   (() => {
+    let l = document.documentElement.getAttribute('data-start-lang');
+    if (!l) { try { l = JSON.parse(localStorage.getItem('sumsum-language')); } catch { l = null; } }
+    if (l !== 'he') return;
+    for (const o of [document.getElementById('lang-en'), document.getElementById('lang-he')]) {
+     const on = o.getAttribute('lang') === l; o.setAttribute('aria-checked', String(on)); o.setAttribute('tabindex', on ? '0' : '-1');
+    }
+   })();
+   </script>
   </div>
  </div>
 </header>
@@ -1118,8 +1153,8 @@ en: {
  navIdentified: 'Identified videos',
  navUnidentified: 'Videos to identify',
  navMissing: 'Missing episodes',
- descIdentified: 'Matched to an episode, or catalogued as a clip, song or compilation',
- descUnidentified: 'Not matched to an episode yet',
+ descIdentified: 'Matched to an episode, or catalogued outside the episode guide',
+ descUnidentified: 'In an identification queue, or only a possible copy of an episode',
  descMissing: 'Documented episodes with no whole copy linked',
  newTab: 'opens in a new tab',
  untitled: 'Untitled',
@@ -1140,6 +1175,7 @@ en: {
  inferTag: 'inference',
  floorNote: 'Totals are unknown or contested for {list}. The real number is higher, so no percentage is shown.',
  queueLink: '{n} uploads await identification',
+ queueLinkOne: 'One upload awaits identification',
  sepTitle: 'Counted separately',
  sepStat: '{known} identified · {whole} whole',
  sepStatOf: '{known} of {total} identified · {whole} whole',
@@ -1225,7 +1261,7 @@ en: {
  cov_missing: 'Missing',
  cov_slot: 'Expected, not identified',
  cov_gap: 'Number not identified',
- 'covLong_whole-candidate': 'At least one upload appears to hold the whole program. Unverified until someone watches it in full.',
+ 'covLong_whole-candidate': 'At least one upload appears to hold the whole program. Unverified until it is checked in full.',
  'covLong_parts-only': 'Only numbered parts or story segments are linked; together they may not cover the program.',
  'covLong_excerpt-only': 'Only excerpts, songs or scenes are linked.',
  covLong_missing: 'The episode is documented, but no upload has been found.',
@@ -1238,15 +1274,15 @@ en: {
  'covWhole_home-video': 'Whole tape link (unverified)',
  ev_none: 'Nothing to check yet',
  evNoneLong: 'No upload is linked, so no check has been made.',
- 'ev_metadata-checked': 'Metadata checked',
- 'ev_playback-started': 'Playback started',
- 'ev_complete-playback-reviewed': 'Watched in full',
+ 'ev_metadata-checked': 'Details checked, not test-played',
+ 'ev_playback-started': 'Seen to play',
+ 'ev_complete-playback-reviewed': 'Checked in full',
  'ev_reference-compared': 'Compared with a reference',
- 'evLong_metadata-checked': 'Title, uploader and length were read from the host. Playback was not tested.',
- 'evLong_playback-started': 'Playback was seen to start on the exact URL. The whole video was not watched.',
- 'evLong_complete-playback-reviewed': 'The whole upload was watched and the result recorded with its URL and date.',
+ 'evLong_metadata-checked': 'Title, uploader and length were read from the host. It has not been test-played.',
+ 'evLong_playback-started': 'Playback was seen to start on the exact URL. The whole video was not checked.',
+ 'evLong_complete-playback-reviewed': 'The whole upload was played through and the result recorded with its URL and date.',
  'evLong_reference-compared': 'Checked against a reference edition for cuts and completeness.',
- evidenceLabel: 'Evidence: {level}',
+ evTileNote: 'Tiles show a badge only for the levels above this one, which every linked episode has.',
  num_documented: 'Documented numbering',
  num_provisional: 'Listing-order numbering',
  num_uploader: 'Uploader numbering',
@@ -1327,7 +1363,7 @@ en: {
  unavailableQ: 'Unavailable',
  searchYoutube: 'Search YouTube',
  findAria: 'Search YouTube for {title}',
- acc_played: 'Playback started without VPN in a check',
+ acc_played: 'Seen to play without a VPN',
  acc_local: 'Your pasted Vimeo link',
  acc_vimeo: 'Vimeo · direct link, playback not tested',
  acc_public: '{host} · public, playback not tested',
@@ -1448,9 +1484,10 @@ en: {
  identifiedTitle: 'Identified videos',
  identifiedLede: 'Every upload that is not awaiting identification: uploads matched to an episode, and clips, songs, promos, ' +
   'compilations and listings catalogued outside the episode guide.',
- identifiedNote: 'Uploads not matched to an episode yet are listed under {link}.',
+ identifiedNote: 'Uploads awaiting identification are listed under {link}.',
  unidentifiedTitle: 'Videos to identify',
- unidentifiedLede: 'Uploads not matched to an episode yet, core Rechov Sumsum first. Some may be whole episodes; others are ' +
+ unidentifiedLede: 'Uploads in a production\'s identification queue, and uploads linked only as a possible copy of an episode, ' +
+  'core Rechov Sumsum first. Some may be whole episodes; others are ' +
   'parts or segments whose episode is unknown. A possible copy probably holds the episode named beside it, but the match is ' +
   'unresolved.',
  onlyProd: 'Showing {name} only.',
@@ -1494,7 +1531,7 @@ en: {
  kindHelp: 'Full episodes and short-series installments are separate. A six-minute installment is complete within its own ' +
   'series; it is not a full Rechov Sumsum episode. Select none to include all types.',
  gsMatched: 'Matched to an episode',
- gsQueue: 'Awaiting identification',
+ gsQueue: 'In an identification queue',
  gsNone: 'Not in the guide',
  agDirect: 'Vimeo direct',
  agPublic: 'Public pages',
@@ -1531,9 +1568,9 @@ en: {
  aboutTitle: 'About, evidence levels and backup',
  about1: 'This guide indexes public video pages. It contains no video files. Upload counts and episode counts are separate: ' +
   'alternate hosts, duplicate editions and numbered parts all belong to one episode.',
- about2: 'Coverage says what kind of link exists. Evidence says how far it was checked: metadata checked, playback started, ' +
-  'watched in full, or compared with a reference edition. A whole-program link stays unverified until someone watches it in ' +
-  'full.',
+ about2: 'Coverage says what kind of link exists. Evidence says how far the project checked it: details checked but not ' +
+  'test-played, seen to play, checked in full, or compared with a reference edition. A whole-program link stays unverified ' +
+  'until it is checked in full. Evidence is about the link, not about what you watched.',
  about3: 'English titles, Hebrew titles where no Hebrew title was published, and theme and character tags are editorial. ' +
   'Each upload keeps its published title and uploader.',
  about4: 'Hop pages need an Israeli connection. Direct Vimeo links found on Hop pages open on Vimeo, outside the Hop-only VPN ' +
@@ -1698,13 +1735,13 @@ he: {
  navStarred: 'מסומנים בכוכב',
  navGuideShort: 'מדריך',
  navBrowseShort: 'עיון',
- navStarredShort: 'בכוכב',
+ navStarredShort: 'מסומנים',
  browseMenu: 'תפריט עיון',
  navIdentified: 'סרטונים מזוהים',
  navUnidentified: 'סרטונים לזיהוי',
  navMissing: 'פרקים חסרים',
- descIdentified: 'מותאמים לפרק, או מקוטלגים כקטע, שיר או אוסף',
- descUnidentified: 'עדיין לא הותאמו לפרק',
+ descIdentified: 'מותאמים לפרק, או מקוטלגים מחוץ למדריך הפרקים',
+ descUnidentified: 'בתור לזיהוי, או רק עותק אפשרי של פרק',
  descMissing: 'פרקים מתועדים שלא קושר להם עותק שלם',
  newTab: 'נפתח בכרטיסייה חדשה',
  untitled: 'ללא שם',
@@ -1725,6 +1762,7 @@ he: {
  inferTag: 'הסקה',
  floorNote: 'הסך אינו ידוע או שנוי במחלוקת עבור {list}. המספר האמיתי גבוה יותר, ולכן לא מוצג אחוז.',
  queueLink: '{n} העלאות ממתינות לזיהוי',
+ queueLinkOne: 'העלאה אחת ממתינה לזיהוי',
  sepTitle: 'נספרים בנפרד',
  sepStat: '{known} זוהו · {whole} שלמים',
  sepStatOf: '{known} מתוך {total} זוהו · {whole} שלמים',
@@ -1810,7 +1848,7 @@ he: {
  cov_missing: 'חסר',
  cov_slot: 'צפוי, טרם זוהה',
  cov_gap: 'מספר שטרם זוהה',
- 'covLong_whole-candidate': 'לפחות העלאה אחת נראית כמכילה את התכנית כולה. לא מאומת עד שמישהו צופה בה במלואה.',
+ 'covLong_whole-candidate': 'לפחות העלאה אחת נראית כמכילה את התכנית כולה. לא מאומת עד שהיא נבדקת במלואה.',
  'covLong_parts-only': 'מקושרים רק חלקים ממוספרים או קטעי עלילה; ייתכן שיחד אינם מכסים את התכנית.',
  'covLong_excerpt-only': 'מקושרים רק קטעים, שירים או סצנות.',
  covLong_missing: 'הפרק מתועד, אך לא נמצאה העלאה שלו.',
@@ -1822,15 +1860,15 @@ he: {
  'covWhole_home-video': 'קישור לקלטת שלמה (לא מאומת)',
  ev_none: 'אין עדיין מה לבדוק',
  evNoneLong: 'לא מקושרת העלאה, ולכן לא נעשתה בדיקה.',
- 'ev_metadata-checked': 'מטא־נתונים נבדקו',
- 'ev_playback-started': 'הניגון התחיל',
- 'ev_complete-playback-reviewed': 'נצפה במלואו',
+ 'ev_metadata-checked': 'פרטים נבדקו, הניגון לא נוסה',
+ 'ev_playback-started': 'נבדק שמתנגן',
+ 'ev_complete-playback-reviewed': 'נבדק במלואו',
  'ev_reference-compared': 'הושווה למהדורת ייחוס',
- 'evLong_metadata-checked': 'הכותרת, המעלה והמשך נקראו מאתר האירוח. הניגון לא נבדק.',
- 'evLong_playback-started': 'נצפתה תחילת ניגון בכתובת המדויקת. הסרטון לא נצפה במלואו.',
- 'evLong_complete-playback-reviewed': 'ההעלאה נצפתה במלואה והתוצאה תועדה עם הכתובת והתאריך.',
+ 'evLong_metadata-checked': 'הכותרת, המעלה והמשך נקראו מאתר האירוח. הניגון לא נוסה.',
+ 'evLong_playback-started': 'נבדק שהניגון מתחיל בכתובת המדויקת. הסרטון לא נבדק במלואו.',
+ 'evLong_complete-playback-reviewed': 'ההעלאה נבדקה מתחילתה ועד סופה, והתוצאה תועדה עם הכתובת והתאריך.',
  'evLong_reference-compared': 'נבדק מול מהדורת ייחוס לאיתור קיצורים ושלמות.',
- evidenceLabel: 'ראיות: {level}',
+ evTileNote: 'באריחים מופיע תג רק לרמות שמעל זו, שיש לכל פרק מקושר.',
  num_documented: 'מספור מתועד',
  num_provisional: 'מספור לפי סדר הרישום',
  num_uploader: 'מספור המעלה',
@@ -1909,7 +1947,7 @@ he: {
  unavailableQ: 'לא זמין',
  searchYoutube: 'חיפוש ביוטיוב',
  findAria: 'חיפוש ביוטיוב: {title}',
- acc_played: 'הניגון התחיל בלי VPN בבדיקה',
+ acc_played: 'מתנגן בלי VPN',
  acc_local: 'קישור Vimeo שהדבקתם',
  acc_vimeo: 'Vimeo · קישור ישיר, הניגון לא נבדק',
  acc_public: '{host} · ציבורי, הניגון לא נבדק',
@@ -2027,9 +2065,10 @@ he: {
  identifiedTitle: 'סרטונים מזוהים',
  identifiedLede: 'כל ההעלאות שאינן ממתינות לזיהוי: העלאות שהותאמו לפרק, וקטעים, שירים, פרומואים, אוספים ורישומים ' +
   'שמקוטלגים מחוץ למדריך הפרקים.',
- identifiedNote: 'העלאות שעדיין לא הותאמו לפרק מופיעות בדף {link}.',
+ identifiedNote: 'העלאות שממתינות לזיהוי מופיעות בדף {link}.',
  unidentifiedTitle: 'סרטונים לזיהוי',
- unidentifiedLede: 'העלאות שעדיין לא הותאמו לפרק, ורחוב סומסום המרכזי ראשון. חלקן אולי פרקים שלמים; אחרות הן חלקים או ' +
+ unidentifiedLede: 'העלאות שבתור הזיהוי של הפקה, והעלאות שקושרו רק כעותק אפשרי של פרק, ורחוב סומסום המרכזי ראשון. ' +
+  'חלקן אולי פרקים שלמים; אחרות הן חלקים או ' +
   'קטעים שלא ידוע מאיזה פרק הם. עותק אפשרי מכיל ככל הנראה את הפרק שמופיע לצדו, אך ההתאמה לא הוכרעה.',
  onlyProd: 'מוצגת רק ההפקה {name}.',
  allProds: 'הצגת כל ההפקות',
@@ -2072,7 +2111,7 @@ he: {
  kindHelp: 'פרקים מלאים ופרקונים של סדרות קצרות נפרדים. פרקון של שש דקות שלם בתוך הסדרה שלו, אבל אינו פרק מלא של רחוב סומסום. ' +
   'ללא בחירה יוצגו כל הסוגים.',
  gsMatched: 'מותאם לפרק',
- gsQueue: 'ממתין לזיהוי',
+ gsQueue: 'בתור לזיהוי',
  gsNone: 'לא במדריך',
  agDirect: 'Vimeo ישיר',
  agPublic: 'עמודים ציבוריים',
@@ -2109,8 +2148,9 @@ he: {
  aboutTitle: 'אודות, רמות ראיה וגיבוי',
  about1: 'המדריך מפנה לעמודי וידאו ציבוריים ואינו מכיל קובצי וידאו. ספירת ההעלאות נפרדת מספירת הפרקים: אתרים חלופיים, מהדורות ' +
   'כפולות וחלקים ממוספרים שייכים כולם לפרק אחד.',
- about2: 'כיסוי מתאר איזה קישור קיים. ראיות מתארות עד כמה נבדק: מטא־נתונים, תחילת ניגון, צפייה מלאה או השוואה למהדורת ייחוס. ' +
-  'קישור לתכנית שלמה נשאר לא מאומת עד שמישהו צופה בו במלואו.',
+ about2: 'כיסוי מתאר איזה קישור קיים. ראיות מתארות עד כמה הפרויקט בדק אותו: פרטים נבדקו בלי לנסות לנגן, נבדק שמתנגן, ' +
+  'נבדק במלואו או הושווה למהדורת ייחוס. קישור לתכנית שלמה נשאר לא מאומת עד שהוא נבדק במלואו. הראיות נוגעות לקישור, ולא ' +
+  'למה שצפיתם.',
  about3: 'הכותרות באנגלית, הכותרות בעברית במקום שלא פורסמה כותרת בעברית, ותגיות הנושאים והדמויות הן עריכה שלנו. ' +
   'כל העלאה שומרת את הכותרת ואת שם המעלה כפי שפורסמו.',
  about4: 'עמודי הופ דורשים חיבור ישראלי. קישורי Vimeo ישירים שנמצאו בעמודי הופ נפתחים ב־Vimeo, מחוץ לכלל ה־VPN שחל על הופ ' +
@@ -2629,11 +2669,15 @@ function hostKind(url) {
 }
 const isHopUrl = u => !!u && hostKind(u) === 'hop';
 const normalize = v => String(v ?? '').normalize('NFKD').replace(/[֑-ׇ̀-ͯ]/g, '').toLocaleLowerCase()
+ // A geresh, gershayim or ASCII quote between two Hebrew letters is part of the word (שי״ן, ט״ו, ג׳ייק): it is dropped, not
+ // made a word break, so the letters typed without it (Hebrew keyboards have no gershayim key) still match.
+ .replace(/([א-ת])["'״׳]+(?=[א-ת])/g, '$1')
  .replace(/[’'"״׳‘“”\-–—_.,:;!?()[\]]/g, ' ').replace(/\s+/g, ' ').trim();
 // Applied to queries and to the index alike. Hebrew has no \b, so the plene spelling תוכנית (also inside בתוכנית,
-// תוכניות) folds to the defective תכנית used by Hop and by the series names.
+// תוכניות) folds to the defective תכנית used by Hop and by the series names, and the plene doubled letters of the editorial
+// titles (חנוכייה, מצווה, סיוון) fold to one, so the common spellings (חנוכיה, מצוה) find them.
 const alias = s => s.replace(/\bchanukah\b/g, 'hanukkah').replace(/\babigail\b/g, 'avigail').replace(/\bofnik\b/g, 'oofnik')
- .replace(/תוכנית/g, 'תכנית');
+ .replace(/תוכנית/g, 'תכנית').replace(/יי+/g, 'י').replace(/וו+/g, 'ו');
 const tagKeyCache = new Map();
 function tagKey(v) {
  if (v === null || v === undefined) return '';
@@ -2769,11 +2813,12 @@ function glyph(kind) {
  const g = el('span', 'glyph g-' + (COV_CLASS[kind] || kind)); g.setAttribute('aria-hidden', 'true');
  return g;
 }
-function pips(level) {
- const p = el('span', 'pips' + (level ? '' : ' none')); p.setAttribute('aria-hidden', 'true');
- const n = EVS.indexOf(level) + 1;
- for (let i = 1; i <= 4; i++) p.append(el('i', i <= n ? 'on' : ''));
- return p;
+// Evidence in words. A badge marks only the levels above the baseline (metadata-checked), which every linked episode has, so
+// tiles and compact rows say nothing for the baseline. Its hint gives the level's explanation.
+function evBadge(level, cls) {
+ if (EVS.indexOf(level) < 1) return null;
+ const b = el('span', 'ev-badge' + (cls ? ' ' + cls : ''), t('ev_' + level)); b.setAttribute('title', t('evLong_' + level));
+ fk(b, 'evb-' + level); return b;
 }
 function imgEl(url, w, h) {
  const u = safeUrl(url); if (!u) return null;
@@ -3097,7 +3142,7 @@ const evCache = new Map();
 const evPool = e => { const ups = upsOf(e), whole = ups.filter(u => u.role === 'whole-candidate' || u.role === 'alternate-edition');
  return whole.length ? whole : ups; };
 const recUrls = r => [r.url, r.directUrl, r.playerUrl, r.playbackUrl, r.sourceUrl, r.hopUrl].map(safeUrl).filter(Boolean);
-// "Watched in full" and "Compared with a reference" need evidenceDetail that agrees with the stated evidence, names a
+// "Checked in full" and "Compared with a reference" need evidenceDetail that agrees with the stated evidence, names a
 // whole or alternate upload (any upload when there is none), one of that upload's own URLs and an ISO date. The builder
 // rejects guide data that breaks this, so the file and the page cannot diverge.
 function evDetail(e) {
@@ -3628,8 +3673,18 @@ function tabLink(view, key, count) {
  const a = go(view, '', 'tab tab-' + view); fk(a, 'tab-' + view);
  const ic = el('span', 'tab-ico'); ic.setAttribute('aria-hidden', 'true'); ic.innerHTML = ICON[TAB_ICON[view]];
  a.append(ic, el('span', 'long', t(key)), el('span', 'short', t(key + 'Short')));
- if (count !== null) a.append(el('span', 'tab-count', fmtN(count)));
+ if (count !== null) a.append(countBadge(count));
  return a;
+}
+// The Starred count. Phones show it as a badge on the icon, so a count over 99 shows as "99+" there and the badge stays inside
+// its tab (review round 1: "1,200" ran over the theme button or off the page); the full number is still the text that
+// assistive technology reads, and wider screens show it.
+function countBadge(n) {
+ const c = el('span', 'tab-count');
+ if (n <= 99) { c.textContent = fmtN(n); return c; }
+ c.className += ' capped';
+ const short = el('span', 'cnt-short', fmtN(99) + '+'); short.setAttribute('aria-hidden', 'true'); short.setAttribute('dir', 'ltr');
+ c.append(el('span', 'cnt-full', fmtN(n)), short); return c;
 }
 // The views nav: Episode guide, Browse (a link plus the arrow of its menu) and Starred. A view below a tab (an episode or slot
 // page under the guide; a record or a Browse menu page under Browse) marks that tab aria-current="true"; the page itself is
@@ -3746,8 +3801,10 @@ function translateStatic() {
  renderPicker();
  renderAbout();
 }
-// A click anywhere on the toggle, Space or Enter on an option (each is a button), or an arrow key switches the language.
-// Focus moves to the newly checked option and the page keeps its scroll position.
+// Activating the unchecked option (a click, or Space or Enter, which click a button) or an arrow key switches the language.
+// As in any radio group, activating the checked option changes nothing (review round 1: a click on the highlighted
+// "English" switched to Hebrew, and Space on "English, radio button, checked" did too). Focus moves to the newly checked
+// option and the page keeps its scroll position.
 function switchLang() {
  // Every shown card is rebuilt in the other language, so a long "Show more" session would block the page for seconds
  // (about 0.25 ms per card); like a route change, the list starts again from its first 48 cards.
@@ -3758,7 +3815,11 @@ function switchLang() {
  $('lang-' + lang).focus({preventScroll: true});
  if (y !== null && W.scrollY !== y && W.scrollTo) W.scrollTo(0, y);
 }
-$('lang').addEventListener('click', switchLang);
+$('lang').addEventListener('click', ev => {
+ let o = ev && ev.target;
+ while (o && o !== $('lang') && !(o.getAttribute && o.getAttribute('role') === 'radio')) o = o.parentElement;
+ if (o && o !== $('lang') && o.getAttribute('aria-checked') !== 'true') switchLang();
+});
 $('lang').addEventListener('keydown', ev => {
  if (!['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(ev.key)) return;
  if (ev.preventDefault) ev.preventDefault();
@@ -4080,7 +4141,7 @@ function legendBox() {
   // h2: in a production scope the legend follows the H1 directly, and in the full guide it is a sibling of the sections.
   const c = el('div'); c.append(el('h2', '', t(titleKey))); const dl = el('dl');
   for (const [mark, name, long] of items) {
-   const dt = el('dt'), dd = el('dd'); dt.append(mark, txt(name));
+   const dt = el('dt'), dd = el('dd'); if (mark) dt.append(mark); dt.append(txt(name));
    if (typeof long === 'string') dd.textContent = long; else dd.append(long);
    dl.append(dt, dd);
   }
@@ -4094,7 +4155,7 @@ function legendBox() {
   col('legendNumbers', [[cellMark('cov-whole'), t('cov_whole-candidate'), t('covLong_whole-candidate')],
    [cellMark('gap'), t('cov_gap'), t('covLong_gap')], [cellMark('exp'), t('cov_slot'), t('covLong_slot')],
    ...NUM_LEGEND.map(k => [el('span', 'numtag n-' + k, '#'), t('num_' + k), t('numLong_' + k)])]),
-  col('legendEvidence', EVS.map(k => [pips(k), t('ev_' + k), t('evLong_' + k)])),
+  col('legendEvidence', EVS.map(k => [null, t('ev_' + k), k === EVS[0] ? t('evLong_' + k) + ' ' + t('evTileNote') : t('evLong_' + k)])),
   col('legendAccess', [['ok', 'agDirect', 'accessLegend_ok'], ['public', 'agPublic', 'accessLegend_public'],
    ['web', 'agWeb', 'accessLegend_web'], ['vpn', 'agVpn', 'accessLegend_vpn'], ['lic', 'legendLicensed', 'accessLegend_lic'],
    ['bad', 'agUnavailable', 'accessLegend_bad']]
@@ -4111,7 +4172,7 @@ function goalPanel() {
  }, 'goal-more');
  more.setAttribute('aria-expanded', String(state.goalOpen)); more.setAttribute('aria-controls', 'goal-detail-1');
  top.append(h2, el('p', 'note goal-detail', t('goalHelp'))); sec.append(top);
- const rows = el('div', 'goal-rows'); const openNames = []; let queueN = 0;
+ const rows = el('div', 'goal-rows'); const openNames = [];
  for (const [series, key] of [['classic', 'famClassic'], ['modern', 'famModern']]) {
   const ps = prods.filter(p => p.series === series && isCoreRechov(p)); if (!ps.length) continue;
   const c = {'whole-candidate': 0, 'parts-only': 0, 'excerpt-only': 0, missing: 0};
@@ -4121,7 +4182,6 @@ function goalPanel() {
    slots += m.slots; gaps += m.inferredGaps; knownFloor += m.knownFloor; inferFloor += m.numberingFloor;
    if (m.ts !== 'known') { open = true; openNames.push(prodName(p)); }
   }
-  for (const p of prods) if (p.series === series && famOf(p) === 'rechov' && ['core', 'queue'].includes(fmtOf(p))) queueN += queueIds(p).length;
   const row = el('div', 'goal-row'); row.append(el('h3', '', iso(t(key))));
   const parts = statParts(c, slots, gaps); row.append(meter(parts, open, 'big', meterLabel(parts, open)));
   const big = el('p', 'goal-big'); big.append(el('strong', '', fmtN(c['whole-candidate'])), el('span', '', t('goalWhole'))); row.append(big);
@@ -4139,7 +4199,9 @@ function goalPanel() {
  for (const k of ['whole', 'parts', 'excerpt', 'missing', 'slots', 'gaps', 'open']) {
   const li = el('li'); li.append(el('span', 'sw seg-' + k), txt(t(k === 'open' ? 'segOpen' : SEG_WORD[k]))); legend.append(li);
  }
- foot.append(legend); if (queueN) foot.append(go('browse/unidentified', t('queueLink', {n: fmtN(queueN)}), 'linkbtn'));
+ // The link's number is what Videos to identify lists: queued uploads and uploads linked only as possible copies.
+ const queueN = menuCounts().unidentified;
+ foot.append(legend); if (queueN) foot.append(go('browse/unidentified', queueLinkText(queueN), 'linkbtn'));
  detail.append(foot);
  if (openNames.length) detail.append(el('p', 'goal-note', t('goalKnownHelp') + ' ' + t('floorNote', {list: openNames.join('; ')})));
  const sep = el('ul', 'sep-list'); const sh = el('li'); sh.append(el('strong', '', t('sepTitle') + ':')); sep.append(sh);
@@ -4339,7 +4401,7 @@ function productionSection(p, Q, filtered) {
    const es = el('p', 'evsum'); es.append(el('strong', '', t('evSummary') + ':'));
    for (const k of ['none', ...EVS]) {
     if (k === 'none' && !m.evc.none) continue;
-    const s = el('span'); s.append(pips(k === 'none' ? null : k), txt(t('ev_' + k) + ' ' + fmtN(m.evc[k]))); es.append(s);
+    const s = el('span'); s.append(txt(t('ev_' + k) + ': '), el('strong', '', fmtN(m.evc[k]))); es.append(s);
    }
    sec.append(es);
   }
@@ -4482,9 +4544,10 @@ function tile(e, p) {
  const a = titleDir(go(epRoute(e.id), epTitle(e), 'tile-title'), e, n => { n.setAttribute('dir', 'auto'); return n; }); fk(a, 'ep-' + e.id);
  const alts = altText(e);
  a.setAttribute('aria-label', [epCode(e), epTitle(e), alts ? t('alsoLabelled') + ': ' + alts : '', covLabel(e, true),
-  t('evidenceLabel', {level: evName(e)}), watched.has(e.id) ? t('seenBadge') : ''].filter(Boolean).join('. '));
- const metaRow = el('span', 'tile-meta'); metaRow.setAttribute('aria-hidden', 'true');
- metaRow.append(glyph(cov), el('span', 'cov-word', covLabel(e)), pips(evOf(e)));
+  watched.has(e.id) ? t('seenBadge') : ''].filter(Boolean).join('. '));
+ // The coverage word repeats the link's name, so it is hidden from assistive technology; the evidence badge is read as text.
+ const metaRow = el('span', 'tile-meta'), cw = el('span', 'cov-word', covLabel(e)); cw.setAttribute('aria-hidden', 'true');
+ metaRow.append(glyph(cov), cw); const eb = evBadge(evOf(e)); if (eb) { metaRow.append(eb); metaRow.className += ' has-ev'; }
  body.append(a);
  // Alternate labels (an uploader's S2E20) are a small secondary line; the tile link's name already includes them.
  // The line takes the page direction (dir=auto would lay "hoopla עונה 2, פרק 1" out left to right in Hebrew); each label is
@@ -4521,10 +4584,11 @@ function epRow(e, p) {
  const alts = altText(e);
  if (alts) { const al = el('span', 'alt altlab'); al.append(txt(t('alsoLabelled') + ': '), altNodes(e)); tt.append(al); }
  if (watched.has(e.id)) tt.append(seenTag());
+ const eb = evBadge(evOf(e), 'ev-inline'); if (eb) tt.append(eb);
  tr.append(tt);
  const cov = el('td', 'c-cov'); const cf = el('span', 'cell-flex'); cf.append(glyph(covOf(e)), txt(covLabel(e))); cov.append(cf);
  tr.append(cov);
- const ev = el('td', 'c-ev'); const ef = el('span', 'cell-flex'); ef.append(pips(evOf(e)), txt(evName(e))); ev.append(ef); tr.append(ev);
+ tr.append(el('td', 'c-ev', evName(e)));
  tr.append(el('td', 'c-links note', linksSummary(e)));
  const act = el('td', 'c-act');
  act.append(b ? watchLink(b, false, 'btn ghost', epTitle(e), true) :
@@ -4583,7 +4647,8 @@ VIEWS.episode = function mountEpisode(v) {
  if (alts) { const al = el('p', 'alsolab'); al.append(el('strong', '', t('alsoLabelled') + ': '), altNodes(e)); info.append(al); }
  const tags = el('div', 'head-tags');
  const ct = el('span', 'tag t-' + COV_CLASS[cov]); ct.append(glyph(cov), txt(covLabel(e, true))); fk(ct, 'ep-cov'); tags.append(ct);
- const et = el('span', 'tag'); et.append(pips(evOf(e)), txt(evName(e))); fk(et, 'ep-ev'); tags.append(et);
+ const et = el('span', 'tag t-ev', evName(e)); et.setAttribute('title', evOf(e) ? t('evLong_' + evOf(e)) : t('evNoneLong'));
+ fk(et, 'ep-ev'); tags.append(et);
  if (CONFS.includes(e.confidence)) tags.append(el('span', 'tag', t('conf_' + e.confidence)));
  if (f !== 'core') tags.append(el('span', 'fmt fmt-' + f, t('fs_' + f)));
  if (e.airDate) { const ad = el('span', 'tag'); ad.append(txt(t('airDate') + ' '), ltr(e.airDate)); tags.append(ad); }
@@ -4649,7 +4714,7 @@ VIEWS.episode = function mountEpisode(v) {
  if (cov !== 'whole-candidate') {
   const fc = el('section', 'card'); fc.append(el('h2', '', t('findTitle')), el('p', '', t('findHelp_' + cov)));
   const fl = el('div', 'find-links'); if (b) fl.append(ext(ytSearchUrl(p, epSearchWords(e)), t('searchYoutube'), 'btn ghost', 'search'));
-  const qn = queueIds(p).length; if (qn) fl.append(go(idRoute(p), t('queueLink', {n: fmtN(qn)}), 'linkbtn'));
+  const qn = awaitingIn(p); if (qn) fl.append(go(idRoute(p), queueLinkText(qn), 'linkbtn'));
   fc.append(fl); aside.append(fc);
  }
  aside.append(identityCard(e, p));
@@ -4669,7 +4734,7 @@ function evidenceCard(e, ups, cov) {
   tx.append(s, txt(t('evLong_' + x))); li.append(stp, tx); ol.append(li);
  });
  ev.append(ol);
- // A recorded "watched in full" or "compared" result shows its exact URL, date and note.
+ // A recorded "checked in full" or "compared" result shows its exact URL, date and note.
  const src = evSource(e);
  if (src) {
   const rec = el('p', 'note'); rec.style.marginTop = '12px';
@@ -5336,10 +5401,13 @@ function idGroups() {
  for (const r of records) if (guideStatus(r) === 'possible') by.get(recLinks.get(r.id)[0].e.production).push(r.id);
  return [...by].filter(([, ids]) => ids.length).map(([pid, ids]) => [prodById.get(pid), ids]);
 }
+// How many uploads Videos to identify lists for one production (?prod=), and the text of a link to that page.
+const awaitingIn = p => { const g = idGroups().find(([q]) => q === p); return g ? g[1].length : 0; };
+const queueLinkText = n => (n === 1 ? t('queueLinkOne') : t('queueLink', {n: fmtN(n)}));
 function todoData() {
  const D = gapData();
  return {...D, check: D.eps.filter(e => covOf(e) === 'whole-candidate' && evOf(e) === 'metadata-checked'),
-  queue: [...prods].sort(byRank).filter(p => queueIds(p).length).map(p => [p, queueIds(p)])};
+  queue: idGroups()};
 }
 // A titled list on a page: heading with its glyph and count, help line, then the lists.
 function listSection(id, g, title, count, help, ...lists) {
@@ -5384,7 +5452,8 @@ VIEWS.missing = function mountMissing(v) {
   ['excerpt-only', D.excerpt.length, 'cov_excerpt-only'], ['slot', D.slots.reduce((s, [, m]) => s + m.slots, 0), 'segSlots'],
   ['gap', D.slots.reduce((s, [, m]) => s + m.inferredGaps, 0), 'segGaps']]) {
   if (!n && ['slot', 'gap'].includes(g)) continue;
-  const li = el('li'); li.append(glyph(g), txt(fmtN(n) + ' ' + t(key))); sum.append(li);
+  // An open total makes the expected places a floor, as in the section heading ("73+").
+  const li = el('li'); li.append(glyph(g), txt((g === 'slot' ? openCount(n, D.openSlots) : fmtN(n)) + ' ' + t(key))); sum.append(li);
  }
  tools.append(sum, todoLink()); v.append(tools);
  // Parts only and excerpts only are one section with a list each.
@@ -5539,8 +5608,10 @@ function todoExport(D) {
   search: ytSearchUrl(prodById.get(e.production), epSearchWords(e))});
  const rec = (id, p) => {
   const r = recById.get(id);
+  // An upload linked only as a possible copy names the episodes it may hold, as Videos to identify does.
+  const poss = guideStatus(r) === 'possible' ? (recLinks.get(id) || []).map(l => l.e.id) : [];
   return {recordId: id, production: p.id, url: destination(r), title: publishedTitle(r), uploader: r.uploader || null,
-   durationSeconds: r.durationSeconds ?? null};
+   durationSeconds: r.durationSeconds ?? null, ...(poss.length ? {possibleCopyOf: poss} : {})};
  };
  return {format: 'sumsum-to-find-v1', exportedAt: new Date().toISOString(), order: 'core Rechov Sumsum first',
   unidentified: D.queue.flatMap(([p, ids]) => ids.map(id => rec(id, p))),

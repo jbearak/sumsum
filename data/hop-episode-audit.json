@@ -11010,6 +11010,11 @@
       "version": 2,
       "date": "2026-10-18",
       "summary": "Hop Vimeo collection: all 234 manifest pages returned a Vimeo link on 2026-10-18; the 49 new posts have exact URLs and running times. 224 distinct videos: 10 new posts are second listings of catalogued videos, and four of them are linked as excerpts like their twins. newHopPostsAwaitingVimeoCollection renamed newHopPosts; collection task resolved."
+    },
+    {
+      "version": 2,
+      "date": "2026-10-18",
+      "summary": "Review round 1: the superseded 'about 15' estimate is attributed to the pre-collection version-2 note, not version 1, with its original wording and the measured counts (12 shared titles, 10 same videos)."
     }
   ],
   "version2Inputs": [
@@ -11129,7 +11134,7 @@
       ],
       "hopPagesWithVimeoLinks": 234,
       "distinctHopVimeoVideos": 224,
-      "note": "Ten music posts embed the same Vimeo video as a catalogued show post, so the 49 posts add 39 videos. The four whose twins are guide excerpts (hop-9857, hop-9860, hop-9865 and hop-9867) are linked to the same episodes as excerpts; coverage is unchanged. Three same-title pairs embed different videos. The first version's estimate that about 15 music posts repeat show posts is superseded by this comparison."
+      "note": "Ten music posts embed the same Vimeo video as a catalogued show post, so the 49 posts add 39 videos. The four whose twins are guide excerpts (hop-9857, hop-9860, hop-9865 and hop-9867) are linked to the same episodes as excerpts; coverage is unchanged. Three same-title pairs embed different videos. The earlier estimate (version 2, before collection) that about 15 music titles duplicate catalogued show posts is superseded by this comparison: 12 music posts share a show post's title or nearly so (the ten same-video posts, hop-6848 and hop-6963), and 10 of those 12 are the same video."
     },
     "posts": [
       {

@@ -14,7 +14,13 @@ Browse (`#/browse`) lists every upload with the filters. The old All uploads rou
 
 Identified videos and Videos to identify together hold every upload. Both are defined from the guide data, never from durations.
 
-The Research to-do page (`#/todo`, formerly To find) is linked from the footer and from the Videos to identify and Missing episodes pages. It holds the whole links to check by playback and the JSON export, whose file name and format still say `sumsum-to-find`.
+The Research to-do page (`#/todo`, formerly To find) is linked from the footer and from the Videos to identify and Missing episodes pages. It holds the whole links to check by playback and the JSON export, whose file name and format still say `sumsum-to-find`. The export's `unidentified` list is the Videos to identify list; an upload linked only as a possible copy names its candidate episodes in `possibleCopyOf`.
+
+"Awaiting identification" always means both kinds, queued and possible-only; the Browse facet chip for the queue alone is "In an identification queue". A link to Videos to identify counts what the page it opens lists.
+
+## Evidence display
+
+Evidence is said in words, never with a graphic. The levels are "Details checked, not test-played" (metadata checked, which every linked episode has), "Seen to play" (playback started), "Checked in full" and "Compared with a reference", and "Nothing to check yet" without an upload. Guide tiles, and List rows on phones (where the Evidence column is hidden), show a text badge only above the first level. The List's Evidence column and the episode page's tag name every level; the episode page keeps its ladder, with "Now" at the level. Production pages summarise the levels with counts, and the legend explains each in one line. Evidence wording never says "watched": it is about what the project checked, not about the user's own Watched marks.
 
 ## Browser storage
 
@@ -26,7 +32,7 @@ The UI preferences live in local storage too, as `sumsum-language`, `sumsum-them
 
 The round palette button before the language toggle opens the theme picker. Its Theme group has six palettes: Green, the default, then Blue, Plum, Terracotta, Sunny and Graphite. Its Appearance group has System, Light and Dark. A choice applies at once. The button has the same size and place in English and Hebrew at every width.
 
-An inline script at the end of `<head>`, `#prefs-boot`, sets `data-palette`, `data-appearance` and `data-scheme` on `<html>` before the first paint, so the page never shows the default palette first. A stored value that is not a listed name falls back to the default. Under System, `data-scheme` follows `prefers-color-scheme`, and it changes when the system scheme does. The script also keeps `<meta name="color-scheme">` and `<meta name="theme-color">` in step; under System the first is `light dark`, and the second is always the masthead colour. Tests and probes can set `data-start-palette` and `data-start-appearance` on `<html>` to override the stored values, as `data-start-lang` does.
+An inline script at the end of `<head>`, `#prefs-boot`, sets `data-palette`, `data-appearance` and `data-scheme` on `<html>` before the first paint, so the page never shows the default palette first. A second one, `#lang-boot`, right after the language toggle, checks the stored language's option the same way, so a Hebrew page never first shows English checked. The toggle is a radio group: activating the unchecked option or an arrow key switches the language, and activating the checked one changes nothing. A stored value that is not a listed name falls back to the default. Under System, `data-scheme` follows `prefers-color-scheme`, and it changes when the system scheme does. The script also keeps `<meta name="color-scheme">` and `<meta name="theme-color">` in step; under System the first is `light dark`, and the second is always the masthead colour. Tests and probes can set `data-start-palette` and `data-start-appearance` on `<html>` to override the stored values, as `data-start-lang` does.
 
 Every colour in the stylesheet is a custom property in the token rules at its top. Other rules use only `var(--…)`, `transparent` and, under forced colours, system colours. The tokens come in two layers.
 

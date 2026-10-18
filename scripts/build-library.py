@@ -282,6 +282,17 @@ def is_hop_page(record):
     return bool(record) and urlsplit(record["url"]).hostname in {"hop.co.il", "www.hop.co.il"}
 
 
+def collection_run(report, when):
+    """The collections[] run a row's time falls in: the first run, by completion time, that ended at or after it."""
+    runs = [c for c in report.get("collections") or [] if isinstance(c, dict) and isinstance(c.get("completedAt"), str)]
+    if not isinstance(when, str) or not runs:
+        return None
+    for run in sorted(runs, key=lambda c: c["completedAt"]):
+        if when <= run["completedAt"]:
+            return run
+    return None
+
+
 def apply_player_links(path, records):
     """Add exact Hop-discovered URLs and preserve explicitly recorded playback evidence."""
     if not path.exists():
@@ -310,6 +321,12 @@ def apply_player_links(path, records):
         if not is_hop_page(record):
             continue
         collected_at = item.get("collectedAt") or report.get("completedAt") or report.get("generatedAt") or "date not recorded"
+        run = collection_run(report, collected_at)
+        recheck_run = collection_run(report, item.get("recheckedAt"))
+        # A run that recorded no per-page times gave its rows the run's completion time.
+        run_time_only = bool(run) and run.get("perPageTimes") is False and collected_at == run.get("completedAt")
+        when = (f"by {collected_at}, when its collection run completed (that run recorded no per-page times)"
+                if run_time_only else f"at {collected_at}")
         # A runtime returned by oEmbed is metadata, never proof of playback.
         # Honor only explicit true evidence attached to this exact watch URL.
         previous_direct = record.get("directUrl")
@@ -332,7 +349,7 @@ def apply_player_links(path, records):
             if check_note:
                 record["playbackVerificationNote"] = check_note
         record["originalVerification"] = record.get("originalVerification") or record.get("verification")
-        discovery = f"Exact Vimeo player/watch URL discovered in the public Hop page HTML at {collected_at}."
+        discovery = f"Exact Vimeo player/watch URL discovered in the public Hop page HTML {when}."
         if without_vpn:
             playback = "Playback startup was observed with Vimeo outside the VPN. The complete video was not watched."
         elif verified:
@@ -345,12 +362,23 @@ def apply_player_links(path, records):
             "sourceOrigin": origin,
             "sourceUrl": source_url,
             "collectedAt": collected_at,
-            "collectionMethod": report.get("collectionMethod", "same-origin public Hop page collector"),
+            # The method of the run this row was read in, not every run's (collections[] in the report).
+            "collectionMethod": (run or {}).get("method") or report.get("collectionMethod", "same-origin public Hop page collector"),
             "status": item.get("status", "direct URL present in collector report"),
             "attempts": item.get("attempts", []),
         }
+        if run_time_only:
+            record["directLinkProvenance"]["collectedAtIs"] = "collection run completion time"
+        if isinstance(item.get("recheckedAt"), str):
+            record["directLinkProvenance"].update({
+                "recheckedAt": item["recheckedAt"],
+                "recheckStatus": item.get("recheckStatus"),
+                "recheckMethod": (recheck_run or {}).get("method"),
+                "recheckAttempts": item.get("recheckAttempts", []),
+            })
         old_note = clean_discovery_notes(record.get("notes"), bool(record.get("durationSeconds")), verified)
-        discovery_note = f"Direct Vimeo link found by the same-origin Hop page collector on {collected_at}; the complete privacy URL is preserved. " + playback
+        on = f"by {collected_at} (its collection run's completion time)" if run_time_only else f"on {collected_at}"
+        discovery_note = f"Direct Vimeo link found by the same-origin Hop page collector {on}; the complete privacy URL is preserved. " + playback
         record["notes"] = (old_note + " " if old_note else "") + discovery_note
         added += 1
     return added
@@ -817,6 +845,10 @@ def validate_services(data, name):
         raise ValueError(f"{name}: expected an object with a non-empty services list")
     if not _day_ok(data.get("checkedAt")):
         raise ValueError(f"{name}: checkedAt must be a date (YYYY-MM-DD)")
+    # A fact cannot have been checked after the build that embeds it (one day of slack for a date written in UTC).
+    latest, today = (dt.date.today() + dt.timedelta(days=1)).isoformat(), dt.date.today().isoformat()
+    if data["checkedAt"] > latest:
+        raise ValueError(f"{name}: checkedAt {data['checkedAt']} is after the build date {today}")
     ids, hosts = set(), {}
     for k, s in enumerate(data["services"], 1):
         where = f"{name}, service {k}"
@@ -926,6 +958,50 @@ def validate_services(data, name):
                 cited(lib.get("sources"), at)
             if not any(lib["participates"] for lib in libs):
                 raise ValueError(f"{where}: name at least one participating library")
+            # The how-to box shows the steps' prose, so the structured facts must agree with it: each library is named by a
+            # step that lists it (in both languages) and says whether its cards work, and the lookup link is a step's link.
+            steps = how.get("steps", [])
+            if not steps:
+                raise ValueError(f"{where}: a library-card service needs at least one howTo step")
+            by_lib, named = {lib["id"]: lib for lib in libs}, set()
+            for j, step in enumerate([how.get("headline")] + steps):
+                at = f"{where}, howTo " + ("headline" if j == 0 else f"step {j}")
+                listed = step.get("libraries")
+                if listed is None:
+                    if "participates" in step:
+                        raise ValueError(f"{at}: participates describes the libraries listed in libraries, which is absent")
+                    continue
+                if not isinstance(listed, list) or not listed or not all(isinstance(x, str) for x in listed):
+                    raise ValueError(f"{at}: libraries must be a non-empty list of library ids")
+                if not isinstance(step.get("participates"), bool):
+                    raise ValueError(f"{at}: a step that lists libraries says whether their cards work (participates true or false)")
+                for lid in listed:
+                    lib = by_lib.get(lid)
+                    if lib is None:
+                        raise ValueError(f"{at}: unknown library id {lid!r}")
+                    if lib["participates"] != step["participates"]:
+                        raise ValueError(f"{at}: says library {lid!r} {'participates' if step['participates'] else 'does not participate'}"
+                                         f", but its libraries entry has participates {str(lib['participates']).lower()}")
+                    choice = lib.get("hooplaChoice") if isinstance(lib.get("hooplaChoice"), str) else None
+                    for lang in ("en", "he"):
+                        names = [lib["name"][lang]] + ([choice] if choice else [])
+                        if not any(n in step[lang] for n in names):
+                            raise ValueError(f"{at}: lists library {lid!r} but its {lang} text does not name it ({' or '.join(map(repr, names))})")
+                        for member in lib.get("members") or []:
+                            if member[lang] not in step[lang]:
+                                raise ValueError(f"{at}: lists library {lid!r} but its {lang} text does not name its member {member[lang]!r}")
+                    named.add(lid)
+            unnamed = [lib["id"] for lib in libs if lib["id"] not in named]
+            if unnamed:
+                raise ValueError(f"{where}: library {unnamed[0]!r} is not listed by any howTo step, so the how-to box does not say it")
+            links = [step["link"]["url"] for step in [how.get("headline")] + steps if isinstance(step.get("link"), dict)]
+            if s["lookupUrl"] not in links:
+                raise ValueError(f"{where}: lookupUrl {s['lookupUrl']!r} is not the link of any howTo step")
+        dated = [(f"source {x.get('id')!r} checkedAt", x.get("checkedAt")) for x in sources] \
+            + [(f"lead {j} checkedAt", x.get("checkedAt")) for j, x in enumerate(s.get("leads") or [], 1) if isinstance(x, dict)]
+        for label, value in dated:
+            if isinstance(value, str) and value > latest:
+                raise ValueError(f"{where}: {label} {value} is after the build date {today}")
         for j, lead in enumerate(s.get("leads") or [], 1):
             at = f"{where}, lead {j}"
             if not isinstance(lead, dict) or not valid_url(lead.get("url")) or not _day_ok(lead.get("checkedAt")) \
@@ -1042,6 +1118,7 @@ def main():
     records = []
     seen = {}
     origin = {}  # record id -> (url, "file, entry n") of its first occurrence, for duplicate-id errors
+    entries = {}  # url key -> [("file, entry n", fields present)] for each entry merged into that upload
     notices = []
     for path in inputs:
         if not path.is_absolute():
@@ -1086,6 +1163,8 @@ def main():
                 raise ValueError(f"{where}: record id {r['id']!r} is reserved (saved links and backups are keyed by id)")
             # Two spellings of one URL (raw Hebrew or %-escapes, host case, default port) are one upload.
             key = url_key(r["url"])
+            # Which entry holds each field, so a refusal after merging names the entries involved.
+            entries.setdefault(key, []).append((where, {f for f, v in r.items() if v not in (None, "", [], {})}))
             if key in seen:
                 merge_records(seen[key], r)
                 continue
@@ -1099,10 +1178,13 @@ def main():
             records.append(r)
     # Merging fills empty fields from later entries for the same URL, so one entry's titleHeEditorial can meet another's titleHe.
     for r in records:
-        problem = editorial_he_problem(r, f"record {r['id']!r} ({origin[r['id']][1]}, merged with another entry for its URL)",
-                                       ("titleHe",))
-        if problem:
-            raise ValueError(problem)
+        if not editorial_he_problem(r, "", ("titleHe",)):
+            continue
+        held = entries.get(url_key(r["url"]), [])
+        holder = lambda field: next((w for w, fields in held if field in fields), "an entry")
+        raise ValueError(f"record {r['id']!r}: {holder(EDITORIAL_HE)} has {EDITORIAL_HE} and {holder('titleHe')} (the same URL, "
+                         f"merged into one upload) has titleHe. {EDITORIAL_HE} fills only a missing published Hebrew title; "
+                         f"keep the published title and remove {EDITORIAL_HE} from {holder(EDITORIAL_HE)}")
     unlettered = [r["id"] for r in records if editorial_he_unlettered(r)]
     if unlettered:
         notices.append(f"Warning: {len(unlettered)} records have a {EDITORIAL_HE} with no Hebrew letter (it is a Hebrew "

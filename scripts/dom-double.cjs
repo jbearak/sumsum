@@ -4,7 +4,8 @@
 // createElement, append, replaceChildren, textContent, attributes, events, localStorage, focus, isConnected, timers,
 // window.location (hash routing), window scrolling, window.matchMedia (prefers-color-scheme), Blob downloads and Option.
 // The inline preferences script in <head> (#prefs-boot: theme and appearance before the first paint) runs first, in the
-// same context, then the application script. Image src/loading assignments keep their order. Events reach only the element's own listeners (fire, click) unless dispatched with dispatch(), which bubbles to
+// same context, then the language toggle's inline script (#lang-boot: the stored language checked before the first paint),
+// then the application script. Image src/loading assignments keep their order. Events reach only the element's own listeners (fire, click) unless dispatched with dispatch(), which bubbles to
 // the ancestors and then to the document's listeners (document.addEventListener) like a browser event. Browser layout and
 // rendering QA are separate.
 const fs = require('node:fs');
@@ -23,7 +24,8 @@ function readLibrary(htmlPath) {
   assert(dataText && appSource, 'HTML contains embedded data and the application');
   // The preferences script at the end of <head> (optional: a build without it boots with the default palette).
   const bootSource = html.match(/<script id="prefs-boot">([\s\S]*?)<\/script>/)?.[1] || '';
-  return {html, dataText, appSource, bootSource};
+  const langBootSource = html.match(/<script id="lang-boot">([\s\S]*?)<\/script>/)?.[1] || '';
+  return {html, dataText, appSource, bootSource, langBootSource};
 }
 
 // options.payload(payload) may return a changed payload (for example without a guide);
@@ -32,9 +34,10 @@ function readLibrary(htmlPath) {
 // options.hash is the initial location hash;
 // options.prefersDark sets the system colour scheme that window.matchMedia('(prefers-color-scheme: dark)') reports
 // (default light); the returned media.set(dark) changes it and notifies the page's listeners, like a system switch;
-// options.noMatchMedia leaves window.matchMedia out; options.noBoot skips the #prefs-boot script.
+// options.noMatchMedia leaves window.matchMedia out; options.noBoot skips the #prefs-boot script; options.noLangBoot skips the
+// #lang-boot script (options.onLangBoot(document) runs after it, before the application, to read the toggle it set).
 function boot(htmlPath, options = {}) {
-  const {html, dataText, appSource, bootSource} = readLibrary(htmlPath);
+  const {html, dataText, appSource, bootSource, langBootSource} = readLibrary(htmlPath);
   let payload = JSON.parse(dataText);
   if (options.payload) payload = options.payload(payload) || payload;
   // Elements by id are held weakly, like a browser's id lookup: a detached element is not kept alive by its id.
@@ -206,6 +209,8 @@ function boot(htmlPath, options = {}) {
     clearTimeout: id => { timers.delete(id); }
   };
   if (bootSource && !options.noBoot) vm.runInNewContext(bootSource, context, {filename: htmlPath + '#prefs-boot'});
+  if (langBootSource && !options.noLangBoot) vm.runInNewContext(langBootSource, context, {filename: htmlPath + '#lang-boot'});
+  if (options.onLangBoot) options.onLangBoot(document);
   vm.runInNewContext(appSource, context, {filename: htmlPath});
 
   const flushTimers = () => {
@@ -218,7 +223,7 @@ function boot(htmlPath, options = {}) {
   // Route like a browser: set the hash and dispatch hashchange.
   const navigate = async route => { location._hash = '#/' + route; history.push({type: 'nav', hash: location._hash}); await window.fire('hashchange'); };
   return {document, ids, tree, descendants, storage, downloads, blobs, context, payload, window, location, history,
-    flushTimers, navigate, appSource, bootSource, html, media};
+    flushTimers, navigate, appSource, bootSource, langBootSource, html, media};
 }
 
 module.exports = {boot, readLibrary};

@@ -16,8 +16,12 @@
       },
       "howTo": {
         "headline": {
-          "en": "Free in New York State with a Queens Public Library eCard: anyone who lives, works, studies or owns property in the state can apply online (age 12 or older), then sign in to hoopla with the card.",
-          "he": "חינם במדינת ניו יורק עם כרטיס דיגיטלי (eCard) של הספרייה הציבורית של קווינס: כל מי שגר, עובד, לומד או מחזיק נכס במדינה יכול להגיש בקשה באינטרנט (מגיל 12), ואז להתחבר ל־hoopla עם הכרטיס.",
+          "en": "Free in New York State with a Queens Public Library eCard: anyone who lives, works, studies or owns property in the state can apply online (age 12 or older), then sign in to hoopla with the card. If hoopla does not accept the eCard, get a regular Queens card at any branch (free in the state, with photo ID and proof of address).",
+          "he": "חינם במדינת ניו יורק עם כרטיס דיגיטלי (eCard) של הספרייה הציבורית של קווינס: כל מי שגר, עובד, לומד או מחזיק נכס במדינה יכול להגיש בקשה באינטרנט (מגיל 12), ואז להתחבר ל־hoopla עם הכרטיס. אם hoopla לא מקבל את הכרטיס הדיגיטלי, אפשר להוציא כרטיס רגיל של קווינס בכל סניף (חינם במדינה, עם תעודה מזהה עם תמונה והוכחת כתובת).",
+          "libraries": [
+            "queens"
+          ],
+          "participates": true,
           "link": {
             "url": "https://www.queenslibrary.org/get-a-card/eUser",
             "label": {
@@ -40,6 +44,10 @@
           {
             "en": "In Westchester County, use your local library's card (for example Ardsley Public Library). In hoopla, choose \"Westchester Library System\", not your library's own name.",
             "he": "במחוז וסטצ'סטר משתמשים בכרטיס של הספרייה המקומית (למשל הספרייה הציבורית של ארדסלי). ב־hoopla בוחרים ב־\"Westchester Library System\", ולא בשם הספרייה המקומית.",
+            "libraries": [
+              "westchester"
+            ],
+            "participates": true,
             "sources": [
               "wls-card",
               "wls-listen-read",
@@ -52,6 +60,11 @@
           {
             "en": "New York Public Library and Brooklyn Public Library cards do not work with hoopla.",
             "he": "כרטיסים של הספרייה הציבורית של ניו יורק ושל הספרייה הציבורית של ברוקלין אינם עובדים ב־hoopla.",
+            "libraries": [
+              "nypl",
+              "brooklyn"
+            ],
+            "participates": false,
             "sources": [
               "user-2026-10-18",
               "ps229q"
@@ -75,8 +88,8 @@
             ]
           },
           {
-            "en": "Each library sets a small monthly limit (Queens: 10 hoopla titles; Yonkers: 3; Eastchester: 6), so choose which programmes to borrow.",
-            "he": "כל ספרייה קובעת מגבלה חודשית קטנה (קווינס: 10 כותרים ב־hoopla; יונקרס: 3; איסטצ'סטר: 6), לכן כדאי לבחור אילו תכניות לשאול.",
+            "en": "Each library sets a small monthly limit, so choose which programmes to borrow and check your library's terms (Queens: 5 or 10 hoopla titles, its pages disagree; Yonkers: 3; Eastchester: 6).",
+            "he": "כל ספרייה קובעת מגבלה חודשית קטנה, לכן כדאי לבחור אילו תכניות לשאול ולבדוק את התנאים של הספרייה שלכם (קווינס: 5 או 10 כותרים ב־hoopla, לפי דפים שונים שלה; יונקרס: 3; איסטצ'סטר: 6).",
             "sources": [
               "qpl-card-faq",
               "qpl-chat-emedia",

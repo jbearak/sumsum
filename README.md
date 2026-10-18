@@ -18,7 +18,7 @@ The interface is in English. The English/עברית switch at the top of the pag
 
 The Episode guide goes through each series episode by episode. Browse lists every video, clips and songs included, with filters for series, type, where it plays, theme and character. Videos open on their original site in a new tab.
 
-Each episode's coverage label (Whole link, Parts only, Excerpts only or Missing) says what is linked, and its evidence label (Metadata checked, Playback started, Watched in full or Compared with a reference) says how far that link has been checked.
+Each episode's coverage label (Whole link, Parts only, Excerpts only or Missing) says what is linked, and its evidence label (Details checked, not test-played; Seen to play; Checked in full; or Compared with a reference) says how far the project has checked that link. Tiles show an evidence badge only above the first level, which every linked episode has. Evidence is about the link, not about what you have watched.
 
 ## Where the videos are
 

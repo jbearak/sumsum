@@ -68,7 +68,7 @@ The 234 pages hold 224 distinct Vimeo videos. Ten music posts embed the same vid
 | hop-9862, the fifty-year song compilation | hop-5110 |
 | hop-9869, hop-9872, hop-9874, hop-9876, hop-9878 | hop-5162, hop-5164, hop-5168, hop-5165, hop-5169 (songs) |
 
-The first four are linked to the same episodes as excerpts, like their twins. Coverage is unchanged. Three same-title pairs embed different videos: hop-6848 and hop-5116, hop-6963 and hop-5117, hop-6960 and hop-6961. The builder warns that 10 videos are linked by more than one record; those are these ten pairs, and the warning is expected. This comparison settles the earlier estimate that about 15 music posts repeat show posts.
+The first four are linked to the same episodes as excerpts, like their twins. Coverage is unchanged. Three same-title pairs embed different videos: hop-6848 and hop-5116, hop-6963 and hop-5117, hop-6960 and hop-6961. The builder warns that 10 videos are linked by more than one record; those are these ten pairs, and the warning is expected. This comparison settles the earlier estimate that about 15 music titles duplicate show posts: 12 music posts share a show post's title or nearly so, and 10 of those are the same video.
 
 The Tu BiShvat special hop-10133 "מעבדה – אביגיל שואלת איך ולמה" runs 6:52. It stays unverified, because a running time alone does not establish a whole programme.
 

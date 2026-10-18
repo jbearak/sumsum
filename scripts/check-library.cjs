@@ -390,7 +390,9 @@ function harness(app) {
   const setValue = async (id, value, event = 'change') => { const n = $(id); n.value = value; await n.fire(event); };
   const blobJson = async () => JSON.parse(await app.blobs.get(app.downloads.at(-1).url).text());
   const extLinks = within => descendants(within, n => n.tagName === 'a' && n.target === '_blank');
-  return {...app, $, view, cls, find, byClass, fk, fkAll, has, number, chipCount, text, h1, count, setValue, blobJson, extLinks, ids};
+  // Switch the interface language as a user does: activate the unchecked option of the radio group.
+  const flipLang = () => [$('lang-en'), $('lang-he')].find(o => o.getAttribute('aria-checked') !== 'true').dispatch('click');
+  return {...app, $, view, cls, find, byClass, fk, fkAll, has, number, chipCount, text, h1, count, setValue, blobJson, extLinks, ids, flipLang};
 }
 function assertSafeLinks(H, where) {
   for (const a of H.extLinks(H.tree)) {
@@ -752,6 +754,27 @@ async function checkVimeoAndBackups(H, M, starredRecord) {
   assert(JSON.parse(H.storage.get('sumsum-vimeo-mappings'))['bare-key'], 'Bare mapping object imports');
   await importJson({format: 'sumsum-direct-links-v1', mappings: {'old-key': {url: 'https://vimeo.com/22222222/abcd'}}, favorites: [starredRecord.id]});
   assert(JSON.parse(H.storage.get('sumsum-vimeo-mappings'))['old-key'], 'Backups without watched marks still import');
+  // A backup's stars and watched marks import on their own (review round 1): no mappings, two records not starred yet and one
+  // watched mark, so the import can succeed only through the favorites and watched lists. Stars keep their backup field
+  // (`favorites`), so older backups load.
+  const favsBefore = JSON.parse(H.storage.get('sumsum-favorites') || '[]'), watchedBefore = JSON.parse(H.storage.get('sumsum-watched') || '[]');
+  const newStars = M.records.filter(r => !favsBefore.includes(r.id)).slice(0, 2).map(r => r.id);
+  const newWatch = (M.eps.find(e => !watchedBefore.includes(e.id)) || {}).id;
+  if (newStars.length === 2 && newWatch) {
+    await importJson({format: 'sumsum-direct-links-v1', mappings: {}, favorites: newStars, watched: [newWatch]});
+    assert.equal(H.$('toast').textContent, tr('en', 'imported', {n: '0', f: '2', w: '1'}), 'A stars-only backup reports its stars and watched mark');
+    const favsAfter = JSON.parse(H.storage.get('sumsum-favorites'));
+    assert(newStars.every(id => favsAfter.includes(id)) && favsBefore.every(id => favsAfter.includes(id)), 'Imported stars join the stored ones');
+    assert(JSON.parse(H.storage.get('sumsum-watched')).includes(newWatch), 'The imported watched mark is stored');
+    await H.navigate('starred');
+    for (const id of newStars) assert(H.has('card-' + id, H.view()), 'Starred lists an imported star: ' + id);
+    assert.equal(H.number(H.byClass('tab-count', H.fk('tab-starred'))[0].textContent), favsAfter.length, 'The Starred count includes them');
+    // Undo them through the page, so the later checks see the earlier state.
+    for (const id of newStars) { await H.navigate('record/' + encodeURIComponent(id)); await H.fk('rec-star').click(); }
+    await H.navigate('episode/' + encodeURIComponent(newWatch)); await H.fk('watch-toggle').click();
+    assert.deepEqual(JSON.parse(H.storage.get('sumsum-favorites')), favsBefore, 'The imported stars are removed again');
+    assert.deepEqual(JSON.parse(H.storage.get('sumsum-watched')), watchedBefore, 'and the watched mark');
+  }
   await importJson('{"__proto__": "https://vimeo.com/33333333"}');
   assert.equal(H.$('toast').textContent, L.en.invalidImport, 'Prototype keys are refused');
   assert(!Object.hasOwn(JSON.parse(H.storage.get('sumsum-vimeo-mappings')), '__proto__'));
@@ -960,7 +983,7 @@ async function checkGuide(H, M) {
   for (const p of prods) {
     const withBest = M.epsOf.get(p.id).filter(e => M.best(e)); if (!withBest.length) continue;
     for (const lang of withBest.some(e => M.best(e).acc === 'licensed') ? ['en', 'he'] : ['en']) {
-      if (lang === 'he') await H.$('lang').click();
+      if (lang === 'he') await H.flipLang();
       await H.navigate('guide/' + encodeURIComponent(p.id) + '?layout=album');
       for (const e of withBest) {
         if (!H.has('w-' + e.id, H.view())) continue;
@@ -968,7 +991,7 @@ async function checkGuide(H, M) {
         assertFailedMark(H, H.fk('w-' + e.id), M.best(e).acc === 'unavailable', `Tile (${lang}) ${e.id}`);
         tileLabels++;
       }
-      if (lang === 'he') await H.$('lang').click();
+      if (lang === 'he') await H.flipLang();
     }
   }
   assert(tileLabels > 0 || !eps.some(e => M.best(e)), 'Tile Watch labels were checked');
@@ -977,7 +1000,7 @@ async function checkGuide(H, M) {
   const failedEps = eps.filter(e => M.best(e) && M.best(e).acc === 'unavailable');
   let failedLinks = 0;
   for (const lang of ['en', 'he']) {
-    if (lang === 'he') await H.$('lang').click();
+    if (lang === 'he') await H.flipLang();
     for (const e of failedEps) {
       const b = M.best(e), where = `${e.id} (${lang})`;
       // The layout is stored, so album comes last and the checks after this block see tiles again.
@@ -997,7 +1020,7 @@ async function checkGuide(H, M) {
         failedLinks++;
       }
     }
-    if (lang === 'he') await H.$('lang').click();
+    if (lang === 'he') await H.flipLang();
   }
   await H.navigate('guide?layout=album'); await search('');
   ok(`failed links marked: ${failedEps.length} episodes whose best link failed a check, ${failedLinks} tile and List links (EN, HE)`);
@@ -1072,7 +1095,14 @@ async function checkGuide(H, M) {
   assert.equal(todo.missing.length, eps.filter(e => cov(e) === 'missing').length);
   assert.equal(todo.partsOnly.length, eps.filter(e => cov(e) === 'parts-only').length);
   assert.equal(todo.excerptOnly.length, eps.filter(e => cov(e) === 'excerpt-only').length);
-  assert.equal(todo.unidentified.length, M.queued.size);
+  // The export's list is the Videos to identify list: queued uploads and uploads linked only as possible copies, which name
+  // the episodes they may hold.
+  const {waitingIds: todoWaiting} = menuModel(M);
+  assert.deepEqual(todo.unidentified.map(x => x.recordId).sort(), [...todoWaiting].sort(), 'The export lists every upload to identify');
+  for (const x of todo.unidentified) {
+    const poss = M.guideStatus(M.recById.get(x.recordId)) === 'possible' ? M.recLinks.get(x.recordId).map(l => l.e.id) : [];
+    assert.deepEqual(x.possibleCopyOf || [], poss, 'A possible-only upload names its candidate episodes in the export: ' + x.recordId);
+  }
   assert.equal(todo.wholeLinksToCheck.length, eps.filter(e => cov(e) === 'whole-candidate' && ev(e) === 'metadata-checked').length);
   // YouTube searches name the series once and drop the catalogue's "<N>"; a catalogue title that is only the series name and a
   // number, with no story name, searches by the production's Hebrew number label (R3-01).
@@ -1195,7 +1225,7 @@ async function checkNumbering(H, M) {
     await H.navigate('guide/' + encodeURIComponent(p.id) + '?layout=list&q=' + encodeURIComponent(q)); H.flushTimers();
   };
   for (const lang of ['en', 'he']) {
-    if (lang === 'he') await H.$('lang').click();
+    if (lang === 'he') await H.flipLang();
     for (const p of M.prods) {
       const numbered = M.epsOf.get(p.id).filter(e => Number.isInteger(e.number));
       for (const e of lang === 'en' ? numbered : numbered.slice(0, 3)) {
@@ -1207,7 +1237,7 @@ async function checkNumbering(H, M) {
         codeSearches++;
       }
     }
-    if (lang === 'he') await H.$('lang').click();
+    if (lang === 'he') await H.flipLang();
   }
   // Unscoped, a shown code finds that code in every production and nothing else: "No. 12" is not IETV no. 12 or S1 · E12.
   for (const e of M.eps.filter(x => Number.isInteger(x.number) && !M.label(M.prodById.get(x.production), 'en')).slice(0, 2)) {
@@ -1219,7 +1249,7 @@ async function checkNumbering(H, M) {
   // List rows carry the alternate labels as a secondary line, in both languages; tiles keep the page direction (dir=auto
   // would lay a Hebrew label that starts with a Latin word, "hoopla עונה 2, פרק 1", out left to right).
   for (const lang of ['en', 'he']) {
-    if (lang === 'he') await H.$('lang').click();
+    if (lang === 'he') await H.flipLang();
     for (const p of M.prods.filter(q => M.epsOf.get(q.id).some(e => M.altLabels(e).length))) {
       await H.navigate('guide/' + encodeURIComponent(p.id) + '?layout=list');
       for (const e of M.epsOf.get(p.id).filter(x => M.altLabels(x).length)) {
@@ -1230,7 +1260,7 @@ async function checkNumbering(H, M) {
       await H.navigate('guide/' + encodeURIComponent(p.id) + '?layout=album');
       for (const ta of H.byClass('tile-alt')) assert.equal(ta.getAttribute('dir'), undefined, `Tile alternate labels keep the page direction (${lang})`);
     }
-    if (lang === 'he') await H.$('lang').click();
+    if (lang === 'he') await H.flipLang();
   }
   await search('');
   ok(`numbering: ${strips} strips start at their season's first number; ${labelledCells} cells and ${labelled.length} productions use their number ` +
@@ -1244,7 +1274,7 @@ async function checkHebrew(H, M) {
   // language would block the page for seconds); focus stays on the toggle.
   for (let k = 0; k < 2 && H.has('more', H.view()); k++) await H.fk('more').click();
   const paged = H.$('grid').children.length;
-  await H.$('lang').click();
+  await H.flipLang();
   assert.equal(H.$('grid').children.length, Math.min(48, paged), 'The language toggle shows the first 48 cards again');
   assert.equal(H.document.activeElement, H.$('lang-he'), 'Focus stays on the language toggle (its checked option)');
   assert.equal(H.document.documentElement.dir, 'rtl'); assert.equal(H.document.documentElement.lang, 'he');
@@ -1321,9 +1351,9 @@ async function sweep(H, M) {
   for (const r of M.records) routes.push('record/' + encodeURIComponent(r.id));
   const locals = JSON.parse(H.storage.get('sumsum-vimeo-mappings') || '{}');
   const localOf = r => safe((locals[r.id] || locals[r.url] || {}).url || '');
-  let visited = 0;
+  let visited = 0, tilesChecked = 0;
   for (const lang of ['he', 'en']) {
-    if (H.document.documentElement.lang !== lang) await H.$('lang').click();
+    if (H.document.documentElement.lang !== lang) await H.flipLang();
     const slotTitles = new Map();
     for (const route of routes) {
       await H.navigate(route); visited++;
@@ -1338,6 +1368,15 @@ async function sweep(H, M) {
         slotTitles.set(H.document.title, route);
       }
       if (route.startsWith('guide')) assert(!/\d\s?%/.test(H.text()), where + ': no percentage');
+      assertNoBars(H, where);
+      // Every tile shows an evidence badge exactly when its episode's level is above the baseline (request 06).
+      if (route.startsWith('guide')) {
+        for (const a of H.find(n => H.cls(n).includes('tile-title'))) {
+          const e = M.eps.find(x => x.id === a.getAttribute('data-fk').slice(3)), lv = M.ev(e), b = H.byClass('ev-badge', a.parentElement.parentElement);
+          assert.deepEqual(b.map(x => x.textContent), EVS.indexOf(lv) >= 1 ? [tr(lang, 'ev_' + lv)] : [], `${where}: tile ${e.id} evidence badge`);
+          tilesChecked++;
+        }
+      }
       if (route.startsWith('guide/')) {
         // Totals evidence: scope and source are one left-to-right isolate, so a wrapped Hebrew row cannot interleave them.
         const p = M.prodById.get(decodeURIComponent(route.split('/')[1]));
@@ -1524,7 +1563,9 @@ async function sweep(H, M) {
       }
     }
   }
-  ok(`crash sweep: ${visited} routes (${routes.length} per language); heading order; unique slot titles; URL labels`);
+  assert(tilesChecked > 0, 'The sweep checked guide tiles');
+  ok(`crash sweep: ${visited} routes (${routes.length} per language); heading order; unique slot titles; URL labels; no evidence bars; ` +
+    `${tilesChecked} tiles with an evidence badge exactly above the baseline`);
 }
 
 // ---------------------------------------------------------------- guide-absent mode
@@ -1589,10 +1630,23 @@ function checkStrings() {
   for (const k of ek) {
     assert(!/matched to one episode|not matched to one\b/i.test(L.en[k]) && !/הותאמו לפרק אחד/.test(L.he[k]), 'No "matched to one episode" wording: ' + k);
   }
-  assert.equal(L.en.descUnidentified, 'Not matched to an episode yet', 'Videos to identify: menu description');
-  assert.equal(L.he.descUnidentified, 'עדיין לא הותאמו לפרק', 'Videos to identify: menu description (Hebrew)');
-  assert(L.en.unidentifiedLede.startsWith('Uploads not matched to an episode yet') && L.he.unidentifiedLede.startsWith('העלאות שעדיין לא הותאמו לפרק,'),
-    'Videos to identify: lede says "an episode" in both languages');
+  // The two Browse pages are described from the guide data (AGENTS.md): Identified videos are matched or catalogued outside the
+  // guide; Videos to identify are queued or possible-only. "Not matched to an episode" would also describe 1,585 identified
+  // uploads that are not in the guide (review round 1).
+  assert.equal(L.en.descUnidentified, 'In an identification queue, or only a possible copy of an episode', 'Videos to identify: menu description');
+  assert.equal(L.he.descUnidentified, 'בתור לזיהוי, או רק עותק אפשרי של פרק', 'Videos to identify: menu description (Hebrew)');
+  assert.equal(L.en.descIdentified, 'Matched to an episode, or catalogued outside the episode guide', 'Identified videos: menu description');
+  assert.equal(L.he.descIdentified, 'מותאמים לפרק, או מקוטלגים מחוץ למדריך הפרקים', 'Identified videos: menu description (Hebrew)');
+  assert(L.en.unidentifiedLede.startsWith("Uploads in a production's identification queue, and uploads linked only as a possible copy") &&
+    L.he.unidentifiedLede.startsWith('העלאות שבתור הזיהוי של הפקה, והעלאות שקושרו רק כעותק אפשרי'),
+    'Videos to identify: the lede gives the definition in both languages');
+  for (const k of ['descIdentified', 'descUnidentified', 'identifiedNote', 'unidentifiedLede']) {
+    assert(!/not matched to an episode/i.test(L.en[k]) && !/לא הותאמו לפרק/.test(L.he[k]), 'Defined from the guide data, not "not matched": ' + k);
+  }
+  // One term, one count: the facet chip names the queue (44 in the data), "awaiting identification" is queue plus possible-only.
+  assert.equal(L.en.gsQueue, 'In an identification queue'); assert.equal(L.he.gsQueue, 'בתור לזיהוי');
+  assert(/1/.test(L.en.queueLinkOne) === false && /^One upload awaits/.test(L.en.queueLinkOne) && /^העלאה אחת ממתינה/.test(L.he.queueLinkOne),
+    'A singular queue link in both languages');
   assert(!/whole episodes of/.test(L.en.queueHelp) && /segments/.test(L.en.queueHelp) && /קטעים/.test(L.he.queueHelp),
     'The queue help names parts and segments, not only possible whole episodes');
   // The core headline's scope sentence names every kind that is counted separately, related series included.
@@ -1603,7 +1657,7 @@ function checkStrings() {
     assert(!/\bsav(?:e|ed|es|ing)\b/i.test(L.en[k]), 'No "save" wording in English: ' + k + ': ' + L.en[k]);
     if (k !== 'footer') assert(!/נשמר|שמירה|ששמרתם|שמרתם|שמור/.test(L.he[k]), 'No "save" wording in Hebrew: ' + k + ': ' + L.he[k]);
   }
-  for (const [k, en, he] of [['navStarred', 'Starred', 'מסומנים בכוכב'], ['navStarredShort', 'Starred', 'בכוכב'],
+  for (const [k, en, he] of [['navStarred', 'Starred', 'מסומנים בכוכב'], ['navStarredShort', 'Starred', 'מסומנים'],
     ['starredTitle', 'Starred uploads', 'העלאות מסומנות בכוכב'], ['starredOnly', 'Starred only', 'מסומנים בכוכב בלבד'],
     ['starAria', 'Star {title}', 'סימון בכוכב: {title}'], ['langLabel', 'Interface language', 'שפת הממשק'],
     ['themeLabel', 'Theme', 'ערכת צבעים'], ['appearanceLabel', 'Appearance', 'מראה'], ['appSystem', 'System', 'לפי המערכת'],
@@ -1653,7 +1707,15 @@ function checkData(M, payload) {
     for (const f of ['directUrl', 'sourceUrl']) if (r[f]) assert(safe(r[f]), `${r.id}: ${f} is safe`);
     assert(!ids.has(r.id), 'Record ids are unique: ' + r.id); ids.add(r.id);
     const key = safe(r.url).replace(/\/$/, ''); assert(!urls.has(key), 'Records are merged by (serialized) URL: ' + r.id); urls.add(key);
-    if (r.directLinkProvenance) assert(hostKind(r.directUrl) === 'vimeo' && hostKind(r.url) === 'hop', 'Discovered links pair a Hop page with Vimeo');
+    if (r.directLinkProvenance) {
+      const pv = r.directLinkProvenance;
+      assert(hostKind(r.directUrl) === 'vimeo' && hostKind(r.url) === 'hop', 'Discovered links pair a Hop page with Vimeo');
+      // Provenance names the run that read this page, not every run (review round 1), and says when its time is only the
+      // run's completion time; a re-read carries its own date, method and attempts.
+      assert(!/IL#\d+[^;]*IL#\d+/.test(pv.collectionMethod || ''), r.id + ': the provenance names one collection run');
+      if (pv.collectedAtIs) assert(/when its collection run completed/.test(r.verification || ''), r.id + ': a run completion time is said to be one');
+      if (pv.recheckedAt) assert(Array.isArray(pv.recheckAttempts) && pv.recheckMethod, r.id + ': a re-read keeps its method and attempts');
+    }
   }
   assert(!/__LIBRARY_DATA__/.test(JSON.stringify(payload)), 'Data marker replaced');
   // A check that failed outside Israel (recorded only as text) must carry a status the app reads: never "public".
@@ -1696,7 +1758,7 @@ function checkData(M, payload) {
 const EDGE = {idless: 'https://www.youtube.com/watch?v=EdgeCase001', weird: 'ia/RS%20S03E50#x?y', prod: 'edge/prod?x#1 y',
   ep1: 'edge/ep?s=1#e1 %', ep3: 'edge-ep-3', seasons: 'edge-seasons', known: 'edge-seasons-known', noname: 'edge-noname',
   iaSpace: 'https://archive.org/details/edge-item-2/Rechov Sumsum 001.mp4', ietv: 'edge-ietv', related: 'edge-related', story: 'edge-story',
-  edited: 'edge-edited', editedShalom: 'edge-edited-shalom'};
+  edited: 'edge-edited', editedShalom: 'edge-edited-shalom', evidence: 'edge-evidence'};
 function edgePayload(p) {
   const add = r => { p.records.push({themes: [], characters: [], ...r}); return p.records.at(-1); };
   const idless = add({id: EDGE.idless, url: EDGE.idless, series: 'classic', kind: 'episode', title: 'Edge title-only programme 42',
@@ -1824,6 +1886,7 @@ function edgePayload(p) {
     nameHe: 'סדרת שוויון לבדיקה', numberLabelEn: 'Tie no.', numberLabelHe: 'מס׳ שוויון', expectedTotal: null, totalsEvidence: [], seasons: []});
   for (let n = 1; n <= 8; n++) {
     g.episodes.push({id: 'edge-tie-' + n, production: 'edge-tie', season: null, number: n, confidence: 'documented', titleEn: 'Edge tie ' + n,
+      ...(n === 1 ? {titleHeEditorial: 'Edge (שוויון 1–2) זקשוויון'} : {}),
       uploads: [], altLabels: [...(n <= 4 ? [{labelEn: 'Edge S1E9', sourceLabel: 'Edge uploader'}] : []),
         {labelEn: 'Edge S1E8', sourceLabel: 'Edge uploader'}]});
   }
@@ -1881,9 +1944,12 @@ function edgePayload(p) {
   // with one, 2 has no English title, 3 and 4 have a published titleHe or storyHe beside one (the builder refuses that; the app
   // shows the published title), and 5's is blank (refused too; ignored). The Shalom Sesame episode is searched by its English
   // title. Each value has a nonsense word (זק...) that occurs nowhere else, for search and for "shown nowhere else" checks.
-  // Episode 2's value and the edge-ed-latin clip's start with a Latin word or bracket and have a number range (laid out RTL).
+  // Episode 2's value and the edge-ed-latin clip's start with a Latin word or bracket and have a number range (laid out RTL); so
+  // do the upload, the queued upload, episode 1 and the unnumbered episodes, so that every place that shows an editorial title
+  // (queue items, Videos to identify rows, upload rows, Up next, record links, suggestions, the pasted-link banner, unnumbered
+  // links) can tell RTL from dir=auto and an isolated range from a bare one (review round 1).
   const edRec = add({id: 'edge-ed-rec', url: 'https://www.youtube.com/watch?v=EdgeHeEdRc1', series: 'classic', kind: 'episode',
-    titleEn: 'Edge editorial upload', originalTitle: 'Edge Upload As Published', titleHeEditorial: 'העלאה בעריכת המערכת זקהעלאה',
+    titleEn: 'Edge editorial upload', originalTitle: 'Edge Upload As Published', titleHeEditorial: 'Edge (העלאה בעריכת המערכת 1–3) זקהעלאה',
     durationSeconds: 1610, production: EDGE.edited, guideEpisodeId: EDGE.edited + '-1'});
   add({id: 'edge-ed-clip', url: 'https://www.youtube.com/watch?v=EdgeHeEdCl1', series: 'shalom-modern', kind: 'clip',
     titleEn: 'Edge editorial clip', titleHeEditorial: 'קטע בעריכת המערכת זקקטע', durationSeconds: 95});
@@ -1892,26 +1958,137 @@ function edgePayload(p) {
   add({id: 'edge-ed-blank', url: 'https://www.youtube.com/watch?v=EdgeHeEdBl1', series: 'classic', kind: 'clip',
     titleEn: 'Edge editorial blank', titleHeEditorial: '   '});
   const edQueued = add({id: 'edge-ed-queued', url: 'https://www.youtube.com/watch?v=EdgeHeEdQu1', series: 'classic', kind: 'unverified',
-    titleEn: 'Edge editorial queued', titleHeEditorial: 'העלאה ממתינה בעריכת המערכת זקתור', durationSeconds: 1500});
+    titleEn: 'Edge editorial queued', titleHeEditorial: '[VHS] העלאה ממתינה בעריכת המערכת 2–4 זקתור', durationSeconds: 1500});
   add({id: 'edge-ed-latin', url: 'https://www.youtube.com/watch?v=EdgeHeEdLt1', series: 'shalom-modern', kind: 'clip',
     titleEn: 'Edge editorial Latin first', titleHeEditorial: 'Edgemaster (תכניות 1–5) זקלטיני', durationSeconds: 80});
+  // A Vimeo upload (its link in a search shows the pasted-link banner) that is an excerpt of the two unnumbered episodes.
+  const edVimeo = add({id: 'edge-ed-vimeo', url: 'https://vimeo.com/987650001', series: 'classic', kind: 'clip', titleEn: 'Edge editorial Vimeo',
+    titleHeEditorial: 'Vimeo (קטע בעריכה 3–4) זקוימאו', durationSeconds: 200, production: EDGE.edited, guideEpisodeId: EDGE.edited + '-6'});
+  // Search: letter names with gershayim, ט״ו and plene spellings, found when typed without them (review round 1).
+  for (const [k, he] of [['shin', 'לומדים את האות שי״ן זקאות'], ['menorah', 'חנוכה: החנוכייה שנעלמה זקחנוכה'],
+    ['mitzvah', 'מצווה ברחוב זקמצווה'], ['shvat', 'ט״ו בשבט זקשבט']]) {
+    add({id: 'edge-ed-' + k, url: 'https://www.youtube.com/watch?v=EdgeHeSr' + k.slice(0, 3), series: 'shalom-modern', kind: 'clip',
+      titleEn: 'Edge search ' + k, titleHeEditorial: he, durationSeconds: 60});
+  }
+  // A Hop page with an editorial title: a pasted Vimeo link stores only the published Hebrew title (none here).
+  add({id: 'edge-ed-hop', url: 'https://hop.co.il/shows/edge-ed-hop/', series: 'modern', kind: 'clip', titleEn: 'Edge editorial Hop',
+    titleHeEditorial: 'Edge (הופ בעריכה 5–6) זקהופ', access: 'vpn-required', durationSeconds: 90});
+  // Title sort: the English and the editorial titles sort in opposite orders.
+  add({id: 'edge-sort-a', url: 'https://www.youtube.com/watch?v=EdgeSortA01', series: 'classic', kind: 'clip', titleEn: 'Edge sort Alpha zqsort',
+    titleHeEditorial: 'תמר זקמיון', durationSeconds: 70});
+  add({id: 'edge-sort-b', url: 'https://www.youtube.com/watch?v=EdgeSortB01', series: 'classic', kind: 'clip', titleEn: 'Edge sort Zulu zqsort',
+    titleHeEditorial: 'אגס זקמיון', durationSeconds: 70});
   g.productions.push({id: EDGE.edited, series: 'classic', format: 'core', order: 0.6, years: '1984', nameEn: 'Edge edited series',
-    nameHe: 'סדרה בעריכה לבדיקה', expectedTotal: 5, totalsEvidence: [], seasons: []});
+    nameHe: 'סדרה בעריכה לבדיקה', expectedTotal: 7, totalsEvidence: [], seasons: []});
   const edited = (n, extra) => g.episodes.push({id: EDGE.edited + '-' + n, production: EDGE.edited, season: null, number: n,
     confidence: 'documented', uploads: [], ...extra});
-  edited(1, {titleEn: 'Edge edited episode', titleHeEditorial: 'פרק בעריכת המערכת זקפרק',
+  edited(1, {titleEn: 'Edge edited episode', titleHeEditorial: 'Edge (פרק בעריכת המערכת 1–2) זקפרק',
     uploads: [{recordId: edRec.id, role: 'whole-candidate'}]});
   edited(2, {titleHeEditorial: '[VHS] פרק בלי כותרת באנגלית 1–5 זקבלי'});
   edited(3, {titleEn: 'Edge edited published', titleHe: 'כותרת שפורסמה לפרק', titleHeEditorial: 'זקמוסתר פרק'});
   edited(4, {titleEn: 'Edge edited story', titleHe: 'סדרה בעריכה <4>', storyHe: 'סיפור שפורסם לבדיקה', storySourceEn: 'Edge file label',
     titleHeEditorial: 'זקמוסתר סיפור'});
   edited(5, {titleEn: 'Edge edited blank', titleHeEditorial: '  '});
+  // Two unnumbered episodes, each with an editorial title, sharing one excerpt (the card's tag names both in its tooltip).
+  for (const [n, he] of [[6, 'Edge (פרק בלי מספר 7–8) זקשישה'], [7, 'Edge (פרק נוסף בלי מספר 9–10) זקשבעה']]) {
+    g.episodes.push({id: EDGE.edited + '-' + n, production: EDGE.edited, season: null, number: null, confidence: 'documented',
+      titleEn: 'Edge edited unnumbered ' + n, titleHeEditorial: he, uploads: [{recordId: edVimeo.id, role: 'excerpt'}]});
+  }
   g.unidentified[EDGE.edited] = [edQueued.id];
   g.productions.push({id: EDGE.editedShalom, series: 'shalom-classic', format: 'core', order: 12.5, years: '1986',
     nameEn: 'Edge edited Shalom Sesame', nameHe: 'שלום סומסום בעריכה לבדיקה', expectedTotal: 1, totalsEvidence: [], seasons: []});
   g.episodes.push({id: EDGE.editedShalom + '-1', production: EDGE.editedShalom, season: null, number: 1, confidence: 'documented',
     titleEn: 'Edge Shalom edited', titleHeEditorial: 'שלום בעריכת המערכת זקשלום', uploads: []});
+  // Evidence in words (request 06): one episode at each level, from nothing linked to compared with a reference.
+  const evRec = (k, extra = {}) => add({id: 'edge-ev-' + k, url: 'https://archive.org/details/edge-ev/' + k + '.mp4', series: 'modern',
+    kind: 'episode', titleEn: 'Edge evidence upload ' + k, durationSeconds: 1500, ...extra});
+  const evB = evRec('base'), evF = evRec('full'), evR = evRec('ref'), evP = evRec('played', {playbackVerified: true,
+    playbackUrl: 'https://archive.org/details/edge-ev/played.mp4', playbackVerifiedAt: '2026-10-17'});
+  g.productions.push({id: EDGE.evidence, series: 'modern', format: 'short-series', order: 9, years: '2013', nameEn: 'Edge evidence series',
+    nameHe: 'סדרת ראיות לבדיקה', expectedTotal: 5, totalsEvidence: [], seasons: []});
+  const evEp = (n, uploads, extra = {}) => g.episodes.push({id: EDGE.evidence + '-' + n, production: EDGE.evidence, season: null, number: n,
+    confidence: 'documented', titleEn: 'Edge evidence ' + n, uploads, ...extra});
+  const stated = (r, level, checkedAt) => ({evidence: level, evidenceDetail: {level, recordId: r.id, url: r.url, checkedAt}});
+  evEp(1, []); evEp(2, [{recordId: evB.id, role: 'whole-candidate'}]); evEp(3, [{recordId: evP.id, role: 'whole-candidate'}]);
+  evEp(4, [{recordId: evF.id, role: 'whole-candidate'}], stated(evF, 'complete-playback-reviewed', '2026-10-02'));
+  evEp(5, [{recordId: evR.id, role: 'whole-candidate'}], stated(evR, 'reference-compared', '2026-10-03'));
   return p;
+}
+
+// Evidence in words (request 06: "I don't understand what these cellular signal strength bars are supposed to mean"). No bar
+// glyph or other unlabelled evidence graphic anywhere; tiles and compact List rows show a text badge only above the baseline
+// (details checked, which every linked episode has); the List's Evidence column and the episode page's tag name every level in
+// words; the ladder, the production summary (words and counts) and the legend (one line per level) use the same words.
+function assertNoBars(H, where) {
+  assert(!H.find(n => H.cls(n).some(c => /^pips?$/.test(c))).length, where + ': no evidence bar glyph');
+}
+async function checkEvidenceWords(H, M) {
+  const enc = encodeURIComponent, eps = [1, 2, 3, 4, 5].map(n => M.eps.find(e => e.id === EDGE.evidence + '-' + n));
+  const levels = eps.map(e => M.ev(e)), name = (lang, lv) => tr(lang, lv ? 'ev_' + lv : 'ev_none');
+  assert.deepEqual(levels, [null, ...EVS], 'One fixture episode at each evidence level');
+  const hiddenUpTo = (n, stop) => { for (let x = n; x && x !== stop; x = x.parentElement) if (x.getAttribute?.('aria-hidden') === 'true') return true; return false; };
+  for (const lang of ['en', 'he']) {
+    if (H.document.documentElement.lang !== lang) await H.flipLang();
+    await H.navigate('guide/' + EDGE.evidence + '?layout=album'); assertNoBars(H, lang + ' tiles');
+    eps.forEach((e, k) => {
+      const a = H.fk('ep-' + e.id), tile = a.parentElement.parentElement, lv = levels[k], where = `${lang} tile ${e.id} (${lv})`;
+      const badges = H.byClass('ev-badge', tile), strong = EVS.indexOf(lv) >= 1, meta = H.byClass('tile-meta', tile)[0];
+      assert.equal(badges.length, strong ? 1 : 0, where + ': a badge only above the baseline');
+      if (strong) {
+        assert.equal(badges[0].textContent, name(lang, lv), where + ': the badge says the level in words');
+        assert(!hiddenUpTo(badges[0], tile), where + ': the badge is real text, not aria-hidden');
+        assert.equal(badges[0].getAttribute('title'), tr(lang, 'evLong_' + lv), where + ': its hint explains the level');
+      }
+      // The link's name keeps the code, title and coverage; the evidence is the badge's text, read once.
+      assert(EVS.every(x => !a.getAttribute('aria-label').includes(tr(lang, 'ev_' + x))), where + ': the link name does not repeat the evidence');
+      assert.notEqual(meta.getAttribute('aria-hidden'), 'true', where + ': the meta row is not hidden as a whole');
+      const hidden = H.find(n => n !== meta && n.getAttribute?.('aria-hidden') === 'true', meta);
+      assert(hidden.every(n => H.cls(n).includes('glyph') || H.cls(n).includes('cov-word')), where + ': no other unlabelled graphic in the meta row');
+    });
+    await H.navigate('guide/' + EDGE.evidence + '?layout=list'); assertNoBars(H, lang + ' list');
+    eps.forEach((e, k) => {
+      const row = H.fk('row-' + e.id).parentElement.parentElement, cell = H.byClass('c-ev', row)[0], lv = levels[k], where = `${lang} row ${e.id}`;
+      assert.equal(cell.textContent, name(lang, lv), where + ': the Evidence column names every level, the baseline too');
+      assert(!cell.children.some(c => c && c.tagName && c.tagName !== '#text'), where + ': in text only');
+      const inline = H.byClass('ev-inline', row);
+      assert.equal(inline.length, EVS.indexOf(lv) >= 1 ? 1 : 0, where + ': a compact row badge only above the baseline');
+      if (inline.length) assert.equal(inline[0].textContent, name(lang, lv), where + ': the compact badge in words');
+    });
+    for (const [k, e] of eps.entries()) {
+      await H.navigate('episode/' + enc(e.id)); assertNoBars(H, `${lang} episode ${e.id}`);
+      const lv = levels[k], tag = H.fk('ep-ev');
+      assert.equal(tag.textContent, name(lang, lv), `${lang} episode ${e.id}: the tag names the level`);
+      assert.equal(tag.getAttribute('title'), lv ? tr(lang, 'evLong_' + lv) : tr(lang, 'evNoneLong'), `${lang} episode ${e.id}: its hint`);
+      const steps = H.byClass('ladder')[0].children;
+      steps.forEach((li, i) => {
+        const strong = H.find(n => n.tagName === 'strong', li)[0], now = H.byClass('nowtag', li).length > 0;
+        assert(strong.textContent.startsWith(tr(lang, 'ev_' + EVS[i])), `${lang} episode ${e.id}: ladder step ${i + 1} uses the same words`);
+        assert.equal(now, EVS[i] === lv, `${lang} episode ${e.id}: "Now" marks the level`);
+      });
+    }
+    await H.navigate('guide/' + EDGE.evidence);
+    const es = H.byClass('evsum')[0], want = tr(lang, 'evSummary') + ':' + ['none', ...EVS].map(x => tr(lang, 'ev_' + x) + ': 1').join('');
+    assert.equal(es.textContent, want, lang + ': the production summary gives words and counts');
+    const col = H.byClass('legend-body')[0].children.find(c => c.children[0]?.textContent === tr(lang, 'legendEvidence'));
+    const dl = col.children[1], dts = dl.children.filter(c => c.tagName === 'dt'), dds = dl.children.filter(c => c.tagName === 'dd');
+    assert.deepEqual(dts.map(d => d.textContent), EVS.map(x => tr(lang, 'ev_' + x)), lang + ': the legend names each level in words');
+    assert(dts.every(d => d.children.every(c => c.tagName === '#text')), lang + ': with no mark beside it');
+    assert.deepEqual(dds.map(d => d.textContent), EVS.map((x, i) => tr(lang, 'evLong_' + x) + (i ? '' : ' ' + tr(lang, 'evTileNote'))),
+      lang + ': one line each, the baseline saying tiles show no badge for it');
+  }
+  if (H.document.documentElement.lang !== 'en') await H.flipLang();
+  // The words never read like the user's own Watched marks.
+  for (const lang of ['en', 'he']) {
+    for (const k of ['none', ...EVS]) {
+      for (const v of [tr(lang, 'ev_' + k), k === 'none' ? tr(lang, 'evNoneLong') : tr(lang, 'evLong_' + k)]) {
+        assert(!/watch/i.test(v) && !/צפ/.test(v), `${lang} evidence wording does not say "watched": ${v}`);
+      }
+    }
+  }
+  assert(EVS.every(x => tr('en', 'ev_' + x) !== L.en.seenBadge && tr('he', 'ev_' + x) !== L.he.seenBadge), 'Evidence labels differ from Watched by you');
+  ok('evidence in words: no bars; tile and compact-row badges only above the baseline, as real text with a hint; the List column ' +
+    'and episode tag name every level; the ladder, the production summary (words and counts) and the legend use the same ' +
+    'words, never "watched" (EN, HE)');
 }
 
 async function checkEdgeCases(htmlPath) {
@@ -2137,6 +2314,7 @@ async function checkEdgeCases(htmlPath) {
   await checkContractEdges(H, M);
   await checkStoryNames(H, M);
   await checkEditorialTitles(H, M);
+  await checkEvidenceWords(H, M);
   return N;
 }
 
@@ -2166,11 +2344,11 @@ async function checkContractEdges(H, M) {
   assert(evli && !H.extLinks(evli).length && !H.find(a => a.tagName === 'a', evli).length, 'A totals claim without a url is plain text');
   // A season-and-episode code is matched exactly: "S1 · E1" is not "S1 · E10" (as text it would be).
   for (const [lang, q] of [['en', 'S1 · E1'], ['he', 'עונה 1 · פרק 1']]) {
-    if (lang === 'he') await H.$('lang').click();
+    if (lang === 'he') await H.flipLang();
     await H.navigate('guide/edge-first?layout=list&q=' + encodeURIComponent(q)); H.flushTimers();
     const rows = H.find(n => /^row-/.test(n.getAttribute?.('data-fk') || '')).map(n => n.getAttribute('data-fk').slice(4));
     assert.deepEqual(rows, ['edge-first-s1-1'], `"${q}" finds S1 · E1 only: ${rows.join(' ')}`);
-    if (lang === 'he') await H.$('lang').click();
+    if (lang === 'he') await H.flipLang();
   }
   ok('firstNumber: a season numbered 66-68 has no gap cells for 1-65; one numbered 66-70 has expected cells 68-70; cells and slot ' +
     'titles use the number label; a totals claim without a url is plain text; season and episode codes match exactly');
@@ -2256,11 +2434,11 @@ async function checkContractEdges(H, M) {
   assert(H.text().includes('Edge printed catalogue, no url') && !H.extLinks(H.view()).some(a => a.textContent.includes('Edge printed')),
     'A source without a url is plain text');
   assert.deepEqual(langIssues(H.view(), 'en'), [], 'A Hebrew source without a url is tagged lang="he"');
-  await H.$('lang').click();
+  await H.flipLang();
   assert.equal(H.byClass('alsolab')[0].textContent, L.he.alsoLabelled + ': בדיקה עונה 2 פרק 20 · Edge tape 7');
   assert.equal(H.byClass('kicker', H.byClass('hero')[0])[0].textContent, 'חינוכית לבדיקה · מס׳ בדיקה 66');
   assert.deepEqual(langIssues(H.view(), 'he'), [], 'An English source without a url is tagged lang="en"');
-  await H.$('lang').click();
+  await H.flipLang();
   const search = async q => {
     await H.navigate('guide?layout=album'); H.$('g-search').value = q; await H.$('g-search').fire('input'); H.flushTimers();
   };
@@ -2292,11 +2470,11 @@ async function checkContractEdges(H, M) {
     await H.navigate('browse?q=' + enc(q));
     assert.equal(cardTag(rid).textContent, M.linkTag(M.recById.get(rid)), 'Card tag of ' + rid);
   }
-  await H.$('lang').click(); await H.navigate('browse?q=zqtape');
+  await H.flipLang(); await H.navigate('browse?q=zqtape');
   assert.equal(cardTag('edge-tape').textContent, M.linkTag(M.recById.get('edge-tape'), 'he'), 'Hebrew card tag');
   await H.navigate('browse?q=' + enc('Edge possible copy'));
   assert.equal(cardTag('edge-possible').textContent, 'מס׳ בדיקה 66' + L.he.orSep + '68 · ' + L.he.role_possible, 'Hebrew possible-copy tag');
-  await H.$('lang').click();
+  await H.flipLang();
   await H.navigate('record/edge-tape');
   const crumbHrefs = H.find(n => n.tagName === 'a', H.byClass('crumbs')[0]).map(a => a.href);
   assert.equal(crumbHrefs.at(-1), '#/episode/edge-gapped-3', 'The breadcrumb follows the whole link, not the earlier excerpt link');
@@ -2322,7 +2500,20 @@ async function checkContractEdges(H, M) {
   assert(!H.has('ep-watch', H.view()) && H.fk('ep-cov').textContent === L.en.cov_missing, 'and it never counts or becomes the Watch link');
   await H.navigate('record/edge-possible-free');
   assert(H.text().includes(L.en.possibleRecord), 'Its record page says it is not counted');
-  ok('an unqueued possible copy has its own guide status and is never counted');
+  // It is awaiting identification, so every count of Videos to identify includes it (review round 1): the episode page's link
+  // for its production, the guide headline's link and the to-do export, which names its candidate episode.
+  await H.navigate('episode/edge-gapped-1');
+  const gl = H.find(a => a.tagName === 'a' && a.href === '#/browse/unidentified?prod=edge-gapped')[0];
+  assert(gl && gl.textContent === L.en.queueLinkOne, 'An episode page counts its production\'s possible-only upload: ' + (gl && gl.textContent));
+  const {counts: edgeCounts} = menuModel(M);
+  await H.navigate('guide');
+  const hl = H.find(a => a.tagName === 'a' && a.href === '#/browse/unidentified', H.byClass('goal')[0])[0];
+  assert.equal(hl.textContent, tr('en', 'queueLink', {n: edgeCounts.unidentified.toLocaleString('en-US')}), 'The guide headline counts possible-only uploads too');
+  await H.navigate('todo'); await H.fk('td-export').click();
+  const free = (await H.blobJson()).unidentified.find(x => x.recordId === 'edge-possible-free');
+  assert(free && free.production === 'edge-gapped' && JSON.stringify(free.possibleCopyOf) === '["edge-gapped-2"]',
+    'The to-do export lists the possible-only upload with its candidate episode');
+  ok('an unqueued possible copy has its own guide status and is never counted; it is counted as awaiting identification everywhere');
 
   // Equally likely matches are never cut arbitrarily: four tied matches are all shown; eight show three and count the rest.
   // A possible copy names every episode it may be (Videos to identify).
@@ -2353,7 +2544,7 @@ async function checkContractEdges(H, M) {
   // A best link that failed an availability check is marked on its album tile and List row (R4-01), in both languages.
   const failedId = EDGE.related + '-2';
   for (const lang of ['en', 'he']) {
-    if (lang === 'he') await H.$('lang').click();
+    if (lang === 'he') await H.flipLang();
     for (const layout of ['list', 'album']) {
       await H.navigate('guide/' + EDGE.related + '?layout=' + layout);
       const w = layout === 'album' ? H.fk('w-' + failedId) : H.extLinks(H.fk('row-' + failedId).parentElement.parentElement)[0];
@@ -2367,7 +2558,7 @@ async function checkContractEdges(H, M) {
       }
       assert(w.getAttribute('aria-label').startsWith(long + ', Edge related failed link'), where + ': link name ' + w.getAttribute('aria-label'));
     }
-    if (lang === 'he') await H.$('lang').click();
+    if (lang === 'he') await H.flipLang();
   }
   ok('a best link that failed a check is marked on its tile and List row (EN, HE)');
 
@@ -2391,11 +2582,11 @@ async function checkContractEdges(H, M) {
     'The episode page searches a "<series> <n>" title by its number label, not its English title');
   await H.navigate('browse/missing');
   // In Hebrew, an alternate label that starts with a Latin word keeps the page direction on the tile.
-  await H.$('lang').click(); await H.navigate('guide/edge-first?layout=album');
+  await H.flipLang(); await H.navigate('guide/edge-first?layout=album');
   const ta = H.byClass('tile-alt', H.fk('ep-edge-first-66').parentElement)[0];
   assert.equal(ta.textContent, 'hoopla עונה\u00A02, פרק\u00A066');
   assert.equal(ta.getAttribute('dir'), undefined, 'The tile label takes the page direction (no dir=auto)');
-  await H.$('lang').click();
+  await H.flipLang();
   ok('Missing episodes: untitled labelled numbers named and searched by their number label; "<series> <n>" catalogue titles searched ' +
     'without the series name twice or "<n>"; Latin-first Hebrew tile labels keep RTL');
 }
@@ -2453,7 +2644,7 @@ async function checkStoryNames(H, M) {
   assert.equal(row(sid(2)).storyHe, e2.storyHe, 'The to-do export carries storyHe');
   assert.equal(row(sid(3)).storyHe, null, 'and null for a blank one');
   // Hebrew: the story name heads the episode, its tile, row, Missing episodes row and record link; the identity card is unchanged.
-  await H.$('lang').click();
+  await H.flipLang();
   await H.navigate('episode/' + sid(1));
   assert.equal(H.h1().textContent, e1.storyHe, 'Hebrew heading: the story name');
   assert(H.document.title.startsWith(e1.storyHe + ' · '), 'document.title follows the Hebrew heading');
@@ -2481,7 +2672,7 @@ async function checkStoryNames(H, M) {
   const recLinks = H.find(a => a.tagName === 'a' && a.href === '#/episode/' + sid(1)).map(a => a.textContent);
   assert(recLinks.length && recLinks.every(x => x.endsWith(e1.storyHe)), 'The record page names its episode by the story name in Hebrew: ' +
     recLinks.join(' | '));
-  await H.$('lang').click();
+  await H.flipLang();
   ok('story names: Hebrew headings, tiles, rows, Missing episodes rows and record links use storyHe; English keeps titleEn; the identity card keeps ' +
     'the catalogue title and names the source; search, YouTube search and export use it; blank values ignored');
 }
@@ -2580,12 +2771,16 @@ async function checkEditorialTitles(H, M) {
   assert.deepEqual([row(e2.id).titleHeEditorial, row(e2.id).titleHe, row(e5.id).titleHeEditorial, row(e3.id).titleHe],
     [e2.titleHeEditorial, null, null, e3.titleHe], 'The to-do export names titleHeEditorial apart from titleHe (null for a blank one)');
   assert.equal(row(e2.id).search, want[0], 'and its search link leaves it out');
+  // The title sort follows the shown title: in English the English titles (Alpha before Zulu).
+  const sortIds = () => H.find(n => /^card-/.test(n.getAttribute?.('data-fk') || '')).map(n => n.getAttribute('data-fk').slice(5));
+  await H.navigate('browse?q=zqsort&sort=title'); H.flushTimers();
+  assert.deepEqual(sortIds(), ['edge-sort-a', 'edge-sort-b'], 'English title sort uses the English titles');
   // Hebrew: the editorial titles head and name the items with no published Hebrew title.
-  await H.$('lang').click();
+  await H.flipLang();
   await pages('he');
   await H.navigate('episode/' + enc(e2.id)); rtlTitle(H.h1(), e2.titleHeEditorial, 'Hebrew bracket-first editorial heading');
   rtlTitle(edSpan(factIn(H, 'he', 'heEdTitle')), e2.titleHeEditorial, 'and its labelled row');
-  await H.navigate('episode/' + enc(e1.id)); rtlTitle(H.h1(), e1.titleHeEditorial, 'Hebrew editorial heading without a range');
+  await H.navigate('episode/' + enc(e1.id)); rtlTitle(H.h1(), e1.titleHeEditorial, 'Hebrew Latin-first editorial heading with a range');
   await H.navigate('episode/' + enc(e3.id));
   assert.equal(H.h1().getAttribute('dir'), 'auto', 'A published Hebrew title heading keeps dir=auto');
   await H.navigate('record/' + enc(latin.id)); rtlTitle(H.h1(), latin.titleHeEditorial, 'Hebrew Latin-first editorial record heading');
@@ -2630,7 +2825,7 @@ async function checkEditorialTitles(H, M) {
   await H.navigate('guide');
   const nextIs = () => H.has('next-ep', H.view()) && H.fk('next-ep').href === '#/episode/' + enc(e1.id);
   for (let k = 0; k < 2000 && H.has('next-skip', H.view()) && !nextIs(); k++) await H.fk('next-skip').click();
-  assert.equal(H.fk('next-ep').textContent, e1.titleHeEditorial, 'Hebrew Up next');
+  rtlTitle(H.fk('next-ep'), e1.titleHeEditorial, 'Hebrew Up next');
   assert(H.fk('next-watch').getAttribute('aria-label').includes(', ' + e1.titleHeEditorial + ' ('), 'and its Watch label');
   for (const [q, id] of [['זקהעלאה', rec.id], ['זקפרק', rec.id]]) {
     await H.navigate('browse?q=' + enc(q)); H.flushTimers();
@@ -2638,7 +2833,80 @@ async function checkEditorialTitles(H, M) {
   }
   await H.navigate('guide?layout=album&q=' + enc('זקבלי')); H.flushTimers();
   assert(H.has('ep-' + e2.id, H.view()), 'Hebrew guide search finds an editorial title');
-  await H.$('lang').click();
+  // Every other place that shows an editorial title lays it out RTL with its ranges isolated too (review round 1: these were
+  // checked by their text only, so dir=auto or a bare range there passed).
+  const [e6, e7] = [6, 7].map(n => ep(eid(n))), vimeoRec = M.recById.get('edge-ed-vimeo'), tie1 = ep('edge-tie-1');
+  const linkTo = (route, within = H.view()) => H.find(a => a.tagName === 'a' && a.href === '#/' + route, within);
+  const bdiIn = a => a && a.children.find(c => c && c.tagName === 'bdi' && c.getAttribute('dir') === 'rtl');
+  await H.navigate('guide/' + EDGE.edited + '?layout=album');
+  rtlTitle(H.fk('q-' + queued.id), queued.titleHeEditorial, 'Hebrew queue item');
+  await H.navigate('browse/unidentified');
+  rtlTitle(H.fk('tq-' + queued.id), queued.titleHeEditorial, 'Hebrew Videos to identify row');
+  // A tied candidate's compact link (its code) names it by the editorial title in its hint.
+  const tieRow = H.fk('tq-edge-tied').parentElement.parentElement, tieLink = linkTo('episode/edge-tie-1', tieRow)[0];
+  assert.equal(tieLink && tieLink.getAttribute('title'), tie1.titleHeEditorial, 'Hebrew compact suggestion hint');
+  await H.navigate('record/edge-tied');
+  rtlTitle(bdiIn(linkTo('episode/edge-tie-1', H.byClass('sugg')[0])[0]), tie1.titleHeEditorial, 'Hebrew suggestion title');
+  await H.navigate('episode/' + enc(e1.id));
+  const ur = H.fk('ur-' + rec.id);
+  assert.equal(ur.getAttribute('dir'), 'rtl', 'Hebrew upload row: laid out right to left');
+  rtlTitle(ur.children.find(c => c && c.tagName === 'span'), rec.titleHeEditorial, 'Hebrew upload row title');
+  const urWatch = H.extLinks(ur.parentElement.parentElement.parentElement)[0];
+  assert(urWatch.getAttribute('aria-label').includes(', ' + rec.titleHeEditorial + ' ('), 'Hebrew upload row Watch label: ' + urWatch.getAttribute('aria-label'));
+  await H.navigate('record/' + enc(rec.id));
+  rtlTitle(linkTo('episode/' + enc(e1.id), H.byClass('crumbs')[0])[0], e1.titleHeEditorial, 'Hebrew record breadcrumb');
+  const cardLinks = linkTo('episode/' + enc(e1.id)).filter(a => !H.byClass('crumbs')[0].contains(a));
+  assert(cardLinks.length, 'The record page links its episode');
+  for (const a of cardLinks) rtlTitle(bdiIn(a), e1.titleHeEditorial, 'Hebrew record guide card');
+  assert(H.fk('rec-watch').getAttribute('aria-label').includes(', ' + rec.titleHeEditorial + ' ('), 'Hebrew record Watch label');
+  await H.navigate('guide/' + EDGE.edited + '?layout=numbers');
+  const un6 = H.find(a => a.tagName === 'a' && a.href === '#/episode/' + enc(e6.id) && H.cls(a.parentElement).includes('unnum'))[0];
+  rtlTitle(un6 && un6.children.find(c => c && c.tagName === 'span' && !H.cls(c).includes('glyph')), e6.titleHeEditorial, 'Hebrew unnumbered episode link');
+  assert(un6.getAttribute('aria-label').startsWith(e6.titleHeEditorial + '. '), 'Hebrew unnumbered link name');
+  const cell1 = H.find(a => a.tagName === 'a' && a.href === '#/episode/' + enc(e1.id) && H.cls(a).includes('cell'))[0];
+  assert(cell1.getAttribute('aria-label').includes(': ' + e1.titleHeEditorial + '. ') && cell1.getAttribute('title') === cell1.getAttribute('aria-label'),
+    'Hebrew Numbers grid cell name and hint');
+  await H.navigate('guide/' + EDGE.edited + '?layout=list');
+  const listWatch = H.extLinks(H.fk('row-' + e1.id).parentElement.parentElement)[0];
+  assert(listWatch.getAttribute('aria-label').includes(', ' + e1.titleHeEditorial + ' ('), 'Hebrew List row Watch label');
+  await H.navigate('guide/' + EDGE.edited + '?layout=album');
+  const findE2 = H.extLinks(H.fk('ep-' + e2.id).parentElement.parentElement)[0];
+  assert(findE2.getAttribute('aria-label').includes(e2.titleHeEditorial), 'Hebrew tile Find on YouTube label: ' + findE2.getAttribute('aria-label'));
+  // An episode with both an English and an editorial title: the Hebrew label uses the editorial one.
+  await H.navigate('guide/' + EDGE.editedShalom + '?layout=album');
+  const findEs = H.extLinks(H.fk('ep-' + es.id).parentElement.parentElement)[0];
+  assert(findEs.getAttribute('aria-label').includes(es.titleHeEditorial) && !findEs.getAttribute('aria-label').includes(es.titleEn),
+    'Hebrew tile Find on YouTube label names the episode by its editorial title: ' + findEs.getAttribute('aria-label'));
+  // The record page keeps the English title row in Hebrew; a pasted Vimeo link stores only a published Hebrew title.
+  await H.navigate('record/' + enc(rec.id));
+  assert.equal(factIn(H, 'he', 'engTitle').textContent, rec.titleEn, 'The Hebrew record page keeps the English title row');
+  await H.navigate('record/edge-ed-hop');
+  H.$('vimeo-url').value = 'https://vimeo.com/123456780/abcdef1234'; await H.find(n => n.tagName === 'form')[0].fire('submit');
+  assert.equal(JSON.parse(H.storage.get('sumsum-vimeo-mappings'))['edge-ed-hop'].titleHe, '', 'A pasted link never stores the editorial title as titleHe');
+  await H.fk('map-remove').click();
+  await H.navigate('episode/' + enc(e2.id));
+  assert.equal(H.fk('prev').getAttribute('aria-label'), L.he.prevEp + ': ' + e1.titleHeEditorial, 'Hebrew previous-episode link name');
+  await H.navigate('episode/' + enc(e6.id));
+  assert.equal(H.fk('next').getAttribute('aria-label'), L.he.nextEp + ': ' + e7.titleHeEditorial, 'Hebrew next-episode link name');
+  // The pasted-link banner names the uploads with that Vimeo video.
+  await H.navigate('browse?q=' + enc(vimeoRec.url)); H.flushTimers();
+  rtlTitle(linkTo('record/' + vimeoRec.id, H.byClass('banner')[0])[0], vimeoRec.titleHeEditorial, 'Hebrew pasted-link banner');
+  await H.navigate('browse?q=' + enc('זקוימאו')); H.flushTimers();
+  const vBody = H.fk('card-' + vimeoRec.id).parentElement.parentElement, tagTip = H.find(n => n.getAttribute && n.getAttribute('title') &&
+    H.cls(n).includes('tag'), vBody)[0];
+  assert(tagTip && [e6, e7].every(e => tagTip.getAttribute('title').includes(e.titleHeEditorial)), 'Hebrew card tag hint names the episodes');
+  assert(H.extLinks(vBody.parentElement)[0].getAttribute('aria-label').includes(', ' + vimeoRec.titleHeEditorial + ' ('), 'Hebrew card Watch label');
+  // The title sort follows the shown title: in Hebrew the editorial titles (אגס before תמר).
+  await H.navigate('browse?q=' + enc('זקמיון') + '&sort=title'); H.flushTimers();
+  assert.deepEqual(sortIds(), ['edge-sort-b', 'edge-sort-a'], 'Hebrew title sort uses the editorial titles');
+  // Search: gershayim, a geresh or quote between letters, and plene doubled letters are not needed (review round 1).
+  for (const [q, id] of [['האות שין', 'edge-ed-shin'], ['האות שי"ן', 'edge-ed-shin'], ['האות שי״ן', 'edge-ed-shin'], ['חנוכיה', 'edge-ed-menorah'],
+    ['החנוכיה שנעלמה', 'edge-ed-menorah'], ['החנוכייה', 'edge-ed-menorah'], ['מצוה', 'edge-ed-mitzvah'], ['טו בשבט', 'edge-ed-shvat'],
+    ["ט'ו בשבט", 'edge-ed-shvat']]) {
+    await H.navigate('browse?q=' + enc(q)); H.flushTimers();
+    assert(H.has('card-' + id, H.view()), `Hebrew search "${q}" finds ${id}`);
+  }
+  await H.flipLang();
   ok('editorial Hebrew titles: Hebrew headings, document.title, tiles, rows, Missing episodes, to-do and Videos to identify rows, upload ' +
     'cards and rows, record links, Up next, Starred and star labels use titleHeEditorial without a published Hebrew title; titleHe and ' +
     'storyHe come first; blank values ignored; English shows it only in the labelled row; search finds it; the published-title ' +
@@ -2651,6 +2919,23 @@ async function checkStarredAndHash(htmlPath, M) {
   const real = M.records[0].id, N = M.records.length;
   let H = harness(boot(htmlPath, {storage: new Map([['sumsum-favorites', JSON.stringify([real, 'removed-record-id', 'https://example.org/gone'])]])}));
   assert.equal(H.number(H.byClass('tab-count', H.fk('tab-starred'))[0].textContent), 1, 'Starred tab counts only stars that match a record');
+  // Over 99 stars the phone badge reads "99+" (review round 1: "1,200" ran over the theme button or off the page); the full
+  // count is the text assistive technology reads, and wider screens show it.
+  if (N > 99) {
+    const many = M.records.slice(0, Math.min(N, 150)).map(r => r.id);
+    const S = harness(boot(htmlPath, {storage: new Map([['sumsum-favorites', JSON.stringify(many)]])}));
+    const badge = S.byClass('tab-count', S.fk('tab-starred'))[0], full = S.byClass('cnt-full', badge)[0], short = S.byClass('cnt-short', badge)[0];
+    assert(S.cls(badge).includes('capped') && full && short, 'A count over 99 has a capped badge');
+    assert.equal(full.textContent, many.length.toLocaleString('en-US'), 'with the full count');
+    assert(short.textContent === '99+' && short.getAttribute('aria-hidden') === 'true' && short.getAttribute('dir') === 'ltr',
+      'and a short "99+" that is hidden from assistive technology and laid out left to right');
+    assert(accName(S.fk('tab-starred')).endsWith(many.length.toLocaleString('en-US')), 'The tab is named with the full count');
+    await S.flipLang();
+    const hb = S.byClass('tab-count', S.fk('tab-starred'))[0];
+    assert.equal(S.byClass('cnt-short', hb)[0].textContent, '99+', 'Hebrew keeps "99+"');
+  }
+  const small = H.byClass('tab-count', H.fk('tab-starred'))[0];
+  assert(!H.cls(small).includes('capped') && !small.children.some(c => c && c.tagName === 'span'), 'A count up to 99 is the number alone');
   await H.navigate('starred'); assert.equal(H.count(), 1);
   assert(H.$('count').textContent.includes(tr('en', 'countUploads', {n: '1', total: '1'}).split(' ').at(-1)));
   assert.equal(H.$('count').textContent.replace(/\D+/g, ' ').trim(), '1 1', 'Starred total ignores stale stars');
@@ -2815,7 +3100,7 @@ async function checkLicensed(htmlPath, H, M) {
   for (const r of lic) assert(expectSvc(r), 'A licensed listing has a described service: ' + r.id);
   const hoopla = M.services.find(x => x.model === 'library-card' && x.howTo);
   for (const lang of ['en', 'he']) {
-    if (H.document.documentElement.lang !== lang) await H.$('lang').click();
+    if (H.document.documentElement.lang !== lang) await H.flipLang();
     // Filters: one chip per model, named by its services, with its count; the removable chip has the same name.
     await H.navigate('browse');
     for (const g of M.licGroups) {
@@ -2864,7 +3149,7 @@ async function checkLicensed(htmlPath, H, M) {
       assertHowTo(H, hoopla, lang, `${lang} episode ${e.id}`);
     }
   }
-  await H.$('lang').click(); assert.equal(H.document.documentElement.lang, 'en');
+  await H.flipLang(); assert.equal(H.document.documentElement.lang, 'en');
   // Without services data: generic licensed labels, one "Licensed listings" group, no how-to box, no summaries.
   const H0 = harness(boot(htmlPath, {payload: p => { delete p.services; return p; }})), M0 = model(H0.payload);
   try {
@@ -2898,8 +3183,9 @@ async function checkMasthead(H) {
   const header = H.find(n => n.tagName === 'header', H.tree)[0], mast = header.children.find(c => H.cls(c).includes('mast'));
   assert.deepEqual(mast.children.filter(c => c.tagName !== '#text').map(c => c.id), ['tabs', 'mast-tools'],
     'The masthead holds the views nav, then the control group');
-  assert.deepEqual(H.$('mast-tools').children.filter(c => c.tagName !== '#text').map(c => c.id), ['theme-picker', 'lang'],
-    'The control group holds the theme picker, then the language toggle (at the right edge)');
+  assert.deepEqual(H.$('mast-tools').children.filter(c => c.tagName !== '#text').map(c => c.id), ['theme-picker', 'lang', 'lang-boot'],
+    'The control group holds the theme picker, then the language toggle (at the right edge), then the toggle\'s inline script');
+  assert.equal(H.$('lang-boot').tagName, 'script', 'The language toggle is followed by its inline script');
   assert.equal(H.find(n => n.tagName === 'a' && n.href === '#/guide', header).length, 1, 'One link to the guide in the masthead: its tab');
   const opts = () => H.$('lang').children.filter(c => c.getAttribute && c.getAttribute('role') === 'radio');
   const expectToggle = (ui, where) => {
@@ -2924,7 +3210,7 @@ async function checkMasthead(H) {
   };
   const other = ui => (ui === 'en' ? 'he' : 'en');
   for (const ui of ['en', 'he']) {
-    if (H.document.documentElement.lang !== ui) await H.$('lang').click();
+    if (H.document.documentElement.lang !== ui) await H.flipLang();
     expectToggle(ui, ui.toUpperCase());
     assert.equal(H.$('tabs').getAttribute('aria-label'), L[ui].navLabel, 'The views nav is named in ' + ui);
   }
@@ -2938,9 +3224,21 @@ async function checkMasthead(H) {
     assert(H.window.scrollY === 640 && !H.window.scrolls.some(x => x.y !== 640), how + ': the page keeps its scroll position');
     assert.equal(H.storage.get('sumsum-language'), JSON.stringify(ui), how + ': the language is stored');
   };
-  await flipped('click on the group', () => H.$('lang').click());
   await flipped('click on the unchecked option', () => H.$('lang-' + other(ui)).dispatch('click'));
-  await flipped('click on the checked option', () => H.$('lang-' + ui).dispatch('click'));
+  // A radio group: activating the checked option (a click, or Space or Enter, which click a button) and a click on the rim
+  // between the options change nothing: not the language, the focus, the stored value or the scroll position.
+  for (const [how, act] of [['click on the checked option', () => H.$('lang-' + ui).dispatch('click')],
+    ['Space or Enter on the checked option', () => H.$('lang-' + ui).dispatch('click', {detail: 0})],
+    ['click on the checked option\'s label', () => H.byClass('lang-long', H.$('lang-' + ui))[0].dispatch('click')],
+    ['click on the rim', () => H.$('lang').click()]]) {
+    H.$('lang-' + ui).focus(); H.window.scrollY = 640; H.window.scrolls.length = 0;
+    const stored = H.storage.get('sumsum-language'); await act();
+    expectToggle(ui, how);
+    assert.equal(H.document.activeElement, H.$('lang-' + ui), how + ': focus stays on the checked option');
+    assert(H.window.scrollY === 640 && !H.window.scrolls.length, how + ': nothing re-renders or scrolls');
+    assert.equal(H.storage.get('sumsum-language'), stored, how + ': the stored language is unchanged');
+  }
+  await flipped('click on the unchecked option\'s label', () => H.byClass('lang-short', H.$('lang-' + other(ui)))[0].dispatch('click'));
   for (const key of ['ArrowRight', 'ArrowLeft', 'ArrowDown', 'ArrowUp']) {
     let prevented = false;
     await flipped(key, async () => { prevented = await H.document.activeElement.dispatch('keydown', {key}); });
@@ -2950,13 +3248,41 @@ async function checkMasthead(H) {
     const before = ui; await H.document.activeElement.dispatch('keydown', {key});
     assert.equal(H.document.documentElement.lang, before, key + ' does not switch the language');
   }
-  if (H.document.documentElement.lang !== 'en') await H.$('lang').click();
+  if (H.document.documentElement.lang !== 'en') await H.flipLang();
   const aside = H.byClass('filters')[0];
   assert(H.cls(aside.children[0]).includes('search') && H.cls(aside.children[1]).includes('filters-toggle'),
     'Search precedes the Filters toggle in DOM (and visual) order');
   ok('masthead: no brand; language radiogroup named in the UI language, options named in their own language, aria-checked, ' +
-    'one tab stop; click (group or either option) and arrows switch, focus the checked option and keep the scroll position; ' +
+    'one tab stop; the unchecked option (click, Space, Enter) and arrows switch, focus the checked option and keep the scroll ' +
+    'position; the checked option and the rim change nothing; ' +
     'filter DOM order');
+}
+
+// The toggle's inline script (#lang-boot) checks the stored language before the application script, which comes after the
+// embedded data, so a Hebrew page never first draws English checked and then slides the thumb over (review round 1). It makes
+// the application's choice: data-start-lang, else the stored value; anything but Hebrew keeps the markup's English. The
+// application then keeps the same state.
+async function checkLangBoot(htmlPath) {
+  const cases = [['stored Hebrew', {'sumsum-language': '"he"'}, {}, 'he'], ['stored English', {'sumsum-language': '"en"'}, {}, 'en'],
+    ['nothing stored', {}, {}, 'en'], ['a stored unknown language', {'sumsum-language': '"fr"'}, {}, 'en'],
+    ['a stored prototype key', {'sumsum-language': '"constructor"'}, {}, 'en'], ['broken JSON', {'sumsum-language': '{he'}, {}, 'en'],
+    ['a bare unquoted he', {'sumsum-language': 'he'}, {}, 'en'],
+    ['data-start-lang he', {'sumsum-language': '"en"'}, {'data-start-lang': 'he'}, 'he'],
+    ['data-start-lang en over stored Hebrew', {'sumsum-language': '"he"'}, {'data-start-lang': 'en'}, 'en']];
+  for (const [label, stored, htmlAttrs, want] of cases) {
+    let early = null;
+    const app = boot(htmlPath, {storage: new Map(Object.entries(stored)), htmlAttrs, onLangBoot: doc => {
+      early = ['lang-en', 'lang-he'].map(id => [doc.getElementById(id).getAttribute('aria-checked'), doc.getElementById(id).getAttribute('tabindex')]);
+    }});
+    const expect = want === 'en' ? [['true', '0'], ['false', '-1']] : [['false', '-1'], ['true', '0']];
+    assert.deepEqual(early, expect, `${label}: the toggle shows ${want} before the application starts`);
+    const late = ['lang-en', 'lang-he'].map(id => [app.ids[id].getAttribute('aria-checked'), app.ids[id].getAttribute('tabindex')]);
+    assert.deepEqual(late, expect, `${label}: the application keeps that state`);
+    assert.equal(app.document.documentElement.lang, want, `${label}: the page language agrees`);
+  }
+  const noScript = boot(htmlPath, {storage: new Map([['sumsum-language', '"he"']]), noLangBoot: true});
+  assert.equal(noScript.ids['lang-he'].getAttribute('aria-checked'), 'true', 'Without the inline script the application still checks Hebrew');
+  ok(`language toggle before the first paint: #lang-boot checks the stored language (${cases.length} cases) and the application agrees`);
 }
 
 // ---------------------------------------------------------------- theme picker and preferences
@@ -3008,7 +3334,7 @@ async function checkThemePicker(htmlPath) {
     }
   };
   for (const ui of ['en', 'he']) {
-    if (H.document.documentElement.lang !== ui) await H.$('lang').click();
+    if (H.document.documentElement.lang !== ui) await H.flipLang();
     assert(!open(), ui + ': the popover starts closed'); expectPicker(ui, ui + ' closed');
     H.window.scrollY = 200; H.window.scrolls.length = 0; const hash = H.location.hash;
     await H.$('theme-btn').click();
@@ -3075,7 +3401,7 @@ async function checkThemePicker(htmlPath) {
     expectPicker(ui, ui + ' closed again');
     await H.$('tp-pal-green').click(); await H.$('tp-app-system').click();
   }
-  if (H.document.documentElement.lang !== 'en') await H.$('lang').click();
+  if (H.document.documentElement.lang !== 'en') await H.flipLang();
   // Persistence: a reload with the same storage applies the stored choice before the app starts.
   const storage = H.storage;
   await H.$('tp-pal-terracotta').click(); await H.$('tp-app-dark').click();
@@ -3159,7 +3485,7 @@ async function checkBrowseMenu(H, M) {
   const key = (n, k) => n.dispatch('keydown', {key: k});
   const active = () => H.document.activeElement;
   for (const ui of ['en', 'he']) {
-    if (H.document.documentElement.lang !== ui) await H.$('lang').click();
+    if (H.document.documentElement.lang !== ui) await H.flipLang();
     await H.navigate('guide');
     // Episode guide | Browse (label, arrow, menu) | Starred. The research to-do list has no tab.
     const lis = H.$('tabs').children.find(c => c.tagName === 'ul').children;
@@ -3234,7 +3560,7 @@ async function checkBrowseMenu(H, M) {
     assert.equal(H.fk('foot-todo').textContent, L[ui].todoTitle);
     assertNav(H, 'todo', ui + ' #/todo');
   }
-  if (H.document.documentElement.lang !== 'en') await H.$('lang').click();
+  if (H.document.documentElement.lang !== 'en') await H.flipLang();
   ok(`Browse menu (EN, HE): label opens #/browse; the arrow is a disclosure (aria-expanded, aria-controls, name, hidden icon) for ` +
     `three links named with their counts (${counts.identified} identified + ${counts.unidentified} to identify = ${N} uploads; ` +
     `${counts.missing} missing episodes) and described; click, arrow keys with wrap, Home, End, Escape with focus return, outside ` +
@@ -3321,6 +3647,15 @@ async function checkBrowsePages(H, M) {
     assert(H.find(a => a.tagName === 'a' && a.href === '#/browse/unidentified?prod=' + enc(qEp.production)).length,
       'The episode page links its production\'s uploads to identify');
   }
+  // The link's number is what the page it opens lists for that production (queued and possible-only), in the singular for one.
+  for (const [home, n] of byHome) {
+    const e = M.eps.find(x => x.production === home && M.cov(x) !== 'whole-candidate'); if (!e) continue;
+    await H.navigate('episode/' + enc(e.id));
+    const a = H.find(x => x.tagName === 'a' && x.href === '#/browse/unidentified?prod=' + enc(home))[0];
+    assert(a, 'The episode page links its production\'s uploads to identify: ' + e.id);
+    assert.equal(a.textContent, n === 1 ? L.en.queueLinkOne : tr('en', 'queueLink', {n: n.toLocaleString('en-US')}),
+      `The link counts the production's uploads to identify (${home}: ${n})`);
+  }
   const qSlot = M.prods.find(p => [...M.queued.values()].includes(p.id) && M.prodModel(p).groups.some(g => g.slotNs.length));
   if (qSlot) {
     const g = M.prodModel(qSlot).groups.find(x => x.slotNs.length);
@@ -3329,8 +3664,12 @@ async function checkBrowsePages(H, M) {
   }
   await H.navigate('guide');
   const queueTail = tr('en', 'queueLink', {n: '\u0000'}).split('\u0000')[1];
-  for (const a of H.find(n => n.tagName === 'a' && (n.textContent || '').endsWith(queueTail), H.byClass('goal')[0] || H.view())) {
+  for (const a of H.find(n => n.tagName === 'a' && (n.textContent === L.en.queueLinkOne || (n.textContent || '').endsWith(queueTail)),
+    H.byClass('goal')[0] || H.view())) {
     assert.equal(a.href, '#/browse/unidentified', 'The core headline links Videos to identify');
+    // Its number is the page's (queued plus possible-only), in one term with one count.
+    assert.equal(a.textContent, counts.unidentified === 1 ? L.en.queueLinkOne : tr('en', 'queueLink', {n: counts.unidentified.toLocaleString('en-US')}),
+      'The headline link counts what Videos to identify lists');
   }
   ok(`Videos to identify: ${counts.unidentified} uploads in ${groups.length} production groups, core Rechov first, group counts, ` +
     'possible copies name their candidates; ?prod= from episode and slot pages; identified and to-identify are disjoint and complete');
@@ -3389,6 +3728,10 @@ async function checkBrowsePages(H, M) {
   }
   const stats = H.byClass('ms-stats')[0].children.map(li => li.textContent);
   assert.equal(stats[0], lists['ms-missing'].length.toLocaleString('en-US') + ' ' + L.en.cov_missing, 'The summary starts with the missing count');
+  // The expected places keep the open-total mark of their section heading ("73+").
+  const slotStat = stats.find(x => x.endsWith(' ' + L.en.segSlots)), placeN = slotProds.reduce((s, p) => s + M.prodModel(p).slots, 0);
+  if (placeN) assert.equal(slotStat, (open ? tr('en', 'countOpen', {n: placeN.toLocaleString('en-US')}) : placeN.toLocaleString('en-US')) + ' ' + L.en.segSlots,
+    'The summary marks an open total as the heading does');
   assert.equal(H.fk('todo-link').href, '#/todo', 'Missing episodes links the full research to-do list');
   if (visitedSlot) {
     const [p, g, n] = visitedSlot;
@@ -3515,15 +3858,17 @@ function themeTokens(css) {
 // A colour expression in the pairs below: a token, a token composited over another ('mast-ctl@brand'), or over a literal
 // thumbnail colour ('scrim@#ffffff').
 function colourOf(t, expr) {
-  const [fg, bg] = expr.split('@'), val = k => {
+  // 'a@b@c' is a over b over c (a hovered tab's count: the chip over the hover tint over the masthead).
+  const layers = expr.split('@'), val = k => {
     const v = k.startsWith('#') ? k : t[k];
     assert(typeof v === 'string' && /^#(?:[0-9a-f]{3,4}|[0-9a-f]{6}|[0-9a-f]{8})$/i.test(v), `Token --${k} is a hex colour (${v})`);
     return hex6(v);
   };
-  // What a colour sits on is opaque; a translucent colour is named with what it is composited over.
-  assert(!bg || val(bg).length === 7, `--${bg} is opaque (${expr})`);
-  assert(bg || val(fg).length === 7, `--${fg} is opaque, or the pair names what it is composited over (${expr})`);
-  return bg ? blendOver(val(fg), val(bg)) : val(fg);
+  // What a colour sits on is opaque at the bottom; a translucent colour is named with what it is composited over.
+  const base = layers.at(-1);
+  assert(layers.length > 1 || val(base).length === 7, `--${base} is opaque, or the pair names what it is composited over (${expr})`);
+  assert(layers.length === 1 || val(base).length === 7, `--${base} is opaque (${expr})`);
+  return layers.slice(0, -1).reduceRight((under, k) => blendOver(val(k), under), val(base));
 }
 // The key pairs, in every palette and scheme: text and its background need 4.5:1 (WCAG 1.4.3), marks, rings, outlines and
 // the toggle thumb 3:1 against what they sit on (WCAG 1.4.11).
@@ -3540,7 +3885,7 @@ const CONTRAST_PAIRS = [
   ...['modern', 'classic', 'shalom-classic', 'shalom-modern', 'elmo'].map(c => [`series kicker: ${c}`, 'ser-' + c, 'surface', 4.5]),
   ['host chip on a dark thumbnail', 'host-ink', 'host-bg@#000000', 4.5], ['duration on a white thumbnail', 'scrim-ink', 'scrim@#ffffff', 4.5],
   ['masthead text', 'mast-ink', 'brand', 4.5], ['tab labels', 'mast-ink-soft', 'brand', 4.5], ['hovered tab labels', 'mast-ink-soft', 'mast-hover@brand', 4.5],
-  ['tab counts', 'mast-ink-soft', 'mast-chip@brand', 4.5], ['the current tab and the checked language', 'mast-current-ink', 'mast-current', 4.5],
+  ['tab counts', 'mast-ink-soft', 'mast-chip@brand', 4.5], ['tab counts, hovered', 'mast-ink-soft', 'mast-chip@mast-hover@brand', 4.5], ['the current tab and the checked language', 'mast-current-ink', 'mast-current', 4.5],
   ['the current tab\'s count', 'mast-current', 'mast-current-ink', 4.5], ['the unchecked language and the theme icon', 'mast-ink-soft', 'mast-ctl@brand', 4.5],
   ['the open theme button\'s icon', 'mast-current-ink', 'mast-current', 3],
   ['focus ring on the page', 'focus', 'bg', 3], ['focus ring on cards and the popovers', 'focus', 'surface', 3], ['focus ring on raised rows', 'focus', 'surface-2', 3],
@@ -3632,6 +3977,9 @@ function checkThemeTokens(html, theme) {
   return T;
 }
 
+// Every CSS rule with the @media (or other at-rule) prelude it sits in ('' at the top level), whatever the line layout.
+const cssRulesIn = (css, media = '') => cssTop(css).flatMap(r => (r.at ? cssRulesIn(r.text, r.at.replace(/^@media\s*/, '')) :
+  [{media, sel: r.sel, body: r.body}]));
 function checkCss(html) {
   const css = html.match(/<style>([\s\S]*?)<\/style>/)[1].replace(/\/\*[\s\S]*?\*\//g, '');
   const rules = [...css.matchAll(/([^{}]+)\{([^{}]*)\}/g)].map(m => ({sel: m[1].trim(), body: m[2]}));
@@ -3851,13 +4199,68 @@ function checkCss(html) {
     forcedRules.some(r => r.sels.includes('.tp-sw') && /forced-color-adjust:none/.test(r.body)), 'Forced colours mark the theme picker\'s state');
   assert(/visibility:visible/.test(body('.tp-pal[aria-checked=true] .tp-check')) && /visibility:hidden/.test(body('.tp-check')),
     'The checked palette has a check mark, not only a colour');
+  // Every rule with its @media context (also a block added on one line), for the checks that must see all of them.
+  const ctxRules = cssRulesIn(css);
+  const inPhone = r => /max-width:480px/.test(r.media), inBase = r => !r.media;
+  // Review round 1: the masthead controls keep one box in English and Hebrew. No rule scoped by the page's direction or language
+  // styles them (only the views nav takes the page direction back, and the popover's content its direction); the checked or
+  // focused option changes no font, padding, spacing or width; phones keep the short labels.
+  const MAST_CTL = /\.(?:mast|mast-tools|theme|theme-btn|lang|lang-opt|lang-thumb|lang-long|lang-short|tabs?|tab-[\w-]+)(?![\w-])/;
+  const ALLOWED_SCOPED = ['html[dir=rtl] .tabs', '.lang-opt[lang=he][aria-checked=true]~.lang-thumb'];
+  for (const r of ctxRules) {
+    for (const sel of r.sel.split(',').map(x => x.trim())) {
+      if (/\[dir|:dir\(|:lang\(|\[lang/.test(sel) && MAST_CTL.test(sel) && !ALLOWED_SCOPED.includes(sel)) {
+        assert.fail(`A masthead control is styled by the page's direction or language (${r.media || 'all'}): ${sel}`);
+      }
+      if (/\.lang-opt/.test(sel) && /\[aria-checked|:focus|:hover|:active/.test(sel)) {
+        assert(!/(?:^|;)\s*(?:font[\w-]*|padding[\w-]*|letter-spacing|(?:min-|max-)?width|margin[\w-]*|border(?:-width)?)\s*:/.test(r.body),
+          'A checked, focused or hovered language option keeps its box: ' + sel + '{' + r.body + '}');
+      }
+    }
+  }
+  const langLabelRules = ctxRules.filter(r => /\.lang-(?:long|short)(?![\w-])/.test(r.sel));
+  assert.deepEqual(langLabelRules.map(r => [r.media, r.sel, r.body]), [['', '.lang-short', 'display:none'],
+    ['(max-width:480px)', '.lang-long', 'display:none'], ['(max-width:480px)', '.lang-short', 'display:inline']],
+    'Phones show only the short language labels, and nothing else changes them');
+  assert(/(?:^|;)direction:ltr/.test(ctxRules.filter(r => r.sel === '.mast').map(r => r.body).join(';')) &&
+    ctxRules.filter(r => r.sel.split(',').some(x => /\.mast(?![\w-])/.test(x)) && /grid-template-columns|direction/.test(r.body)).every(r =>
+      r.sel === '.mast' && inBase(r)), 'Only the base rule sets the masthead grid and its direction');
+  // The focus ring of a phone-width language option stays clear of the other option's label.
+  const phoneRing = ctxRules.find(r => inPhone(r) && r.sel === '.lang-opt:focus-visible');
+  assert(phoneRing && Number((phoneRing.body.match(/outline-offset:(-?\d+)px/) || [])[1]) <= 0, 'At 480 px and below the language ring is drawn close in');
+  // The theme popover on phones is placed from the band, whose box leaves out a classic scrollbar, so it stays on screen.
+  const phoneTp = ctxRules.filter(r => inPhone(r) && r.sel === '.tp').map(r => r.body).join(';');
+  assert(ctxRules.some(r => inPhone(r) && r.sel === '.mast-tools' && /position:static/.test(r.body)) && /(?:^|;)left:10px/.test(phoneTp) &&
+    /(?:^|;)right:10px/.test(phoneTp) && /(?:^|;)width:auto/.test(phoneTp) && /max-width:360px/.test(phoneTp) && !/100vw/.test(phoneTp),
+    'At 480 px and below the popover spans the band between 10 px insets, not 100vw');
+  // The phone Starred badge sits on the icon's corner and is capped at "99+", the full count visually hidden but read.
+  assert(/inset-inline-start:calc\(50% \+ 2px\)/.test(p760('.tab-count')) && /display:none/.test(body('.tab-count .cnt-short')) &&
+    /display:inline/.test(p760('.tab-count .cnt-short')) && /clip:rect\(0,0,0,0\)/.test(p760('.tab-count .cnt-full')) &&
+    !/display:none/.test(p760('.tab-count .cnt-full')), 'Phones show a capped Starred badge on the icon, with the full count still read');
+  assert(/scrollbar-gutter:stable/.test(body('html')), 'The scrollbar gutter is kept on short pages, so the masthead does not move between routes');
+  // Forced colours: the separator shows in a system colour on the current Browse pill too, and the current mark stays inside
+  // the label's 3 px end padding.
+  assert(forcedRules.some(r => r.sels.includes('.tab-split.cur>.tab-more::before') && /background:CanvasText/.test(r.body)),
+    'Forced colours draw the current pill\'s separator in CanvasText');
+  const curOff = forcedRules.filter(r => r.sels.includes('.tab-split>.tab-browse[aria-current]')).map(r => Number((r.body.match(/outline-offset:(-?\d+)px/) || [])[1]));
+  assert(curOff.length && curOff.every(o => o <= 0 && -o <= 3 - 1), 'The forced current mark on Browse stays inside its 3 px end padding');
+  // Evidence in words (request 06): no bar glyph rules; the badge is a chip in the chip colours; compact List rows show it only
+  // where the Evidence column is hidden.
+  assert(!ctxRules.some(r => /\.pips?(?![\w-])/.test(r.sel)), 'No evidence bar glyph rules');
+  assert(/background:var\(--chip\)/.test(body('.ev-badge')) && /color:var\(--chip-ink\)/.test(body('.ev-badge')) &&
+    !/aria-hidden|content:/.test(body('.ev-badge')), 'The evidence badge is text on a chip');
+  assert(/display:none/.test(body('.eptable .c-title .ev-inline')) && /display:(?:table|inline-block|block|inline-flex)/.test(p760('.eptable .c-title .ev-inline')) &&
+    /display:none/.test(p760('.eptable .c-ev,.eptable .c-links')), 'The compact List badge shows only where the Evidence column is hidden');
   ok('CSS: positioned scroll containers, alt-free generated glyphs, wrapping kicker labels, strip contrast, toolbar room, unclipped ' +
     'focus rings, forced-colors state marks, wrapping tile labels, search box padding, phone-width Watch labels, notes and host chips, ' +
     'wrapping guide tags on upload cards, breaking List titles, wrapping uploader names, failed Watch links, unbroken number ranges; ' +
     'masthead without brand rules, a physical one-row layout, a thumb that follows aria-checked, token colours with masthead contrast, ' +
     'motion only without reduced motion, forced-colors thumb; Browse arrow and menu placement, 44 px targets, focus ring, dividers and ' +
     'forced-colors marks; a menu at least 400 px wide with one-line titles, counts beside them and no split words; no Browse divider at ' +
-    'rest, a short separator on hover, focus and the current pill, and in forced colours');
+    'rest, a short separator on hover, focus and the current pill, and in forced colours (the current pill too, its mark inside the ' +
+    'label padding); no direction- or language-scoped masthead control rules, option states that keep their box, phone-only short ' +
+    'labels, a close phone focus ring, a band-placed phone popover, a stable scrollbar gutter, a capped phone Starred badge; ' +
+    'evidence badges as text, no bar glyph rules');
 }
 
 // Builder validation, run against fixture inputs in a temporary directory (never the project's index.html).
@@ -3981,7 +4384,7 @@ function builderChecks(builder, dir) {
   // previous output; a licensed record no service describes, and a service without records, are warnings.
   const svcOk = () => ({format: 'sumsum-licensed-services-v1', checkedAt: '2026-10-18', services: [{id: 'fx-lib', name: 'Fixture Library',
     hosts: ['hoopladigital.com'], model: 'library-card', summary: {en: 'Free with a card.', he: 'חינם עם כרטיס.'},
-    howTo: {headline: {en: 'Get a card.', he: 'משיגים כרטיס.', sources: ['s1']},
+    howTo: {headline: {en: 'Get a Fixture Public Library card.', he: 'משיגים כרטיס של ספרייה.', libraries: ['l1'], participates: true, sources: ['s1']},
       steps: [{en: 'Sign in.', he: 'מתחברים.', sources: ['s1', 'u1'], link: {url: 'https://www.hoopladigital.com/register', label: {en: 'Find', he: 'חיפוש'}}}]},
     lookupUrl: 'https://www.hoopladigital.com/register',
     libraries: [{id: 'l1', name: {en: 'Fixture Public Library', he: 'ספרייה'}, participates: true, sources: ['s1', 'u1']}],
@@ -4019,6 +4422,32 @@ function builderChecks(builder, dir) {
   svcBad('no participating library', (d, x) => { x.libraries[0].participates = false; }, /name at least one participating library/);
   svcBad('library without sources', (d, x) => { x.libraries[0].sources = []; }, /library 'l1': sources must name at least one source id/);
   svcBad('library-card without how-to', (d, x) => { delete x.howTo; }, /a library-card service needs howTo/);
+  // The how-to box shows the steps' prose, so the structured facts must agree with it (review round 1): each library is listed
+  // by a step that names it in both languages and says whether its cards work; the lookup URL is a step's link; no fact is
+  // checked after the build date.
+  const noCards = {id: 'l2', name: {en: 'Other City Library', he: 'ספריית העיר האחרת'}, participates: false, sources: ['u1']};
+  const noStep = {en: 'Other City Library cards do not work.', he: 'כרטיסים של ספריית העיר האחרת אינם עובדים.', libraries: ['l2'],
+    participates: false, sources: ['u1']};
+  builds('a non-participating library with its step', svcRun((() => { const d = svcOk(); d.services[0].libraries.push(noCards);
+    d.services[0].howTo.steps.push(noStep); return d; })()));
+  svcBad('no steps', (d, x) => { x.howTo.steps = []; }, /service 'fx-lib': a library-card service needs at least one howTo step/);
+  svcBad('a library no step lists', (d, x) => { x.libraries.push(noCards); }, /library 'l2' is not listed by any howTo step/);
+  svcBad('participation that disagrees with the step', (d, x) => { x.libraries.push({...noCards, participates: true}); x.howTo.steps.push(noStep); },
+    /howTo step 2: says library 'l2' does not participate, but its libraries entry has participates true/);
+  svcBad('a step that does not name its library', (d, x) => { x.libraries.push(noCards); x.howTo.steps.push({...noStep, he: 'הכרטיסים אינם עובדים.'}); },
+    /howTo step 2: lists library 'l2' but its he text does not name it/);
+  svcBad('an unknown library id', (d, x) => { x.howTo.steps[0].libraries = ['nope']; x.howTo.steps[0].participates = true; },
+    /howTo step 1: unknown library id 'nope'/);
+  svcBad('libraries without participates', (d, x) => { delete x.howTo.headline.participates; },
+    /howTo headline: a step that lists libraries says whether their cards work/);
+  svcBad('participates without libraries', (d, x) => { x.howTo.steps[0].participates = true; },
+    /howTo step 1: participates describes the libraries listed in libraries, which is absent/);
+  svcBad('a lookup URL that no step links', (d, x) => { x.lookupUrl = 'https://example.org/'; },
+    /lookupUrl 'https:\/\/example\.org\/' is not the link of any howTo step/);
+  svcBad('a source checked in the future', (d, x) => { x.sources[0].checkedAt = '2999-01-01'; }, /source 's1' checkedAt 2999-01-01 is after the build date/);
+  svcBad('a file checked in the future', d => { d.checkedAt = '2999-01-01'; }, /fixture-services\.json: checkedAt 2999-01-01 is after the build date/);
+  svcBad('a lead checked in the future', (d, x) => { x.leads = [{url: 'https://example.org/lead', checkedAt: '2999-01-01', note: 'Unconfirmed.'}]; },
+    /lead 1 checkedAt 2999-01-01 is after the build date/);
   fails(svcRun('{"services": [,]}'), /fixture-services\.json: invalid JSON/, 'services: invalid JSON');
   builds('related-series format', run(recs, {guide: guide({}, {format: 'related-series'})}));
   fails(run(recs, {guide: guide({}, {format: 'related'})}), /production 'fx-prod': format must be one of .*'related'/, 'guide: unknown format');
@@ -4100,8 +4529,18 @@ function builderChecks(builder, dir) {
     /entry 1: titleHeEditorial fills only a missing published Hebrew title, but this item has titleHe;/, 'record titleHeEditorial beside titleHe');
   // Entries for one URL merge, so one entry's editorial title must not meet another's published one.
   fails(run([rec('fx-ed', edYt, {titleHeEditorial: 'כותרת בעריכה'}), rec('fx-ed', edYt, {titleHe: 'כותרת שפורסמה'})]),
-    /record 'fx-ed' \(fixture-records\.json, entry 1, merged with another entry for its URL\): titleHeEditorial fills only a missing published/,
+    /record 'fx-ed': fixture-records\.json, entry 1 has titleHeEditorial and fixture-records\.json, entry 2 \(the same URL, merged into one upload\) has titleHe\. titleHeEditorial fills only a missing published.*remove titleHeEditorial from fixture-records\.json, entry 1$/m,
     'record titleHeEditorial merged with a titleHe');
+  // Across files, in either order, the refusal names the entry with each field (not only the first entry for the URL).
+  const edFiles = {a: write('a-records.json', {records: [rec('fx-pub', edYt, {titleHe: 'כותרת שפורסמה'})]}),
+    b: write('b-records.json', {records: [rec('fx-pub', edYt, {titleHeEditorial: 'כותרת בעריכה'})]})};
+  for (const order of [['a', 'b'], ['b', 'a']]) {
+    const out = path.join(dir, 'out.html'); fs.writeFileSync(out, 'KEEP');
+    const r = spawnSync('python3', [builder, ...order.map(k => edFiles[k]), '--guide', guideFile, '--output', out], {encoding: 'utf8'});
+    fails({status: r.status, text: (r.stdout || '') + (r.stderr || ''), out: fs.readFileSync(out, 'utf8')},
+      /record 'fx-pub': b-records\.json, entry 1 has titleHeEditorial and a-records\.json, entry 1 \(the same URL, merged into one upload\) has titleHe\..*remove titleHeEditorial from b-records\.json, entry 1$/m,
+      'record titleHeEditorial merged with a titleHe from another file, files ' + order.join(','));
+  }
   builds('a record titleHeEditorial without a Hebrew letter', run([rec('fx-ed', edYt, {titleHeEditorial: 'Elmo 2'})]),
     /Warning: 1 records have a titleHeEditorial with no Hebrew letter.*: fx-ed/);
   builds('an episode titleHeEditorial', run(recs, {guide: guide({titleEn: 'Fixture episode', titleHeEditorial: 'פרק בעריכה'})}),
@@ -4166,7 +4605,8 @@ function builderChecks(builder, dir) {
     'validated; ' +
     'availability checks, malformed season keys and totals claims without a source refused; the embedded data is escaped; ' +
     'licensed services embedded, and malformed services files (models, hosts, EN/HE text, links, sources and their dates, ' +
-    'libraries, lookup URL) refused with located messages');
+    'libraries, lookup URL) refused with located messages; services facts tied to the shown steps (listed libraries, participation, ' +
+    'names in both languages, the lookup link, no future check dates); a merge refusal names the entry with each field');
 }
 
 async function run() {
@@ -4182,6 +4622,7 @@ async function run() {
   await checkHebrew(H, M);
   await checkPersistence(htmlPath, app.storage, starred);
   await checkMasthead(H);
+  await checkLangBoot(htmlPath);
   await checkThemePicker(htmlPath);
   await checkLicensed(htmlPath, H, M);
   if (M.hasGuide) { await checkBrowseMenu(H, M); await checkBrowsePages(H, M); }
