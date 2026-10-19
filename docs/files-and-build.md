@@ -8,6 +8,7 @@ Read this before changing data files, scripts or the build. The rules, and the t
 | --- | --- |
 | `library.template.html` | Editable UI source |
 | `data/series.json` | Series registry: the guide rail's families, every series with its English and Hebrew labels and YouTube search terms, and the goal rows (the series whose core productions count as core Rechov Sumsum) |
+| `data/vocabulary.json` | Editorial English and Hebrew names for theme and character tags, keyed by the lowercase tag |
 | `data/episode-guide.json` | Episode guide: productions, totals with their evidence, episodes, upload roles, coverage and evidence levels, and the queues of uploads awaiting identification |
 | `data/nli-ietv-catalogue.json` | National Library of Israel IETV catalogue extract: original-series programmes 1-198 and co-production programmes 1-70, with titles, summaries, runtimes and record ids |
 | `data/hop-records.json` | Official Hop page metadata, one record per Hop page |
@@ -34,9 +35,10 @@ Read this before changing data files, scripts or the build. The rules, and the t
 
 ## Building
 
-`python3 scripts/build-library.py [record-file.json ...] [--guide PATH] [--services PATH] [--series PATH] [--output PATH]`
+`python3 scripts/build-library.py [record-file.json ...] [--guide PATH] [--services PATH] [--series PATH] [--vocabulary PATH] [--output PATH]`
 
 - It reads the series registry, `data/series.json` (`--series PATH` for another file), and embeds it for the app. It refuses a record or production whose series is not listed, and a malformed registry: a duplicate or non-slug id, a series whose family is not listed, a label without English or Hebrew text, an empty search prefix, a search language other than `he` or `en`, or goal rows that repeat a series or span two families.
+- It embeds the tag vocabulary, `data/vocabulary.json` (`--vocabulary PATH` for another file). It refuses a key that is not lowercase or is a reserved name, and a name pair that is not `[English, Hebrew]` text with Hebrew letters in the second. The checks require a name pair for every tag a record uses.
 
 - With no inputs it embeds every `data/*-records.json` file and merges records by URL. It integrates the exact links and explicit playback evidence from `data/hop-player-links.json`.
 - It embeds `data/episode-guide.json` by default. `--guide PATH` uses another guide, and an explicit path that does not exist is an error. Without the default guide it builds a plain uploads library.
@@ -62,7 +64,7 @@ A series is what a record is filed under and what a production belongs to. A fam
 1. Add the series to `data/series.json`, with a new family if it belongs to none. List order is Browse's chip and sort order; family order is the rail's. A new series is not a goal series unless it is core Rechov Sumsum.
 2. Add `--ser-ID` colours to the light and dark scheme rules at the top of `library.template.html`, and a `.ser-ID{--series-ink:var(--ser-ID)}` rule beside the others. The checker refuses a missing one and checks their contrast.
 3. Add its records to a `data/*-records.json` file, and its productions to the guide, as [episode-guide.md](episode-guide.md) describes.
-4. Add new character and theme names to the `names` table in `library.template.html`. The checker requires an English and Hebrew name for every tag. A name shared with a dub (Bert is בנץ in Rechov Sumsum) has one entry for every series: decide how it reads before reusing it.
+4. Add new character and theme names to `data/vocabulary.json`. The checker requires an English and Hebrew name for every tag. A name shared with a dub (Bert is בנץ in Rechov Sumsum) has one entry for every series: decide how it reads before reusing it.
 5. `searchLanguage` chooses the language of an episode's title words in its YouTube searches. A number-only search still uses the production's number label or the Hebrew season and episode words; check those for a non-Hebrew series. Browse search is bilingual whatever the series.
 6. Update the copy that names the programs (the page title, `appName`, the Home and guide ledes, AGENTS.md's project purpose), TODO.md, the research notes and an episode audit.
 7. Rebuild and run the checks.

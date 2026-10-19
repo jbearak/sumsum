@@ -30,10 +30,8 @@ const tr = (lang, key, vars) => {
   return s;
 };
 const PLACEHOLDERS = new Set(Object.values(L.en).flatMap(s => (s.match(/\{\w+\}/g) || [])));
-// The editorial tag names (EN, HE), read from the app like the string table.
-const namesAt = appSource.indexOf('const names = Object.assign(Object.create(null), {'), namesEnd = appSource.indexOf('});', namesAt);
-assert(namesAt > 0 && namesEnd > namesAt, 'Tag name map found');
-const NAMES = vm.runInNewContext('var names = ' + appSource.slice(namesAt + 'const names = '.length, namesEnd + 3) + 'names');
+// The editorial tag names (EN, HE) from the embedded vocabulary (data/vocabulary.json), as a null-prototype table like the app's.
+const NAMES = Object.assign(Object.create(null), JSON.parse(readLibrary(htmlPath).dataText).vocabulary?.tags || {});
 
 // ---------------------------------------------------------------- independent model of the data
 // The series registry (payload.series, from data/series.json): set from each booted payload by model(), like the services.
@@ -4696,11 +4694,11 @@ function builderChecks(builder, dir) {
   const write = (name, value) => { const f = path.join(dir, name); fs.writeFileSync(f, typeof value === 'string' ? value : JSON.stringify(value)); return f; };
   const guideFile = write('empty-guide.json', {productions: [], episodes: [], unidentified: {}});
   const rec = (id, url, extra = {}) => ({id, url, series: 'classic', kind: 'episode', titleEn: 'Fixture ' + id, ...extra});
-  const run = (records, {guide = guideFile, keep = false, services = null, series = null} = {}) => {
+  const run = (records, {guide = guideFile, keep = false, services = null, series = null, vocabulary = null} = {}) => {
     const input = write('fixture-records.json', typeof records === 'string' ? records : {records});
     const out = path.join(dir, 'out.html'); if (!keep) fs.writeFileSync(out, 'KEEP');
     const r = spawnSync('python3', [builder, input, '--guide', guide, ...(services ? ['--services', services] : []),
-      ...(series ? ['--series', series] : []), '--output', out],
+      ...(series ? ['--series', series] : []), ...(vocabulary ? ['--vocabulary', vocabulary] : []), '--output', out],
       {encoding: 'utf8'});
     return {status: r.status, text: (r.stdout || '') + (r.stderr || ''), out: fs.readFileSync(out, 'utf8')};
   };
@@ -4735,6 +4733,19 @@ function builderChecks(builder, dir) {
   assert.equal(usBuild.status, 0, usBuild.text);
   const usPayload = JSON.parse(usBuild.out.match(/<script id="library-data" type="application\/json">([\s\S]*?)<\/script>/)[1]);
   assert.deepEqual(usPayload.series.series.at(-1), usSeries, 'The registry is embedded with the added series');
+  // The tag vocabulary: embedded as given; malformed names are refused.
+  const vocab = tags => write('vocabulary.json', {tags});
+  const vocabBuild = run([rec('fx-v', 'https://www.youtube.com/watch?v=AAAAAAAAAA1')], {vocabulary: vocab({'big bird': ['Big Bird', 'ציפורת']})});
+  assert.equal(vocabBuild.status, 0, vocabBuild.text);
+  assert.deepEqual(JSON.parse(vocabBuild.out.match(/<script id="library-data" type="application\/json">([\s\S]*?)<\/script>/)[1]).vocabulary,
+    {tags: {'big bird': ['Big Bird', 'ציפורת']}}, 'The vocabulary is embedded as given');
+  for (const [label, tags, pattern] of [['capital key', {'Big Bird': ['Big Bird', 'ציפורת']}, /tag 'Big Bird': keys are non-empty lowercase/],
+    ['one name', {'elmo': ['Elmo']}, /tag 'elmo': expected \[English, Hebrew\] names/],
+    ['Hebrew name in Latin letters', {'elmo': ['Elmo', 'Elmo']}, /the Hebrew name has no Hebrew letters/],
+    ['reserved key', {'constructor': ['Constructor', 'בנאי']}, /keys are non-empty lowercase tags \(not a reserved name\)/],
+    ['empty table', {}, /non-empty tags object/]]) {
+    fails(run([rec('fx-v', 'https://www.youtube.com/watch?v=AAAAAAAAAA1')], {vocabulary: vocab(tags)}), pattern, 'vocabulary: ' + label);
+  }
   fails(run([rec('fx-us', 'https://www.youtube.com/watch?v=AAAAAAAAAA1', {series: 'us-street'})]), /unknown series 'us-street'.*series\.json/,
     'a series missing from the registry');
   for (const [label, edit, pattern] of [

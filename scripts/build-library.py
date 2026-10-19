@@ -878,6 +878,24 @@ def load_series(path):
             "goal": [{k: g[k] for k in ("series", "en", "he")} for g in goal]}
 
 
+# Tag vocabulary (data/vocabulary.json): editorial English and Hebrew names for theme and character tags, keyed by the
+# lowercase tag. The app looks tags up by their lowercase or normalised form, so a key with capitals would never match.
+def load_vocabulary(path):
+    data = load_json(path)
+    tags = data.get("tags") if isinstance(data, dict) else None
+    if not isinstance(tags, dict) or not tags:
+        raise ValueError(f"{path.name}: expected an object with a non-empty tags object")
+    for key, pair in tags.items():
+        where = f"{path.name}, tag {key!r}"
+        if not key.strip() or key != key.lower() or key in RESERVED_IDS:
+            raise ValueError(f"{where}: keys are non-empty lowercase tags (not a reserved name)")
+        if not (isinstance(pair, list) and len(pair) == 2 and all(_nonempty(v) for v in pair)):
+            raise ValueError(f"{where}: expected [English, Hebrew] names")
+        if not HEBREW_RE.search(pair[1]):
+            raise ValueError(f"{where}: the Hebrew name has no Hebrew letters")
+    return {"tags": tags}
+
+
 # Licensed services (data/licensed-services.json): how each licensed service is reached, with sourced facts. A record with
 # access 'licensed' is matched to a service by its link's hostname. 'library-card': free with a participating public
 # library's card (hoopla); 'purchase-or-rent': bought or rented with an account (Apple TV, Prime Video); 'subscription':
@@ -1186,6 +1204,7 @@ def main():
     parser.add_argument("--output", type=Path, default=ROOT / "index.html")
     parser.add_argument("--guide", type=Path, help="episode guide JSON (default: data/episode-guide.json if it exists)")
     parser.add_argument("--series", type=Path, default=ROOT / "data/series.json", help="series registry JSON")
+    parser.add_argument("--vocabulary", type=Path, default=ROOT / "data/vocabulary.json", help="tag vocabulary JSON")
     parser.add_argument("--services", type=Path,
                         help="licensed services JSON (default: data/licensed-services.json if it exists)")
     args = parser.parse_args()
@@ -1193,6 +1212,8 @@ def main():
     series_path = args.series if args.series.is_absolute() else ROOT / args.series
     registry = load_series(series_path)
     series_ids = {s["id"] for s in registry["series"]}
+    vocabulary_path = args.vocabulary if args.vocabulary.is_absolute() else ROOT / args.vocabulary
+    vocabulary = load_vocabulary(vocabulary_path)
     records = []
     seen = {}
     origin = {}  # record id -> (url, "file, entry n") of its first occurrence, for duplicate-id errors
@@ -1299,6 +1320,7 @@ def main():
         "playbackVerifiedWithoutVpn": sum(r.get("playbackVerified") is True and r.get("playbackWithoutVpn") is True for r in records),
         "inputFiles": [p.name for p in inputs],
         "seriesFile": series_path.name,
+        "vocabularyFile": vocabulary_path.name,
     }
     if guide is not None:
         meta.update({"guideFile": guide_path.name, "guideSha256": guide_sha, "guideCounts": guide_counts(guide, {g["series"] for g in registry["goal"]})})
@@ -1309,7 +1331,7 @@ def main():
     else:
         notices.append(f"No licensed services file ({services_path.name} not found): licensed listings are labelled without "
                        "their access terms.")
-    payload = {"meta": meta, "series": registry, "records": records, "guide": guide if guide is not None else EMPTY_GUIDE}
+    payload = {"meta": meta, "series": registry, "vocabulary": vocabulary, "records": records, "guide": guide if guide is not None else EMPTY_GUIDE}
     if services is not None:
         payload["services"] = services
     # Escape HTML-significant characters inside the script data block. JSON strings
