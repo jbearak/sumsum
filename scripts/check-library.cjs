@@ -1716,7 +1716,9 @@ async function checkSeriesRegistry(htmlPath) {
       titleHe: 'הבדיקה החסרה', uploads: []});
     return p;
   }}));
-  const goalLabels = H.payload.series.goal.map(g => g.en);
+  // The panel has a row for each goal series with a core production in this build's guide (none: no panel).
+  const goalLabels = H.payload.series.goal.filter(g => H.payload.guide.productions.some(p => p.series === g.series && p.format === 'core'))
+    .map(g => g.en);
   await H.navigate('browse');
   const chips = H.fkAll('fs-test-street');
   assert.equal(chips.length, 1, 'A registered series gets a Browse chip'); assert.equal(H.chipCount(chips[0]), 1);
@@ -1728,7 +1730,7 @@ async function checkSeriesRegistry(htmlPath) {
   assert.equal(fams.at(-1), 'Test family', 'A new family is a rail heading after the registered ones');
   assert(H.has('rail-test-core'), 'Its production is on the rail');
   assert.deepEqual(H.byClass('goal-row').map(r => r.children[0].textContent), goalLabels, 'The goal panel keeps only the goal series rows');
-  assert(H.byClass('sep-list').some(l => l.textContent.includes('Test Street core')), 'A non-goal core production is counted separately');
+  if (goalLabels.length) assert(H.byClass('sep-list').some(l => l.textContent.includes('Test Street core')), 'A non-goal core production is counted separately');
   for (const lang of ['en', 'he']) {
     if (H.document.documentElement.lang !== lang) await H.flipLang();
     await H.navigate('episode/test-ep-2');
@@ -1738,7 +1740,8 @@ async function checkSeriesRegistry(htmlPath) {
   }
   await H.flipLang();
   await H.navigate('home');
-  assert.notEqual(H.fk('next-watch').href, url, 'Up next prefers core Rechov Sumsum, not a core production of another series');
+  // Without a core Rechov episode to offer, Up next may offer any video, this one included.
+  if (goalLabels.length) assert.notEqual(H.fk('next-watch').href, url, 'Up next prefers core Rechov Sumsum, not a core production of another series');
   ok('series registry: a new series and family get a Browse chip, a rail heading and their own search terms, and stay out of core Rechov Sumsum');
 }
 
