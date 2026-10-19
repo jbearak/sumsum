@@ -3726,6 +3726,23 @@ async function checkHome(htmlPath, M) {
       'With a character chosen, the character picks');
     await H.fk('surprise-close').click();
   }
+  // The parts train: one car per numbered part with a link, in part order; a car opens its part and counts an open, and a car
+  // you opened says so (yours, not evidence).
+  const trainEp = M.eps.find(e => M.partsOf(e).filter(x => expectDest(x.u.r)).length >= 2);
+  if (trainEp) {
+    await H.navigate('episode/' + encodeURIComponent(trainEp.id));
+    const ps = M.partsOf(trainEp).filter(x => expectDest(x.u.r)), cars = H.find(n => (n.getAttribute?.('data-fk') || '').startsWith('car-'));
+    assert.deepEqual(cars.map(c => c.href), ps.map(x => expectDest(x.u.r)), 'The train has a car per part, in order');
+    assert.deepEqual(cars.map(c => H.byClass('car-no', c)[0].textContent), ps.map(x => String(x.no)), 'Each car shows its part number');
+    assert(cars.every((c, k) => c.getAttribute('aria-label').includes(tr('en', 'partOf', {i: String(ps[k].no), n: String(ps[k].of)}))),
+      'Each car is named by its part');
+    const r0 = ps[0].u.r, n0 = (JSON.parse(H.storage.get('sumsum-opened') || '{}')[keyOf(r0)] || {n: 0}).n;
+    await cars[0].click(); H.flushTimers();
+    assert.equal(JSON.parse(H.storage.get('sumsum-opened'))[keyOf(r0)].n, n0 + 1, 'A car counts an open');
+    await H.navigate('home'); await H.navigate('episode/' + encodeURIComponent(trainEp.id));
+    const c0 = H.fk('car-' + r0.id);
+    assert(H.cls(c0).includes('opened') && c0.getAttribute('aria-label').includes(', ' + L.en.openedCar + ' ('), 'An opened car says so');
+  }
   // The queue popover from the masthead holds the same queue.
   await H.$('queue-btn').click();
   assert(!H.$('queue-pop').hidden && H.has('qp-open') && H.fk('qp-open').href === expectDest(c2), 'The queue popover offers the next video');
@@ -3733,7 +3750,7 @@ async function checkHome(htmlPath, M) {
   ok('Home: stored Spoken and Length that Browse hashes never change; offered videos only in Up next, the music shelf and ' +
     'Surprise; See all opens the same query with its count; twelve characters opening Browse with their counts; the queue (add, ' +
     'move, remove, clear and undo, Open next taking the first and counting an open, its link still in the page); Again with counts; ' +
-    'the ✓ sticker rule; Surprise and the queue popover (named, focused, Escape, outside click, route change, focus return; picks ' +
+    'the ✓ sticker rule; the parts train; Surprise and the queue popover (named, focused, Escape, outside click, route change, focus return; picks ' +
     'from the Browse list; a character\'s pick)');
 }
 
