@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light dark" id="meta-color-scheme">
-<meta name="theme-color" content="#0f3f2d" id="meta-theme-color">
+<meta name="theme-color" content="#803414" id="meta-theme-color">
 <title>Rechov Sumsum guide</title>
 <style>
 /* ---------- tokens ---------- */
@@ -16,10 +16,10 @@
      coverage (whole, parts, excerpt, missing, unknown), access kinds, series inks, the star and the thumbnail overlays.
      Light on :root, dark on :root[data-scheme=dark].
    - Palette: surfaces, inks, lines, the brand (masthead), buttons, accent, focus ring, links, chips, shadows and the
-     masthead controls. Green is the default, on :root and :root[data-scheme=dark]. Another palette NAME is
+     masthead controls. Terracotta is the default, on :root and :root[data-scheme=dark]. Another palette NAME is
      :root[data-palette=NAME] (every palette token) and :root[data-palette=NAME][data-scheme=dark] (at least the tokens
      the default dark block sets), and its swatch in the theme picker (.tp-sw-NAME) shares both blocks. A palette may also
-     override a shared colour, in both of its blocks: the palettes other than green tint the unknown greys (--unknown,
+     override a shared colour, in both of its blocks: the palettes other than the default tint the unknown greys (--unknown,
      --unknown-bg) to their own surfaces. docs/library-ui.md ("Themes and appearance") says how to add one;
      scripts/check-library.cjs checks the tokens and their contrast in every palette and scheme. */
 :root{color-scheme:light;
@@ -35,116 +35,112 @@
  --whole-bg:#173827;--parts-bg:#3a2c12;--excerpt-bg:#29244a;--missing-bg:#40201b;--unknown-bg:#1c2823;
  --acc-ok:#8cc3ff;--acc-public:#a9b6bf;--acc-vpn:#e59ac6;--acc-lic:#7fd1cc;--acc-bad:#cfcfcf;
  --ser-modern:#86d6a8;--ser-classic:#e3c167;--ser-shalom-classic:#9cc4ec;--ser-shalom-modern:#d6a6dc;--ser-elmo:#f2a28e}
-/* Palettes. Green, the default: the masthead is dark green (--brand) in both schemes, so its ink and controls keep one set
-   of values. */
-:root,.tp-sw-green{
- --bg:#f6f4ea;--surface:#fffefa;--surface-2:#efeee3;--surface-3:#e4e7da;
- --ink:#15302a;--muted:#536159;--line:#d9ddd0;--line-strong:#b4bfb1;
- --brand:#0f3f2d;--primary:#136a45;--primary-ink:#fff;--primary-hover:#0d5536;
- --accent:#f5cf45;--focus:#1f66b3;--link:#155f9e;--chip:#eaeee4;--chip-ink:#3c5547;
- --art-veil:#fffefacc;--shadow:0 1px 2px #1230240f,0 6px 18px #1230240d;
- --mast-ink:#fff;--mast-ink-soft:#e9f3ec;--mast-hover:#ffffff18;--mast-chip:#ffffff26;
- --mast-current:#fff;--mast-current-ink:#0f3f2d;--mast-ctl:#ffffff14;--mast-ctl-hover:#ffffff26;--mast-ctl-line:#ffffff80;
- --mast-focus:#f5cf45;--mast-divider:#ffffff59;--mast-current-divider:#0f3f2d99}
-:root[data-scheme=dark],[data-scheme=dark] .tp-sw-green{
- --bg:#0e1714;--surface:#15211c;--surface-2:#1b2a24;--surface-3:#23352d;
- --ink:#e6eee8;--muted:#a6b5ac;--line:#2b3c35;--line-strong:#42574d;
- --brand:#0a2a1e;--primary:#7fd3a5;--primary-ink:#05231a;--primary-hover:#a1e2bd;
- --focus:#8cc3ff;--link:#93c7ff;--chip:#23352d;--chip-ink:#c6d5cb;
- --art-veil:#15211ccc;--shadow:0 1px 2px #0006}
-/* Blue: navy masthead, blue buttons, an amber focus ring. */
-:root[data-palette=blue],.tp-sw-blue{
- --bg:#f2f5f9;--surface:#fcfdff;--surface-2:#e9eef5;--surface-3:#dce4ee;
- --ink:#13233a;--muted:#4d5b6f;--line:#d3dae4;--line-strong:#aab6c6;
- --brand:#143a6a;--primary:#1a5fae;--primary-ink:#fff;--primary-hover:#134a8a;
- --accent:#f5cf45;--focus:#b04a0c;--link:#1757a6;--chip:#e6ecf4;--chip-ink:#3a4b63;
- --art-veil:#fcfdffcc;--shadow:0 1px 2px #0f24400f,0 6px 18px #0f24400d;
- --mast-ink:#fff;--mast-ink-soft:#e6eefa;--mast-hover:#ffffff18;--mast-chip:#ffffff26;
- --mast-current:#fff;--mast-current-ink:#143a6a;--mast-ctl:#ffffff14;--mast-ctl-hover:#ffffff26;--mast-ctl-line:#ffffff80;
- --mast-focus:#f5cf45;--mast-divider:#ffffff59;--mast-current-divider:#143a6a99;
- --unknown:#7a8696;--unknown-bg:#edf1f6}
-:root[data-palette=blue][data-scheme=dark],[data-scheme=dark] .tp-sw-blue{
- --bg:#0d131c;--surface:#141b26;--surface-2:#1a2331;--surface-3:#222d3d;
- --ink:#e5ebf3;--muted:#a3afbf;--line:#28334a;--line-strong:#435069;
- --brand:#0b2444;--primary:#8bbcf5;--primary-ink:#061a33;--primary-hover:#afd1f8;
- --focus:#fbbf24;--link:#93c7ff;--chip:#222d3d;--chip-ink:#c5d0de;
- --art-veil:#141b26cc;--shadow:0 1px 2px #0006;
- --unknown:#8794a6;--unknown-bg:#1b2331}
-/* Plum: deep plum masthead with a gold stripe, a teal focus ring. */
-:root[data-palette=plum],.tp-sw-plum{
- --bg:#f6f2f6;--surface:#fffcff;--surface-2:#efe8ef;--surface-3:#e5dae6;
- --ink:#2b1830;--muted:#61516a;--line:#ddd2df;--line-strong:#bcaabf;
- --brand:#4a1f5c;--primary:#7a3a90;--primary-ink:#fff;--primary-hover:#622d75;
- --accent:#eebd4f;--focus:#0d7068;--link:#6c2d90;--chip:#f0e6f1;--chip-ink:#56405d;
- --art-veil:#fffcffcc;--shadow:0 1px 2px #2a10300f,0 6px 18px #2a10300d;
- --mast-ink:#fff;--mast-ink-soft:#f4e9f7;--mast-hover:#ffffff18;--mast-chip:#ffffff26;
- --mast-current:#fff;--mast-current-ink:#4a1f5c;--mast-ctl:#ffffff14;--mast-ctl-hover:#ffffff26;--mast-ctl-line:#ffffff80;
- --mast-focus:#eebd4f;--mast-divider:#ffffff59;--mast-current-divider:#4a1f5c99;
- --unknown:#877b8c;--unknown-bg:#f2edf2}
-:root[data-palette=plum][data-scheme=dark],[data-scheme=dark] .tp-sw-plum{
- --bg:#150e17;--surface:#1d1420;--surface-2:#251a29;--surface-3:#2f2234;
- --ink:#f0e6f2;--muted:#b9a8be;--line:#35283a;--line-strong:#524157;
- --brand:#2e1239;--primary:#d6a6e6;--primary-ink:#2a0f35;--primary-hover:#e4c2ef;
- --focus:#5eead4;--link:#d4adff;--chip:#2f2234;--chip-ink:#d9c9dd;
- --art-veil:#1d1420cc;--shadow:0 1px 2px #0006;
- --unknown:#988b9e;--unknown-bg:#251c29}
-/* Terracotta: brick masthead with an ochre stripe, rust buttons. */
-:root[data-palette=terracotta],.tp-sw-terracotta{
- --bg:#f8f2ec;--surface:#fffcf9;--surface-2:#f2e9e1;--surface-3:#e9ddd2;
- --ink:#33201a;--muted:#6a544a;--line:#e3d6cb;--line-strong:#c4ae9f;
- --brand:#7c2d1a;--primary:#a63f22;--primary-ink:#fff;--primary-hover:#86321a;
- --accent:#f2b544;--focus:#1d5fb3;--link:#1c58a0;--chip:#f1e5db;--chip-ink:#5c4237;
- --art-veil:#fffcf9cc;--shadow:0 1px 2px #3a1a100f,0 6px 18px #3a1a100d;
- --mast-ink:#fff;--mast-ink-soft:#fff4ef;--mast-hover:#ffffff18;--mast-chip:#ffffff26;
- --mast-current:#fff;--mast-current-ink:#7c2d1a;--mast-ctl:#ffffff14;--mast-ctl-hover:#ffffff26;--mast-ctl-line:#ffffff80;
- --mast-focus:#f2b544;--mast-divider:#ffffff59;--mast-current-divider:#7c2d1a99;
- --unknown:#887d76;--unknown-bg:#f3eee9}
-:root[data-palette=terracotta][data-scheme=dark],[data-scheme=dark] .tp-sw-terracotta{
- --bg:#17100d;--surface:#201714;--surface-2:#2a1e19;--surface-3:#352620;
- --ink:#f3e9e4;--muted:#c0aaa0;--line:#3a2b25;--line-strong:#58443b;
- --brand:#46190e;--primary:#f0a283;--primary-ink:#3a1408;--primary-hover:#f6bea7;
- --focus:#8cc3ff;--link:#93c7ff;--chip:#352620;--chip-ink:#dfcbc2;
- --art-veil:#201714cc;--shadow:0 1px 2px #0006;
- --unknown:#9a8c84;--unknown-bg:#271e1a}
-/* Sunny: a yellow masthead with dark ink and an orange stripe (deep amber in dark), orange buttons. */
-:root[data-palette=sunny],.tp-sw-sunny{
- --bg:#fbf6e6;--surface:#fffdf6;--surface-2:#f5eed8;--surface-3:#ece2c6;
- --ink:#2a2110;--muted:#62563d;--line:#e6dcc2;--line-strong:#c7b991;
- --brand:#f7c948;--primary:#c2410c;--primary-ink:#fff;--primary-hover:#9a3412;
- --accent:#e8730c;--focus:#1f5fbf;--link:#1c58a0;--chip:#f2e9cf;--chip-ink:#514530;
- --art-veil:#fffdf6cc;--shadow:0 1px 2px #3a2a000f,0 6px 18px #3a2a000d;
- --mast-ink:#231a00;--mast-ink-soft:#33270a;--mast-hover:#0000001a;--mast-chip:#00000021;
- --mast-current:#2e2300;--mast-current-ink:#ffe7a3;--mast-ctl:#ffffff40;--mast-ctl-hover:#ffffff66;--mast-ctl-line:#00000080;
- --mast-focus:#1b3a8c;--mast-divider:#0000003d;--mast-current-divider:#ffe7a399;
- --unknown:#857d68;--unknown-bg:#f4efe0}
-:root[data-palette=sunny][data-scheme=dark],[data-scheme=dark] .tp-sw-sunny{
- --bg:#15120a;--surface:#1e1a0f;--surface-2:#272214;--surface-3:#322b1a;
- --ink:#f6efdc;--muted:#c4b694;--line:#3a321f;--line-strong:#5a4e31;
- --brand:#3b2b05;--primary:#f5b14a;--primary-ink:#2b1a00;--primary-hover:#f8c674;
- --accent:#f08c2e;--focus:#8cc3ff;--link:#93c7ff;--chip:#322b1a;--chip-ink:#e2d5b5;
- --art-veil:#1e1a0fcc;--shadow:0 1px 2px #0006;
- --mast-ink:#fff7e0;--mast-ink-soft:#f8ecc8;--mast-hover:#ffffff18;--mast-chip:#ffffff26;
- --mast-current:#f7c948;--mast-current-ink:#2b1f00;--mast-ctl:#ffffff14;--mast-ctl-hover:#ffffff26;--mast-ctl-line:#ffffff80;
- --mast-focus:#8cc3ff;--mast-divider:#ffffff59;--mast-current-divider:#2b1f0099;
- --unknown:#978d74;--unknown-bg:#252011}
-/* Graphite: neutral greys, a light-blue focus ring on the masthead. */
-:root[data-palette=graphite],.tp-sw-graphite{
- --bg:#f4f5f6;--surface:#fefefe;--surface-2:#eceef0;--surface-3:#e1e4e7;
- --ink:#1d2126;--muted:#545b63;--line:#d8dbdf;--line-strong:#b2b8bf;
- --brand:#2a2f35;--primary:#3f4752;--primary-ink:#fff;--primary-hover:#2c333c;
- --accent:#aab2bb;--focus:#1f66b3;--link:#1f5fa6;--chip:#eaecef;--chip-ink:#434a52;
- --art-veil:#fefefecc;--shadow:0 1px 2px #1a1e230f,0 6px 18px #1a1e230d;
- --mast-ink:#fff;--mast-ink-soft:#eceff2;--mast-hover:#ffffff18;--mast-chip:#ffffff26;
- --mast-current:#fff;--mast-current-ink:#2a2f35;--mast-ctl:#ffffff14;--mast-ctl-hover:#ffffff26;--mast-ctl-line:#ffffff80;
- --mast-focus:#8cc3ff;--mast-divider:#ffffff59;--mast-current-divider:#2a2f3599;
- --unknown:#7f858c;--unknown-bg:#eef0f2}
-:root[data-palette=graphite][data-scheme=dark],[data-scheme=dark] .tp-sw-graphite{
- --bg:#111315;--surface:#181b1e;--surface-2:#1f2327;--surface-3:#282c31;
- --ink:#e8eaed;--muted:#a9b0b8;--line:#2c3136;--line-strong:#474e56;
- --brand:#24282d;--primary:#c3cad2;--primary-ink:#15181b;--primary-hover:#dde2e7;
- --focus:#8cc3ff;--link:#93c7ff;--chip:#282c31;--chip-ink:#ccd2d8;
- --art-veil:#181b1ecc;--shadow:0 1px 2px #0006;
- --unknown:#8d939a;--unknown-bg:#1f2327}
+/* Palettes. Terracotta, the default: a clay-tile masthead over a honey-stone stripe, sandstone pages, deep sea-teal buttons
+   (petrol at night). The masthead is dark clay in both schemes, so its ink and controls keep one set of values. */
+:root,.tp-sw-terracotta{
+ --bg:#f9f2eb;--surface:#fffcf8;--surface-2:#f3e9e0;--surface-3:#eaddd1;
+ --ink:#301f18;--muted:#6a5449;--line:#e3d7cc;--line-strong:#c2ac9b;
+ --brand:#803414;--primary:#00445f;--primary-ink:#fff;--primary-hover:#00364c;
+ --accent:#dfbd7c;--focus:#1e3a71;--link:#164878;--chip:#e4dad3;--chip-ink:#4b382f;
+ --art-veil:#fffcf8cc;--shadow:0 1px 2px #3a1a100f,0 6px 18px #3a1a100d;
+ --mast-ink:#fff;--mast-ink-soft:#fdf7f3;--mast-hover:#ffffff18;--mast-chip:#ffffff26;
+ --mast-current:#fff;--mast-current-ink:#803414;--mast-ctl:#ffffff14;--mast-ctl-hover:#ffffff26;--mast-ctl-line:#ffffff80;
+ --mast-focus:#f3d68f;--mast-divider:#ffffff59;--mast-current-divider:#80341499}
+:root[data-scheme=dark],[data-scheme=dark] .tp-sw-terracotta{
+ --bg:#140e0b;--surface:#1e1511;--surface-2:#281c17;--surface-3:#33251f;
+ --ink:#f1e9e3;--muted:#c1ad9f;--line:#382a25;--line-strong:#56433a;
+ --brand:#58230c;--primary:#2f7990;--primary-ink:#fff;--primary-hover:#256a80;
+ --accent:#e0d2b4;--focus:#c1e3fc;--link:#b3d6ff;--chip:#463e39;--chip-ink:#e6dbd3;
+ --art-veil:#1e1511cc;--shadow:0 1px 2px #0006}
+/* Stone: a honey limestone masthead with dark ink over a bougainvillea stripe, blue-door buttons. At night the masthead is
+   stone in shadow, with a honey current tab and floodlit-cream buttons. */
+:root[data-palette=stone],.tp-sw-stone{
+ --bg:#f4efe4;--surface:#fffdf8;--surface-2:#eee8db;--surface-3:#e4dccb;
+ --ink:#2a2318;--muted:#625743;--line:#e2d9c6;--line-strong:#c2b394;
+ --brand:#dcc18e;--primary:#1d3557;--primary-ink:#fff;--primary-hover:#142640;
+ --accent:#b4306c;--focus:#1e3a71;--link:#164878;--chip:#dfd8ce;--chip-ink:#4c4436;
+ --art-veil:#fffdf8cc;--shadow:0 1px 2px #3a2a100f,0 6px 18px #3a2a100d;
+ --mast-ink:#2a2010;--mast-ink-soft:#33291a;--mast-hover:#0000001a;--mast-chip:#00000021;
+ --mast-current:#2e261a;--mast-current-ink:#f3e3bd;--mast-ctl:#ffffff40;--mast-ctl-hover:#ffffff66;--mast-ctl-line:#00000080;
+ --mast-focus:#1e3a71;--mast-divider:#0000003d;--mast-current-divider:#f3e3bd99;--unknown:#85806f;--unknown-bg:#f1ede3}
+:root[data-palette=stone][data-scheme=dark],[data-scheme=dark] .tp-sw-stone{
+ --bg:#14110b;--surface:#1c1811;--surface-2:#252017;--surface-3:#2f291e;
+ --ink:#f5eedf;--muted:#c4b89c;--line:#3a3223;--line-strong:#594d36;
+ --brand:#3e321c;--primary:#ece4d2;--primary-ink:#231c10;--primary-hover:#f7f2e6;
+ --accent:#d0507f;--focus:#c1e3fc;--link:#b3d6ff;--chip:#423e36;--chip-ink:#e0d5bd;
+ --art-veil:#1c1811cc;--shadow:0 1px 2px #0006;
+ --mast-ink:#fff6e0;--mast-ink-soft:#f5e9c9;--mast-hover:#ffffff18;--mast-chip:#ffffff26;
+ --mast-current:#dcc18e;--mast-current-ink:#2a2010;--mast-ctl:#ffffff14;--mast-ctl-hover:#ffffff26;--mast-ctl-line:#ffffff80;
+ --mast-focus:#c1e3fc;--mast-divider:#ffffff59;--mast-current-divider:#2a201099;--unknown:#978e7a;--unknown-bg:#242016}
+/* Sea: a deep Mediterranean masthead over a sand stripe, sea-glass pages, sea-blue buttons (pale sea at night). */
+:root[data-palette=sea],.tp-sw-sea{
+ --bg:#eff4f3;--surface:#fbfdfd;--surface-2:#e6eeed;--surface-3:#d9e4e3;
+ --ink:#142a33;--muted:#4c5f66;--line:#d3dfdf;--line-strong:#a9bcbe;
+ --brand:#0e4a70;--primary:#106278;--primary-ink:#fff;--primary-hover:#0b4d5f;
+ --accent:#e8d6a8;--focus:#1e3a71;--link:#164878;--chip:#d1dbde;--chip-ink:#304a52;
+ --art-veil:#fbfdfdcc;--shadow:0 1px 2px #0a28380f,0 6px 18px #0a28380d;
+ --mast-ink:#fff;--mast-ink-soft:#edf5f8;--mast-hover:#ffffff18;--mast-chip:#ffffff26;
+ --mast-current:#fff;--mast-current-ink:#0e4a70;--mast-ctl:#ffffff14;--mast-ctl-hover:#ffffff26;--mast-ctl-line:#ffffff80;
+ --mast-focus:#f0d68f;--mast-divider:#ffffff59;--mast-current-divider:#0e4a7099;--unknown:#7a8a8d;--unknown-bg:#ebf0f0}
+:root[data-palette=sea][data-scheme=dark],[data-scheme=dark] .tp-sw-sea{
+ --bg:#0a1418;--surface:#101c22;--surface-2:#16252c;--surface-3:#1e2f37;
+ --ink:#e4eff2;--muted:#a2b7bd;--line:#24363e;--line-strong:#3d535c;
+ --brand:#072b40;--primary:#9ad0ea;--primary-ink:#05222e;--primary-hover:#bfe2f2;
+ --accent:#d6cfae;--focus:#c1e3fc;--link:#b3d6ff;--chip:#354046;--chip-ink:#c4d6db;
+ --art-veil:#101c22cc;--shadow:0 1px 2px #0006;--unknown:#879a9f;--unknown-bg:#16252b}
+/* Sage: a grey-sage masthead over an olive-oil stripe, pale leaf pages, ripe-olive buttons (dusty olive-purple at night). */
+:root[data-palette=sage],.tp-sw-sage{
+ --bg:#f3f4ee;--surface:#fdfdf9;--surface-2:#ebede4;--surface-3:#e0e3d8;
+ --ink:#1f2620;--muted:#535d55;--line:#d8ddd3;--line-strong:#b0b9ad;
+ --brand:#3a483d;--primary:#4f3748;--primary-ink:#fff;--primary-hover:#3b2836;
+ --accent:#cfc25a;--focus:#1e3a71;--link:#164878;--chip:#d6d8d1;--chip-ink:#424b44;
+ --art-veil:#fdfdf9cc;--shadow:0 1px 2px #1e28200f,0 6px 18px #1e28200d;
+ --mast-ink:#fff;--mast-ink-soft:#f2f6f2;--mast-hover:#ffffff18;--mast-chip:#ffffff26;
+ --mast-current:#fff;--mast-current-ink:#3a483d;--mast-ctl:#ffffff14;--mast-ctl-hover:#ffffff26;--mast-ctl-line:#ffffff80;
+ --mast-focus:#e3d67a;--mast-divider:#ffffff59;--mast-current-divider:#3a483db3;--unknown:#7f857c;--unknown-bg:#eef0e9}
+:root[data-palette=sage][data-scheme=dark],[data-scheme=dark] .tp-sw-sage{
+ --bg:#101310;--surface:#171b17;--surface-2:#1e231e;--surface-3:#272d27;
+ --ink:#e8ede6;--muted:#aab5aa;--line:#2b322b;--line-strong:#465046;
+ --brand:#26302a;--primary:#86657d;--primary-ink:#fff;--primary-hover:#76586d;
+ --accent:#c4ccb8;--focus:#c1e3fc;--link:#b3d6ff;--chip:#3b403b;--chip-ink:#d0d8cf;
+ --art-veil:#171b17cc;--shadow:0 1px 2px #0006;--unknown:#8c938a;--unknown-bg:#1e231e}
+/* Kippi: Kippi Ben Kippod's pink, a berry masthead over a pink stripe; plum buttons lean to magenta, away from the red
+   "missing" mark (pale pink at night). */
+:root[data-palette=kippi],.tp-sw-kippi{
+ --bg:#f9f4f5;--surface:#fffcfd;--surface-2:#f3eaed;--surface-3:#eadce1;
+ --ink:#2e1720;--muted:#654e58;--line:#e6d6dc;--line-strong:#c5aab5;
+ --brand:#86234f;--primary:#6f2759;--primary-ink:#fff;--primary-hover:#581d47;
+ --accent:#f2a7c3;--focus:#1e3a71;--link:#164878;--chip:#e1d8dd;--chip-ink:#523d47;
+ --art-veil:#fffcfdcc;--shadow:0 1px 2px #3a10280f,0 6px 18px #3a10280d;
+ --mast-ink:#fff;--mast-ink-soft:#fdf0f5;--mast-hover:#ffffff18;--mast-chip:#ffffff26;
+ --mast-current:#fff;--mast-current-ink:#86234f;--mast-ctl:#ffffff14;--mast-ctl-hover:#ffffff26;--mast-ctl-line:#ffffff80;
+ --mast-focus:#f7bfd5;--mast-divider:#ffffff59;--mast-current-divider:#86234f99;--unknown:#877b81;--unknown-bg:#f3edef}
+:root[data-palette=kippi][data-scheme=dark],[data-scheme=dark] .tp-sw-kippi{
+ --bg:#170d12;--surface:#20141a;--surface-2:#2a1b22;--surface-3:#35232c;
+ --ink:#f6e8ee;--muted:#c4a8b5;--line:#3c2832;--line-strong:#5c4250;
+ --brand:#4f1430;--primary:#edc8dd;--primary-ink:#3b0f25;--primary-hover:#f4ddea;
+ --accent:#d98aab;--focus:#c1e3fc;--link:#b3d6ff;--chip:#423b3f;--chip-ink:#eadbe2;
+ --art-veil:#20141acc;--shadow:0 1px 2px #0006;--unknown:#9a8a92;--unknown-bg:#271c22}
+/* Bauhaus: a white plaster masthead with dark ink over a black-steel line, black-steel buttons. At night the band is black
+   with a plaster line and plaster buttons. */
+:root[data-palette=bauhaus],.tp-sw-bauhaus{
+ --bg:#f6f5f1;--surface:#ffffff;--surface-2:#eeede8;--surface-3:#e3e2dc;
+ --ink:#1f2021;--muted:#55575a;--line:#dcdbd5;--line-strong:#b6b5ae;
+ --brand:#ebe8e0;--primary:#2a2d31;--primary-ink:#fff;--primary-hover:#16181b;
+ --accent:#2a2d31;--focus:#1e3a71;--link:#164878;--chip:#dbd9d3;--chip-ink:#43464a;
+ --art-veil:#ffffffcc;--shadow:0 1px 2px #1a1c1e0f,0 6px 18px #1a1c1e0d;
+ --mast-ink:#1d1e20;--mast-ink-soft:#2c2e31;--mast-hover:#0000000f;--mast-chip:#0000001a;
+ --mast-current:#23262a;--mast-current-ink:#f6f5f1;--mast-ctl:#ffffff80;--mast-ctl-hover:#ffffffb3;--mast-ctl-line:#00000080;
+ --mast-focus:#1e3a71;--mast-divider:#0000003d;--mast-current-divider:#f6f5f199;--unknown:#808285;--unknown-bg:#efefec}
+:root[data-palette=bauhaus][data-scheme=dark],[data-scheme=dark] .tp-sw-bauhaus{
+ --bg:#131310;--surface:#1b1b18;--surface-2:#22221f;--surface-3:#2b2b27;
+ --ink:#eeede8;--muted:#b0afa8;--line:#30302c;--line-strong:#4b4b46;
+ --brand:#1d1f21;--primary:#f2f1ec;--primary-ink:#1a1a19;--primary-hover:#ffffff;
+ --accent:#d8d4c8;--focus:#c1e3fc;--link:#b3d6ff;--chip:#3f3e3b;--chip-ink:#d6d5ce;
+ --art-veil:#1b1b18cc;--shadow:0 1px 2px #0006;
+ --mast-ink:#fff;--mast-ink-soft:#ecebe6;--mast-hover:#ffffff18;--mast-chip:#ffffff26;
+ --mast-current:#ece9e1;--mast-current-ink:#1d1f21;--mast-ctl:#ffffff14;--mast-ctl-hover:#ffffff26;--mast-ctl-line:#ffffff80;
+ --mast-focus:#c1e3fc;--mast-divider:#ffffff59;--mast-current-divider:#1d1f2199;--unknown:#8f8f89;--unknown-bg:#22221f}
 
 /* ---------- base ---------- */
 *{box-sizing:border-box}
@@ -1029,13 +1025,17 @@ details.about>summary{cursor:pointer;font-weight:700;padding:12px 0;font-size:14
 <script id="prefs-boot">
 // Theme and appearance, applied before the first paint, so the page never shows the default palette first. Language,
 // theme and appearance are browser-local UI preferences, stored in localStorage beside 'sumsum-language' as 'sumsum-theme'
-// (a palette name) and 'sumsum-appearance' (system, light or dark). Only listed names are used: any other stored value
-// ('constructor', '__proto__', an unknown name, a number, broken JSON) falls back to the default (green, system). While the
-// appearance is System, data-scheme follows prefers-color-scheme, also when it changes. data-start-palette and
-// data-start-appearance on <html> take the place of the stored values (tests and probes). The application script calls
-// sumsumTheme.apply() from the theme picker.
+// (a palette name) and 'sumsum-appearance' (system, light or dark). A palette id from before 2026-10-18 (green, blue, plum,
+// sunny, graphite) is read as the palette that replaced it (RENAMED); the stored value is left as it is. Only listed names
+// are used: any other stored value ('constructor', '__proto__', an unknown name, a number, broken JSON) falls back to the
+// default (terracotta, system). While the appearance is System, data-scheme follows prefers-color-scheme, also when it
+// changes. data-start-palette and data-start-appearance on <html> take the place of the stored values (tests and probes).
+// The application script calls sumsumTheme.apply() from the theme picker.
 (() => {
- const PALETTES = Object.freeze(['green', 'blue', 'plum', 'terracotta', 'sunny', 'graphite']);
+ const PALETTES = Object.freeze(['terracotta', 'stone', 'sea', 'sage', 'kippi', 'bauhaus']);
+ // Palette ids before 2026-10-18 (dce7eba) and the palette each became, so a stored choice survives the change.
+ const RENAMED = Object.freeze({__proto__: null, green: 'sage', blue: 'sea', plum: 'kippi', sunny: 'stone', graphite: 'bauhaus'});
+ const renamed = v => (typeof v === 'string' && Object.prototype.hasOwnProperty.call(RENAMED, v) ? RENAMED[v] : v);
  const APPEARANCES = Object.freeze(['system', 'light', 'dark']);
  const de = document.documentElement, w = typeof window === 'undefined' ? {} : window;
  const mq = typeof w.matchMedia === 'function' ? w.matchMedia('(prefers-color-scheme: dark)') : null;
@@ -1051,7 +1051,7 @@ details.about>summary{cursor:pointer;font-weight:700;padding:12px 0;font-size:14
   return {palette: p, appearance: a, scheme: s};
  }
  const start = name => de.getAttribute('data-start-' + name);
- apply(start('palette') ?? read('sumsum-theme'), start('appearance') ?? read('sumsum-appearance'));
+ apply(renamed(start('palette') ?? read('sumsum-theme')), start('appearance') ?? read('sumsum-appearance'));
  if (mq) {
   const follow = () => { if (de.getAttribute('data-appearance') === 'system') apply(de.getAttribute('data-palette'), 'system'); };
   if (typeof mq.addEventListener === 'function') mq.addEventListener('change', follow);
@@ -1137,12 +1137,12 @@ en: {
  appLight: 'Light',
  appDark: 'Dark',
  themeNote: 'Theme and appearance stay in this browser only.',
- pal_green: 'Green',
- pal_blue: 'Blue',
- pal_plum: 'Plum',
  pal_terracotta: 'Terracotta',
- pal_sunny: 'Sunny',
- pal_graphite: 'Graphite',
+ pal_stone: 'Stone',
+ pal_sea: 'Sea',
+ pal_sage: 'Sage',
+ pal_kippi: 'Kippi',
+ pal_bauhaus: 'Bauhaus',
  navGuide: 'Episode guide',
  navBrowse: 'Browse',
  navStarred: 'Starred',
@@ -1724,12 +1724,12 @@ he: {
  appLight: 'בהיר',
  appDark: 'כהה',
  themeNote: 'ערכת הצבעים והמראה נשארים רק בדפדפן הזה.',
- pal_green: 'ירוק',
- pal_blue: 'כחול',
- pal_plum: 'שזיף',
  pal_terracotta: 'טרקוטה',
- pal_sunny: 'שמשי',
- pal_graphite: 'גרפיט',
+ pal_stone: 'אבן',
+ pal_sea: 'ים',
+ pal_sage: 'מרווה',
+ pal_kippi: 'קיפי',
+ pal_bauhaus: 'באוהאוס',
  navGuide: 'מדריך הפרקים',
  navBrowse: 'עיון',
  navStarred: 'מסומנים בכוכב',

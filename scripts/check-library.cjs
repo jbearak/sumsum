@@ -3286,19 +3286,24 @@ async function checkLangBoot(htmlPath) {
 }
 
 // ---------------------------------------------------------------- theme picker and preferences
-// The preferences script applies the stored palette and appearance before the app starts (defaults: green, System), falls
-// back to the defaults for any other stored value, follows the system scheme only under System, and keeps the color-scheme
-// meta in step. The picker is a disclosure (button: aria-expanded, aria-controls) holding two radio groups named by their
-// visible headings, translated, with roving tabindex; arrows (mirrored in Hebrew), Home, End and clicks choose and store;
-// Escape, an outside click, focus leaving and a route change close it; the choice persists across reloads.
+// The preferences script applies the stored palette and appearance before the app starts (defaults: terracotta, System),
+// reads a palette id from before 2026-10-18 as the palette that replaced it, falls back to the defaults for any other stored
+// value, follows the system scheme only under System, and keeps the color-scheme meta in step. The picker is a disclosure
+// (button: aria-expanded, aria-controls) holding two radio groups named by their visible headings, translated, with roving
+// tabindex; arrows (mirrored in Hebrew), Home, End and clicks choose and store; Escape, an outside click, focus leaving and a
+// route change close it; the choice persists across reloads.
 const APP_KEY = {system: 'appSystem', light: 'appLight', dark: 'appDark'};
+// The default palette: the bare :root rule and its swatch, PALETTES[0] in #prefs-boot and the first pal_* string.
+const DEFAULT_PALETTE = 'terracotta';
+// Palette ids before 2026-10-18 and the palette each became (RENAMED in #prefs-boot), so a stored choice survives the change.
+const RENAMED_PALETTES = Object.freeze({green: 'sage', blue: 'sea', plum: 'kippi', sunny: 'stone', graphite: 'bauhaus'});
 async function checkThemePicker(htmlPath) {
   const prefs = H => { const de = H.document.documentElement; return ['palette', 'appearance', 'scheme'].map(k => de.getAttribute('data-' + k)); };
   const metaScheme = H => H.$('meta-color-scheme').getAttribute('content');
   const booted = H => { assert(H.h1() && H.h1().textContent.trim(), 'The app renders'); return H; };
   let H = booted(harness(boot(htmlPath)));
   const P = [...H.window.sumsumTheme.palettes], A = [...H.window.sumsumTheme.appearances];
-  assert.deepEqual(prefs(H), ['green', 'system', 'light'], 'Defaults: green and System (here a light system scheme)');
+  assert.deepEqual(prefs(H), [DEFAULT_PALETTE, 'system', 'light'], `Defaults: ${DEFAULT_PALETTE} and System (here a light system scheme)`);
   assert.equal(metaScheme(H), 'light dark', 'Under System the page offers both schemes');
   const pals = () => H.$('tp-pal').children.filter(c => c.tagName !== '#text'), apps = () => H.$('tp-app').children.filter(c => c.tagName !== '#text');
   const open = () => !H.$('theme-pop').hidden;
@@ -3356,14 +3361,14 @@ async function checkThemePicker(htmlPath) {
       const before = prefs(H)[0]; await press(key);
       assert.equal(prefs(H)[0], before, `${ui}: ${key} does not choose`);
     }
-    await H.$('tp-pal-plum').click();
-    assert(prefs(H)[0] === 'plum' && H.document.activeElement === H.$('tp-pal-plum') && H.storage.get('sumsum-theme') === '"plum"',
+    await H.$('tp-pal-kippi').click();
+    assert(prefs(H)[0] === 'kippi' && H.document.activeElement === H.$('tp-pal-kippi') && H.storage.get('sumsum-theme') === '"kippi"',
       ui + ': a click chooses, focuses and stores a palette');
     // The appearance group: System, Light, Dark; data-scheme and the color-scheme meta follow.
     H.$('tp-app-' + prefs(H)[1]).focus();
     for (const [a, scheme, metaValue] of [['light', 'light', 'light'], ['dark', 'dark', 'dark'], ['system', 'light', 'light dark']]) {
       assert(await press(fwd), `${ui}: arrows move in the appearance group`);
-      assert.deepEqual(prefs(H), ['plum', a, scheme], `${ui}: the next appearance is ${a}`);
+      assert.deepEqual(prefs(H), ['kippi', a, scheme], `${ui}: the next appearance is ${a}`);
       assert.equal(metaScheme(H), metaValue, `${ui}: color-scheme meta under ${a}`);
       assert.equal(H.storage.get('sumsum-appearance'), JSON.stringify(a), `${ui}: the appearance is stored`);
       assert.equal(H.document.activeElement, H.$('tp-app-' + a)); expectPicker(ui, `${ui} appearance ${a}`);
@@ -3379,19 +3384,19 @@ async function checkThemePicker(htmlPath) {
     // an outside click, Escape elsewhere, focus leaving and a route change close it. A click inside keeps it open.
     assert(await press('Escape') && !open() && H.document.activeElement === H.$('theme-btn'), ui + ': Escape closes and returns focus to the button');
     expectPicker(ui, ui + ' after Escape');
-    assert(await H.$('theme-btn').dispatch('keydown', {key: 'ArrowDown'}) && open() && H.document.activeElement === H.$('tp-pal-plum'),
+    assert(await H.$('theme-btn').dispatch('keydown', {key: 'ArrowDown'}) && open() && H.document.activeElement === H.$('tp-pal-kippi'),
       ui + ': ArrowDown on the button opens it on the checked palette');
     H.$('theme-btn').focus(); await H.$('theme-btn').dispatch('keydown', {key: 'Escape'});
     assert(!open() && H.document.activeElement === H.$('theme-btn'), ui + ': Escape on the button closes it');
     await H.$('theme-btn').click(); await H.$('theme-btn').click(); assert(!open(), ui + ': the button toggles the popover');
-    await H.$('theme-btn').click(); await H.$('tp-pal-blue').dispatch('click');
-    assert(open() && prefs(H)[0] === 'blue', ui + ': a click inside chooses and keeps the popover open');
+    await H.$('theme-btn').click(); await H.$('tp-pal-sea').dispatch('click');
+    assert(open() && prefs(H)[0] === 'sea', ui + ': a click inside chooses and keeps the popover open');
     await H.view().dispatch('click'); assert(!open(), ui + ': an outside click closes it');
     await H.$('theme-btn').click(); await H.view().dispatch('keydown', {key: 'Escape'}); assert(!open(), ui + ': Escape elsewhere closes it');
     await H.$('theme-btn').click();
-    await H.$('tp-pal-blue').dispatch('focusout', {relatedTarget: H.$('tp-app-light')}); assert(open(), ui + ': focus moving inside keeps it open');
-    await H.$('tp-pal-blue').dispatch('focusout', {relatedTarget: null}); assert(open(), ui + ': focus going nowhere keeps it open');
-    await H.$('tp-pal-blue').dispatch('focusout', {relatedTarget: H.$('lang-en')}); assert(!open(), ui + ': focus leaving the control closes it');
+    await H.$('tp-pal-sea').dispatch('focusout', {relatedTarget: H.$('tp-app-light')}); assert(open(), ui + ': focus moving inside keeps it open');
+    await H.$('tp-pal-sea').dispatch('focusout', {relatedTarget: null}); assert(open(), ui + ': focus going nowhere keeps it open');
+    await H.$('tp-pal-sea').dispatch('focusout', {relatedTarget: H.$('lang-en')}); assert(!open(), ui + ': focus leaving the control closes it');
     await H.$('theme-btn').click(); await H.navigate(ui === 'en' ? 'starred' : 'browse'); assert(!open(), ui + ': a route change closes it');
     // The masthead's ids are unique on a page with the filters (whose theme select is #theme).
     const ids = H.find(n => n.getAttribute && n.getAttribute('id') !== undefined, H.tree).map(n => n.getAttribute('id'));
@@ -3399,43 +3404,66 @@ async function checkThemePicker(htmlPath) {
       assert.equal(ids.filter(x => x === id).length, 1, ui + ': one element has the id ' + id);
     }
     expectPicker(ui, ui + ' closed again');
-    await H.$('tp-pal-green').click(); await H.$('tp-app-system').click();
+    await H.$('tp-pal-' + DEFAULT_PALETTE).click(); await H.$('tp-app-system').click();
   }
   if (H.document.documentElement.lang !== 'en') await H.flipLang();
-  // Persistence: a reload with the same storage applies the stored choice before the app starts.
+  // Persistence: a reload with the same storage applies the stored choice before the app starts (a palette other than the
+  // default, so that nothing stored would fail).
   const storage = H.storage;
-  await H.$('tp-pal-terracotta').click(); await H.$('tp-app-dark').click();
+  await H.$('tp-pal-sage').click(); await H.$('tp-app-dark').click();
   H = booted(harness(boot(htmlPath, {storage})));
-  assert.deepEqual(prefs(H), ['terracotta', 'dark', 'dark'], 'The palette and the appearance persist across reloads');
-  assert(H.$('tp-pal-terracotta').getAttribute('aria-checked') === 'true' && H.$('tp-app-dark').getAttribute('aria-checked') === 'true',
+  assert.deepEqual(prefs(H), ['sage', 'dark', 'dark'], 'The palette and the appearance persist across reloads');
+  assert(H.$('tp-pal-sage').getAttribute('aria-checked') === 'true' && H.$('tp-app-dark').getAttribute('aria-checked') === 'true',
     'The picker shows the stored choice');
   assert.equal(metaScheme(H), 'dark');
   // Start attributes take the place of the stored values (an invalid one gives the default, not the stored value).
-  H = booted(harness(boot(htmlPath, {storage, htmlAttrs: {'data-start-palette': 'sunny', 'data-start-appearance': 'light'}})));
-  assert.deepEqual(prefs(H), ['sunny', 'light', 'light'], 'data-start-palette and data-start-appearance win over storage');
+  H = booted(harness(boot(htmlPath, {storage, htmlAttrs: {'data-start-palette': 'stone', 'data-start-appearance': 'light'}})));
+  assert.deepEqual(prefs(H), ['stone', 'light', 'light'], 'data-start-palette and data-start-appearance win over storage');
   H = booted(harness(boot(htmlPath, {storage, htmlAttrs: {'data-start-palette': 'constructor', 'data-start-appearance': '__proto__'}})));
-  assert.deepEqual(prefs(H), ['green', 'system', 'light'], 'An invalid start attribute gives the default');
+  assert.deepEqual(prefs(H), [DEFAULT_PALETTE, 'system', 'light'], 'An invalid start attribute gives the default');
   // The system scheme, with and without matchMedia.
-  assert.deepEqual(prefs(booted(harness(boot(htmlPath, {prefersDark: true})))), ['green', 'system', 'dark'], 'System follows a dark system scheme at start');
-  assert.deepEqual(prefs(booted(harness(boot(htmlPath, {prefersDark: true, noMatchMedia: true})))), ['green', 'system', 'light'],
+  assert.deepEqual(prefs(booted(harness(boot(htmlPath, {prefersDark: true})))), [DEFAULT_PALETTE, 'system', 'dark'], 'System follows a dark system scheme at start');
+  assert.deepEqual(prefs(booted(harness(boot(htmlPath, {prefersDark: true, noMatchMedia: true})))), [DEFAULT_PALETTE, 'system', 'light'],
     'Without matchMedia, System is light');
-  // Hostile or broken stored values fall back to the defaults and the app still starts.
-  const hostile = ['constructor', '__proto__', 'toString', 'hasOwnProperty', 'valueOf', 'GREEN', 'Dark', 'dark', 'blue ', 'system'].map(v => JSON.stringify(v))
+  // Hostile or broken stored values fall back to the defaults and the app still starts; an old id that is not exactly one
+  // ('GREEN', 'blue ', one inside an object or an array) is not migrated.
+  const hostile = ['constructor', '__proto__', 'toString', 'hasOwnProperty', 'valueOf', 'GREEN', 'Dark', 'dark', 'blue ', 'olive', 'system'].map(v => JSON.stringify(v))
     .concat(['{', 'undefined', '42', '{}', '[]', 'null', '"', 'true', '{"__proto__":"blue"}', '["blue"]']);
   for (const raw of hostile) {
     const h = booted(harness(boot(htmlPath, {storage: new Map([['sumsum-theme', raw], ['sumsum-appearance', raw === '"system"' ? '"blue"' : raw]])})));
     const [pal, app] = prefs(h);
-    assert.equal(pal, 'green', `A stored palette ${raw} falls back to green`);
+    assert.equal(pal, DEFAULT_PALETTE, `A stored palette ${raw} falls back to ${DEFAULT_PALETTE}`);
     assert.equal(app, raw === '"dark"' ? 'dark' : 'system', `A stored appearance ${raw} falls back to System unless it is one`);
-    assert(h.$('tp-pal-green').getAttribute('aria-checked') === 'true', `The picker marks green after a stored ${raw}`);
+    assert(h.$('tp-pal-' + DEFAULT_PALETTE).getAttribute('aria-checked') === 'true', `The picker marks ${DEFAULT_PALETTE} after a stored ${raw}`);
+  }
+  // Migration: a stored id from before 2026-10-18 boots into the palette that replaced it, which the picker marks, and is read
+  // only: storage keeps the old id until the next choice. data-start-palette is read the same way. A stored default stays.
+  const migrated = Object.entries(RENAMED_PALETTES);
+  for (const [old, now] of migrated) {
+    assert(!P.includes(old) && P.includes(now) && now !== DEFAULT_PALETTE, `"${old}" is an old id and ${now} a palette other than the default`);
+    const st = new Map([['sumsum-theme', JSON.stringify(old)], ['sumsum-appearance', '"dark"']]), h = booted(harness(boot(htmlPath, {storage: st})));
+    assert.deepEqual(prefs(h), [now, 'dark', 'dark'], `A stored "${old}" boots into ${now}`);
+    assert(h.$('tp-pal-' + now).getAttribute('aria-checked') === 'true' && h.$('tp-pal-' + DEFAULT_PALETTE).getAttribute('aria-checked') === 'false',
+      `The picker marks ${now} after a stored "${old}"`);
+    assert.equal(st.get('sumsum-theme'), JSON.stringify(old), `A stored "${old}" stays in storage until the next choice`);
+    assert.equal(prefs(booted(harness(boot(htmlPath, {htmlAttrs: {'data-start-palette': old}}))))[0], now, `data-start-palette="${old}" gives ${now}`);
+  }
+  {
+    const st = new Map([['sumsum-theme', JSON.stringify(DEFAULT_PALETTE)]]);
+    assert.equal(prefs(booted(harness(boot(htmlPath, {storage: st}))))[0], DEFAULT_PALETTE, 'A stored default stays');
+    st.set('sumsum-theme', JSON.stringify(migrated[0][0]));
+    const h = booted(harness(boot(htmlPath, {storage: st})));
+    await h.$('theme-btn').click(); await h.$('tp-pal-kippi').click();
+    assert.equal(st.get('sumsum-theme'), '"kippi"', 'A choice after a migrated boot stores the new id');
+    assert.equal(prefs(booted(harness(boot(htmlPath, {storage: st}))))[0], 'kippi', 'and the next boot keeps it');
   }
   // Without the preferences script the control is hidden and the default palette stays.
   H = booted(harness(boot(htmlPath, {noBoot: true})));
   assert(H.$('theme-picker').hidden && !H.document.documentElement.getAttribute('data-palette'), 'Without the preferences script the theme control is hidden');
-  ok('theme picker: defaults (green, System), the system scheme and its changes, color-scheme meta; button and radio groups named ' +
+  ok(`theme picker: defaults (${DEFAULT_PALETTE}, System), the system scheme and its changes, color-scheme meta; button and radio groups named ` +
     'in EN and HE, roving tabindex, arrows (mirrored in Hebrew), Home, End and clicks choose and store; Escape returns focus; outside ' +
     'click, Escape elsewhere, focus leaving and route change close; persistence, start attributes, hostile stored values ' +
-    `(${hostile.length}) and a build without the script`);
+    `(${hostile.length}), old palette ids read as their new palettes (${migrated.map(([o, n]) => o + ' to ' + n).join(', ')}) and a build without the script`);
 }
 
 // ---------------------------------------------------------------- Browse menu and its pages
@@ -3795,10 +3823,10 @@ async function checkRouteAliases(htmlPath, M) {
 // Stylesheet rules that the DOM double cannot render.
 // ---------------------------------------------------------------- theme tokens and contrast
 // Colours are custom properties on <html> (library.template.html, "tokens"): a scheme layer (rules that set color-scheme:
-// the shared semantic colours, light on :root and dark on :root[data-scheme=dark]) and a palette layer (green, the default,
-// on :root and :root[data-scheme=dark]; another palette NAME on :root[data-palette=NAME] and
-// :root[data-palette=NAME][data-scheme=dark], shared with its picker swatch .tp-sw-NAME). themeTokens() reads those rules
-// from the top level of the stylesheet and resolves a palette and scheme the way the cascade does: of the rules whose
+// the shared semantic colours, light on :root and dark on :root[data-scheme=dark]) and a palette layer (the default on :root
+// and :root[data-scheme=dark]; another palette NAME on :root[data-palette=NAME] and :root[data-palette=NAME][data-scheme=dark];
+// each palette's rules are shared with its picker swatch .tp-sw-NAME, which names the default). themeTokens() reads those
+// rules from the top level of the stylesheet and resolves a palette and scheme the way the cascade does: of the rules whose
 // attribute selectors all match, more attributes win, then the later rule. .sweep/titles-he/theme/contrast.cjs prints the
 // contrast table from the same functions.
 const hex6 = h => (h.length === 4 || h.length === 5 ? '#' + h.slice(1).split('').map(x => x + x).join('') : h).toLowerCase();
@@ -3842,7 +3870,11 @@ function themeTokens(css) {
     const tokens = Object.fromEntries([...r.body.matchAll(/--([\w-]+):([^;]+)/g)].map(d => [d[1], d[2].trim()]));
     rules.push({sel: r.sel, body: r.body, sels, attrs, tokens, order, scheme: /(?:^|;)\s*color-scheme:/.test(r.body), others: sels.filter(x => x !== roots[0])});
   });
-  const palettes = ['green', ...new Set(rules.map(r => r.attrs.palette).filter(Boolean))];
+  // The default palette is the one whose swatch shares the bare :root rule (no data-palette, no color-scheme).
+  const bare = rules.find(r => !r.scheme && !Object.keys(r.attrs).length);
+  const dflt = ((bare ? bare.others : []).map(x => /^\.tp-sw-([\w-]+)$/.exec(x)).find(Boolean) || [])[1];
+  assert(dflt, 'The default palette rule (:root) names its swatch, .tp-sw-NAME');
+  const palettes = [...new Set([dflt, ...rules.map(r => r.attrs.palette).filter(Boolean)])];
   const resolve = (palette, scheme) => {
     const out = {}, from = {};
     const hits = rules.filter(r => (!r.attrs.palette || r.attrs.palette === palette) && (!r.attrs.scheme || r.attrs.scheme === scheme))
@@ -3850,9 +3882,9 @@ function themeTokens(css) {
     for (const r of hits) for (const [k, v] of Object.entries(r.tokens)) { out[k] = v; from[k] = r; }
     return {tokens: out, from};
   };
-  const block = (palette, scheme) => rules.find(r => !r.scheme && (r.attrs.palette || 'green') === palette &&
-    (palette === 'green' ? !r.attrs.palette : true) && (r.attrs.scheme || 'light') === scheme);
-  return {rules, top, palettes, resolve, block, schemeLight: rules.find(r => r.scheme && !r.attrs.scheme && !r.attrs.palette),
+  const block = (palette, scheme) => rules.find(r => !r.scheme && (r.attrs.palette || dflt) === palette &&
+    (palette === dflt ? !r.attrs.palette : true) && (r.attrs.scheme || 'light') === scheme);
+  return {rules, top, palettes, default: dflt, resolve, block, schemeLight: rules.find(r => r.scheme && !r.attrs.scheme && !r.attrs.palette),
     schemeDark: rules.find(r => r.scheme && r.attrs.scheme === 'dark' && !r.attrs.palette)};
 }
 // A colour expression in the pairs below: a token, a token composited over another ('mast-ctl@brand'), or over a literal
@@ -3930,9 +3962,10 @@ function checkThemeTokens(html, theme) {
   assert(/color-scheme:light(?:;|$)/.test(T.schemeLight.body) && /color-scheme:dark(?:;|$)/.test(T.schemeDark.body), 'color-scheme follows data-scheme');
   const S = new Set(Object.keys(T.schemeLight.tokens)), keys = r => new Set(Object.keys(r.tokens));
   for (const k of Object.keys(T.schemeDark.tokens)) assert(S.has(k), 'The dark scheme rule sets only shared tokens: --' + k);
-  const green = T.block('green', 'light'), greenDark = T.block('green', 'dark');
-  assert(green && greenDark, 'Green, the default palette, has a light and a dark rule');
-  const P = keys(green), D = keys(greenDark);
+  assert.equal(T.default, DEFAULT_PALETTE, `The default palette (:root) is ${DEFAULT_PALETTE}`);
+  const dflt = T.block(T.default, 'light'), dfltDark = T.block(T.default, 'dark');
+  assert(dflt && dfltDark, `${T.default}, the default palette, has a light and a dark rule`);
+  const P = keys(dflt), D = keys(dfltDark);
   for (const k of P) assert(!S.has(k), 'A token is either shared or a palette token: --' + k);
   for (const k of D) assert(P.has(k), 'The default dark rule sets only palette tokens: --' + k);
   // Every custom property the stylesheet uses is defined (locals are set by rules or, --tb-h, by the script with a fallback).
@@ -3945,7 +3978,8 @@ function checkThemeTokens(html, theme) {
   assert.deepEqual([...theme.palettes], T.palettes, 'The preferences script lists the stylesheet\'s palettes');
   assert.deepEqual([...theme.appearances], ['system', 'light', 'dark'], 'Appearances: System, Light, Dark');
   for (const lg of ['en', 'he']) assert.deepEqual(Object.keys(L[lg]).filter(k => k.startsWith('pal_')).map(k => k.slice(4)), T.palettes, 'Palette names: ' + lg);
-  assert(T.palettes.length >= 6 && T.palettes[0] === 'green', 'At least six palettes, green first (the default)');
+  assert(T.palettes.length >= 6 && T.palettes[0] === DEFAULT_PALETTE && theme.palettes[0] === DEFAULT_PALETTE &&
+    Object.keys(L.en).find(k => k.startsWith('pal_')) === 'pal_' + DEFAULT_PALETTE, `At least six palettes, ${DEFAULT_PALETTE} first (the default)`);
   for (const p of T.palettes) {
     const lt = T.block(p, 'light'), dk = T.block(p, 'dark');
     assert(lt && dk, `Palette ${p} has a light and a dark rule`);
@@ -3961,18 +3995,18 @@ function checkThemeTokens(html, theme) {
     for (const sc of ['light', 'dark']) {
       const {tokens, from} = T.resolve(p, sc);
       for (const k of used) if (!local.has(k)) assert(k in tokens, `${p} ${sc}: --${k} resolves`);
-      for (const k of P) assert(p === 'green' || from[k].attrs.palette === p, `${p} ${sc}: --${k} comes from the ${p} rules`);
+      for (const k of P) assert(p === T.default || from[k].attrs.palette === p, `${p} ${sc}: --${k} comes from the ${p} rules`);
       for (const k of D) assert(from[k].attrs.scheme === sc || sc === 'light', `${p} ${sc}: --${k} comes from the ${sc} rule`);
     }
   }
   // The toolbar colour before the script runs: the default masthead.
-  assert.equal((html.match(/<meta name="theme-color" content="([^"]*)" id="meta-theme-color">/) || [])[1], T.resolve('green', 'light').tokens.brand,
+  assert.equal((html.match(/<meta name="theme-color" content="([^"]*)" id="meta-theme-color">/) || [])[1], T.resolve(T.default, 'light').tokens.brand,
     'theme-color starts as the default masthead colour');
   assert(/<meta name="color-scheme" content="light dark" id="meta-color-scheme">/.test(html), 'color-scheme starts as "light dark" (System)');
   const rows = contrastRows(T), bad = rows.filter(r => !r.ok);
   assert.deepEqual(bad.map(r => `${r.palette} ${r.scheme}: ${r.label} (--${r.fg} on --${r.bg}) ${r.ratio.toFixed(2)} < ${r.min}`), [],
     'Contrast in every palette and scheme');
-  ok(`theme tokens: ${T.palettes.length} palettes (${T.palettes.join(', ')}) define ${P.size} palette tokens, light and dark, over ${S.size} shared ` +
+  ok(`theme tokens: ${T.palettes.length} palettes (${T.palettes.join(', ')}; ${T.default} the default) define ${P.size} palette tokens, light and dark, over ${S.size} shared ` +
     `ones; colours only in tokens; ${rows.length} contrast pairs pass (${CONTRAST_PAIRS.length} per palette and scheme)`);
   return T;
 }
@@ -4075,7 +4109,7 @@ function checkCss(html) {
     'Phones break long List titles inside the title column');
   // Masthead: no brand rules; a physical grid (views nav, then the control group at the right edge) in both directions, and
   // one row on phones; the toggle's thumb is placed physically and follows aria-checked; masthead colours are tokens with
-  // enough contrast on the dark green in both schemes; the thumb slides only without reduced motion.
+  // enough contrast on the masthead colour in every palette and scheme; the thumb slides only without reduced motion.
   assert(!rules.some(r => /\.(?:brand|sign|brand-cap)\b/.test(r.sel)), 'No brand rules');
   assert(/display:grid/.test(body('.mast')) && /grid-template-columns:minmax\(0,1fr\) auto/.test(body('.mast')) &&
     /direction:ltr/.test(body('.mast')), 'The masthead is a left-to-right grid: the views nav, then the control group on the right');

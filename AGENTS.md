@@ -2,7 +2,7 @@
 
 Maintain a local, interactive video-link library for classic and modern Rechov Sumsum, classic and modern Shalom Sesame, and Elmo's Israeli talk show, תכנית האירוח של אלמו. Collect episode and clip links, source metadata, and evidence about completeness and availability. Store links and metadata, never video media.
 
-The library is `index.html`, a self-contained file generated from `library.template.html` and `data/`. Preserve filtering by series, program type, theme and character, dynamic filter counts, longest-first duration sorting, and the UI preferences, such as language (English by default, with a Hebrew toggle and RTL layout), palette (Green by default) and appearance (System by default, or Light or Dark). Full episodes and complete installments of short series are separate categories.
+The library is `index.html`, a self-contained file generated from `library.template.html` and `data/`. Preserve filtering by series, program type, theme and character, dynamic filter counts, longest-first duration sorting, and the UI preferences: language (English by default, with a Hebrew toggle and RTL layout), palette (Terracotta by default) and appearance (System by default). Full episodes and complete installments of short series are separate categories.
 
 Before acquisition or coverage work, read [TODO.md](TODO.md): episode totals, coverage gaps and the acquisition checklist. Before changing a claim, read the [research/](research/) note that cites its evidence and limits.
 
