@@ -3672,10 +3672,15 @@ async function checkHome(htmlPath, M) {
   H.flushTimers();
   assert.deepEqual(JSON.parse(H.storage.get('sumsum-sitting')), [keyOf(c2)], 'Open next takes the first video off the queue');
   assert.equal(JSON.parse(H.storage.get('sumsum-opened'))[keyOf(c1)].n, 1, 'and counts an open');
+  // Opening the last queued video moves focus to the queue heading.
+  H.fk('home-open').focus(); await H.fk('home-open').click(); H.flushTimers();
+  assert.deepEqual(JSON.parse(H.storage.get('sumsum-sitting')), [], 'The last video leaves the queue');
+  assert.equal(H.document.activeElement.getAttribute('data-fk'), 'home-qh', 'and focus moves to the queue heading');
+  await H.fk('smusic-q-' + c2.id).click(); H.flushTimers();
   // Again: the opened video, with its count; the hero offers it again when Up next is something else.
   assert(H.has('ag-w-' + c1.id) && H.fk('ag-w-' + c1.id).href === expectDest(c1), 'Again lists the opened video');
   assert(H.byClass('again')[0].textContent.includes('×1'), 'with how often it was opened');
-  if (H.fk('next-watch').href !== expectDest(c1)) assert.equal(H.fk('again-hero').href, expectDest(c1), 'The hero offers the last video again');
+  if (H.fk('next-watch').href !== expectDest(c2)) assert.equal(H.fk('again-hero').href, expectDest(c2), 'The hero offers the last video opened again');
   await H.fk('ag-w-' + c1.id).click(); H.flushTimers();
   assert.equal(JSON.parse(H.storage.get('sumsum-opened'))[keyOf(c1)].n, 2, 'Again counts another open');
   // Stickers: ×N for opens; ✓ only on a video that is the one whole or alternate copy of a watched episode.
@@ -3719,8 +3724,17 @@ async function checkHome(htmlPath, M) {
   await H.fk('sp-prev').click(); assert.equal(picked(), seenPicks.at(-2), 'Previous goes back');
   await H.document.activeElement.dispatch('keydown', {key: 'Escape'});
   assert(pop.hidden && sb.getAttribute('aria-expanded') === 'false' && H.document.activeElement === sb, 'Escape closes it and focus returns');
-  await sb.click(); await H.$('view').dispatch('click'); assert(pop.hidden, 'An outside click closes it');
+  await sb.click(); await H.$('view').dispatch('click');
+  assert(pop.hidden && H.document.activeElement === sb, 'A click on nothing in particular closes it and returns focus to its button');
+  await sb.click(); H.fk('tab-home').focus(); await H.fk('tab-home').dispatch('click', {button: 1});
+  assert(pop.hidden && H.document.activeElement === H.fk('tab-home'), 'A click on another control closes it and keeps that control\'s focus');
   await sb.click(); await H.navigate('browse'); assert(pop.hidden, 'A route change closes it');
+  // The star inside the Surprise card: the popover stays open with focus on the star.
+  await H.navigate('home'); await sb.click();
+  { const r = picked(), st = () => H.fk('sp-star-' + r.id); st().focus(); await st().click(); H.flushTimers();
+    assert(!pop.hidden && picked() === r && st().getAttribute('aria-pressed') === 'true' && H.document.activeElement === st(),
+      'Starring a Surprise pick keeps it open, pressed and focused');
+    await st().click(); await H.fk('surprise-close').click(); }
   // "+" inside the Surprise card queues the pick in place: the popover stays open and the button shows it.
   await H.navigate('home'); await sb.click();
   const pr = picked(), qb = () => H.fk('sp-q-' + pr.id), wasQ = JSON.parse(H.storage.get('sumsum-sitting') || '[]').includes(keyOf(pr));
@@ -3761,7 +3775,6 @@ async function checkHome(htmlPath, M) {
     const r0 = ps[0].u.r, n0 = (JSON.parse(H.storage.get('sumsum-opened') || '{}')[keyOf(r0)] || {n: 0}).n;
     await cars[0].click(); H.flushTimers();
     assert.equal(JSON.parse(H.storage.get('sumsum-opened'))[keyOf(r0)].n, n0 + 1, 'A car counts an open');
-    await H.navigate('home'); await H.navigate('episode/' + encodeURIComponent(trainEp.id));
     const c0 = H.fk('car-' + r0.id);
     assert(H.cls(c0).includes('opened') && c0.getAttribute('aria-label').includes(', ' + L.en.openedCar + ' ('), 'An opened car says so');
   }
@@ -3786,6 +3799,14 @@ async function checkHome(htmlPath, M) {
   await H.$('queue-btn').click();
   assert(!H.$('queue-pop').hidden && H.has('qp-open') && H.fk('qp-open').href === expectDest(d1), 'The queue popover offers the next video');
   await H.document.activeElement.dispatch('keydown', {key: 'Escape'}); assert(H.$('queue-pop').hidden);
+  // A stored queue key that matches no record stays stored and unseen, and moving a row swaps it with the next row shown.
+  {
+    const [kA, kB] = [c1, c3].map(keyOf), st = new Map([['sumsum-sitting', JSON.stringify([kA, 'zz-no-such-record', kB])]]);
+    const H2 = harness(boot(htmlPath, {storage: st}));
+    assert(H2.has('home-down-' + c1.id) && !H2.has('home-rm-zz-no-such-record'), 'The unknown key is not shown');
+    await H2.fk('home-down-' + c1.id).click(); H2.flushTimers();
+    assert.deepEqual(JSON.parse(st.get('sumsum-sitting')), [kB, 'zz-no-such-record', kA], 'Move down swaps with the next shown row');
+  }
   ok('Home: stored Spoken and Length that Browse hashes never change; offered videos only in Up next, the music shelf and ' +
     'Surprise; See all opens the same query with its count; twelve characters opening Browse with their counts; the queue (add, ' +
     'move, remove, clear and undo, Open next taking the first and counting an open, its link still in the page); Again with counts; ' +

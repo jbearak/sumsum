@@ -4213,8 +4213,10 @@ function starBtn(r, key) {
  const b = btn('star', '', () => {
   const had = favorites.has(mapKey(r)); had ? favorites.delete(mapKey(r)) : favorites.add(mapKey(r));
   if (persist('sumsum-favorites', [...favorites])) toast(t(had ? 'unstarredToast' : 'starredToast'));
-  const focusKey = activeKey(); renderTabs();
+  const focusKey = activeKey(); renderTabs(); rebindOpener();
   if (UVIEWS.includes(state.view)) { starChanged(r, b); return; }
+  // An open popover (a Surprise pick's star) stays open and is drawn again.
+  if (pops.open) { redraw(focusKey, [], true); return; }
   mount(false); restoreFocus(focusKey);
  }, key);
  b.innerHTML = ICON.star; b.setAttribute('aria-pressed', String(favorites.has(mapKey(r))));
@@ -4971,12 +4973,16 @@ function partsTrain(e) {
  for (const x of ps) {
   const r = x.u.r, li = el('li'); if (!destination(r)) continue;
   const a = viewed(watchLink({r, role: 'part', acc: accessOf(r), i: x.no, n: x.of}, true, 'car', epTitle(e)), r);
-  const was = !!opened[mapKey(r)];
   a.replaceChildren(el('span', 'car-no', fmtN(x.no)), ltr(duration(r.durationSeconds) || '·', 'car-dur'));
-  if (was) { a.className += ' opened'; a.append(el('span', 'car-op', t('openedCar'))); a.setAttribute('aria-label', a.getAttribute('aria-label').replace(/ \(([^()]*)\)$/, ', ' + t('openedCar') + ' ($1)')); }
-  fk(a, 'car-' + r.id); li.append(a); ol.append(li);
+  a._car = r; markCar(a, r); fk(a, 'car-' + r.id); li.append(a); ol.append(li);
  }
  return ol.children.length > 1 ? ol : null;
+}
+// Marks a car "Opened" once its part has been opened (at once after the click, through the session redraw).
+function markCar(a, r) {
+ if (!opened[mapKey(r)] || a._opened) return;
+ a._opened = true; a.className += ' opened'; a.append(el('span', 'car-op', t('openedCar')));
+ a.setAttribute('aria-label', a.getAttribute('aria-label').replace(/ \(([^()]*)\)$/, ', ' + t('openedCar') + ' ($1)'));
 }
 // Evidence ladder: the derived level is marked "Now"; nothing is completed when no upload is linked.
 function evidenceCard(e, ups, cov) {
@@ -6258,7 +6264,8 @@ function queueCard(where) {
   const ctl = el('span', 'qctl');
   const move = (d2, lbl, sym, key) => {
    const b = btn('qbtn', sym, () => {
-    const ks = [...sitting], j = ks.indexOf(k), to = j + d2; if (j < 0 || to < 0 || to >= ks.length) return;
+    // Swap with the next shown row; a stored key that matches no record stays where it is, unseen.
+    const ks = [...sitting], j = ks.indexOf(k), nb = items[i + d2], to = nb ? ks.indexOf(mapKey(nb)) : -1; if (j < 0 || to < 0) return;
     // A row moved to an end loses that direction's button: focus goes to its other one.
     [ks[j], ks[to]] = [ks[to], ks[j]]; setSitting(ks, [key, where + (d2 < 0 ? '-down-' : '-up-') + r.id, where + '-rm-' + r.id]);
    }, key);
@@ -6276,8 +6283,9 @@ function queueCard(where) {
  if (destination(first)) {
   const open = viewed(watchLink(recWatchB(first), true, 'btn', recTitle(first)), first);
   open.prepend(el('span', 'open-lbl', t('openNext') + ' · '));
-  open.addEventListener('click', ev => { if (!ev || !(ev.button > 0)) setSitting(sitting.filter(x => x !== mapKey(first))); });
-  open.addEventListener('auxclick', ev => { if (ev && ev.button === 1) setSitting(sitting.filter(x => x !== mapKey(first))); });
+  const after = [where + '-open', where + '-qh'];
+  open.addEventListener('click', ev => { if (!ev || !(ev.button > 0)) setSitting(sitting.filter(x => x !== mapKey(first)), after); });
+  open.addEventListener('auxclick', ev => { if (ev && ev.button === 1) setSitting(sitting.filter(x => x !== mapKey(first)), after); });
   act.append(fk(ticket(open, first), where + '-open'));
  }
  act.append(btn('btn ghost', t('queueClear'), () => {
@@ -6397,13 +6405,19 @@ document.addEventListener('keydown', ev => { if (ev.key === 'Escape' && pops.ope
 document.addEventListener('click', ev => {
  if (!pops.open) return;
  const pop = $(pops.open + '-pop'), o = pops.opener;
- if (!pop.contains(ev.target) && !(o && o.contains(ev.target))) closePop(false);
+ if (pop.contains(ev.target) || (o && o.contains(ev.target))) return;
+ // A click on another control keeps its focus; a click on nothing in particular returns focus to the opener, so it is not
+ // left on the popover's removed content.
+ const a = document.activeElement, lost = !a || a === document.body || pop.contains(a);
+ closePop(lost);
 });
 $('surprise-btn').addEventListener('click', () => (pops.open === 'surprise' ? closePop(true) : openPop('surprise', $('surprise-btn'))));
 $('queue-btn').addEventListener('click', () => (pops.open === 'queue' ? closePop(true) : openPop('queue', $('queue-btn'))));
 // The masthead's queue count and, on phones, the bar above the tabs with the next video.
 function renderQueueUi() {
  const items = queueItems(), qb = $('queue-btn');
+ // The masthead buttons are always there; registered so focus can fall back to them.
+ fk(qb, 'queue-btn'); fk($('surprise-btn'), 'surprise-btn');
  qb.replaceChildren(el('span', 'mlong', t('queue')), el('span', 'qcount', fmtN(items.length)));
  qb.setAttribute('aria-label', t('queueN', {n: fmtN(items.length)}));
  const sb = $('surprise-btn'); sb.replaceChildren(dieFace(), el('span', 'mlong', t('surprise'))); sb.setAttribute('aria-label', t('surprise'));
@@ -6419,32 +6433,40 @@ function renderQueueUi() {
  if (destination(r)) {
   const open = viewed(watchLink(recWatchB(r), true, 'btn', recTitle(r)), r);
   open.prepend(el('span', 'open-lbl', t('openNext') + ' · '));
-  open.addEventListener('click', ev => { if (!ev || !(ev.button > 0)) setSitting(sitting.filter(x => x !== mapKey(r))); });
-  open.addEventListener('auxclick', ev => { if (ev && ev.button === 1) setSitting(sitting.filter(x => x !== mapKey(r))); });
+  // When the last one goes, so does the bar: focus moves to the masthead's queue button.
+  const after = ['qbar-open', 'queue-btn'];
+  open.addEventListener('click', ev => { if (!ev || !(ev.button > 0)) setSitting(sitting.filter(x => x !== mapKey(r)), after); });
+  open.addEventListener('auxclick', ev => { if (ev && ev.button === 1) setSitting(sitting.filter(x => x !== mapKey(r)), after); });
   bar.append(fk(ticket(open, r), 'qbar-open'));
  }
 }
 function dieFace() { const d = el('span', 'die die-static', 'א'); d.setAttribute('aria-hidden', 'true'); return d; }
 // Opens and queue changes: Home re-renders (it shows both); elsewhere the queue buttons, the masthead count, the bar and an
 // open queue popover update in place. Always after the activating link has navigated (sessionChanged defers).
-sessionHooks.add(() => {
- const k = activeKey(), inPop = pops.open && $(pops.open + '-pop').contains(document.activeElement);
- if (state.view === 'home') mount(false, true); else renderQueueUi();
- // mount() forgets the popover's controls, so an open popover is drawn again after it.
- if (pops.open === 'queue') renderQueuePop();
- if (pops.open === 'surprise') renderSurprise();
- for (const n of focusables.values()) {
-  if (!n._rec || n.isConnected === false) continue;
-  const on = inSitting(n._rec); n.setAttribute('aria-pressed', String(on)); n._mark.textContent = on ? '✓' : '+';
- }
- // A redrawn nav or queue bar replaces the button that opened the popover: the new one takes its place.
+function rebindOpener() {
  const o = pops.opener;
  if (pops.open && o && o.isConnected === false) {
   const n = focusables.get(o.getAttribute('data-fk') || ''); if (n) { pops.opener = n; n.setAttribute('aria-expanded', 'true'); }
  }
- const after = focusAfter; focusAfter = [];
+}
+sessionHooks.add(() => { const after = focusAfter; focusAfter = []; redraw(activeKey(), after, false); });
+// Draws what shows opens, stars or the queue again, keeping an open popover open: Home in full; elsewhere the queue buttons,
+// the parts train, the masthead count and the queue bar in place.
+function redraw(k, after, all) {
+ const inPop = pops.open && $(pops.open + '-pop').contains(document.activeElement);
+ if (state.view === 'home' || all) mount(false, true); else renderQueueUi();
+ // mount() forgets the popover's controls, so an open popover is drawn again after it.
+ if (pops.open === 'queue') renderQueuePop();
+ if (pops.open === 'surprise') renderSurprise();
+ for (const n of focusables.values()) {
+  if (n.isConnected === false) continue;
+  if (n._rec) { const on = inSitting(n._rec); n.setAttribute('aria-pressed', String(on)); n._mark.textContent = on ? '✓' : '+'; }
+  if (n._car) markCar(n, n._car);
+ }
+ // A redrawn nav or queue bar replaces the button that opened the popover: the new one takes its place.
+ rebindOpener();
  restoreFocus(k, ...after, ...(inPop ? (pops.open === 'queue' ? ['qp-open', 'qp-h'] : ['surprise-h']) : []));
-});
+}
 
 /* ================= start ================= */
 translateStatic();
