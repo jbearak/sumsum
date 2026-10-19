@@ -4213,13 +4213,15 @@ function starBtn(r, key) {
  const b = btn('star', '', () => {
   const had = favorites.has(mapKey(r)); had ? favorites.delete(mapKey(r)) : favorites.add(mapKey(r));
   if (persist('sumsum-favorites', [...favorites])) toast(t(had ? 'unstarredToast' : 'starredToast'));
+  // The same video's other stars on screen (a Surprise pick that is also a Browse card) show the change too.
+  for (const n of focusables.values()) if (n._star && mapKey(n._star) === mapKey(r)) n.setAttribute('aria-pressed', String(!had));
   const focusKey = activeKey(); renderTabs(); rebindOpener();
   if (UVIEWS.includes(state.view)) { starChanged(r, b); return; }
   // An open popover (a Surprise pick's star) stays open and is drawn again.
   if (pops.open) { redraw(focusKey, [], true); return; }
   mount(false); restoreFocus(focusKey);
  }, key);
- b.innerHTML = ICON.star; b.setAttribute('aria-pressed', String(favorites.has(mapKey(r))));
+ b._star = r; b.innerHTML = ICON.star; b.setAttribute('aria-pressed', String(favorites.has(mapKey(r))));
  b.setAttribute('aria-label', t('starAria', {title: recTitle(r)}));
  return b;
 }
@@ -6242,6 +6244,8 @@ const queueItems = () => sitting.map(k => recByKey.get(k)).filter(Boolean);
 let lastCleared = [];
 function queueCard(where) {
  const sec = el('section', 'card qcard'); sec.setAttribute('aria-labelledby', where + '-qh');
+ // Focus falls back to the card's heading; in the popover that heading is hidden, so to the popover's own.
+ const qh = where === 'qp' ? 'qp-h' : where + '-qh';
  const items = queueItems(), tot = items.reduce((s, r) => s + (Number(r.durationSeconds) > 0 ? Number(r.durationSeconds) : 0), 0);
  const h = el('h2', '', t('queue')); h.setAttribute('id', where + '-qh'); h.tabIndex = -1; fk(h, where + '-qh');
  if (items.length) h.append(el('small', '', ' · ' + fmtN(items.length) + (tot ? ' · ' + duration(tot) : '')));
@@ -6250,7 +6254,7 @@ function queueCard(where) {
   sec.append(el('p', 'note', t('queueEmpty')));
   if (lastCleared.length) {
    sec.append(btn('btn ghost', t('queueUndo'), () => {
-    const back = lastCleared; lastCleared = []; setSitting([...back, ...sitting], [where + '-open', where + '-qh']);
+    const back = lastCleared; lastCleared = []; setSitting([...back, ...sitting], [where + '-open', qh]);
    }, where + '-undo'));
   }
   return sec;
@@ -6274,7 +6278,7 @@ function queueCard(where) {
   if (i > 0) ctl.append(move(-1, 'queueUp', '↑', where + '-up-' + r.id));
   if (i < items.length - 1) ctl.append(move(1, 'queueDown', '↓', where + '-down-' + r.id));
   const near = [items[i + 1], items[i - 1]].filter(Boolean).map(x => where + '-rm-' + x.id);
-  const rm = btn('qbtn', '×', () => setSitting(sitting.filter(x => x !== k), [...near, where + '-qh']), where + '-rm-' + r.id);
+  const rm = btn('qbtn', '×', () => setSitting(sitting.filter(x => x !== k), [...near, qh]), where + '-rm-' + r.id);
   rm.setAttribute('aria-label', t('queueRemove', {title: recTitle(r)})); ctl.append(rm);
   li.append(th, tx, ctl); ol.append(li);
  });
@@ -6283,13 +6287,13 @@ function queueCard(where) {
  if (destination(first)) {
   const open = viewed(watchLink(recWatchB(first), true, 'btn', recTitle(first)), first);
   open.prepend(el('span', 'open-lbl', t('openNext') + ' · '));
-  const after = [where + '-open', where + '-qh'];
+  const after = [where + '-open', qh];
   open.addEventListener('click', ev => { if (!ev || !(ev.button > 0)) setSitting(sitting.filter(x => x !== mapKey(first)), after); });
   open.addEventListener('auxclick', ev => { if (ev && ev.button === 1) setSitting(sitting.filter(x => x !== mapKey(first)), after); });
   act.append(fk(ticket(open, first), where + '-open'));
  }
  act.append(btn('btn ghost', t('queueClear'), () => {
-  lastCleared = [...sitting]; setSitting([], [where + '-undo', where + '-qh']); toast(t('queueCleared'));
+  lastCleared = [...sitting]; setSitting([], [where + '-undo', qh]); toast(t('queueCleared'));
  }, where + '-clear'));
  sec.append(act); return sec;
 }

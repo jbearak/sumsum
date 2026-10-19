@@ -3755,6 +3755,20 @@ async function checkHome(htmlPath, M) {
   for (let k = 0; k < 10; k++) {
     const r = picked(); assert(r && r.series === cls && offerable(r), 'On Browse, Surprise picks from the filtered list'); await H.fk('sp-another').click();
   }
+  // A Surprise pick that is also a card on screen: starring either shows on both.
+  {
+    for (let k = 0; k < 200 && !H.has('star-' + picked().id); k++) await H.fk('sp-another').dispatch('click');
+    const r = picked(), card = () => H.fk('star-' + r.id), inPop = () => H.fk('sp-star-' + r.id);
+    assert(H.has('star-' + r.id), 'Surprise picked a video shown on the page');
+    {
+      const was = card().getAttribute('aria-pressed');
+      await inPop().dispatch('click'); H.flushTimers();
+      assert(!pop.hidden && inPop().getAttribute('aria-pressed') !== was && card().getAttribute('aria-pressed') === inPop().getAttribute('aria-pressed'),
+        'Starring a Surprise pick updates the same video\'s card star');
+      await inPop().dispatch('click'); H.flushTimers();
+      assert.equal(card().getAttribute('aria-pressed'), was, 'and unstarring it too');
+    }
+  }
   await H.fk('surprise-close').click(); assert(pop.hidden && H.document.activeElement === sb, 'The close button closes it');
   const kippi = top.find(([k]) => /kippi/.test(k));
   if (kippi) {
@@ -3806,6 +3820,18 @@ async function checkHome(htmlPath, M) {
   assert(H.$('queue-pop').hidden && H.document.activeElement === H.$('queue-btn'), 'Escape returns focus to the Queue button');
   await H.$('queue-btn').click(); await H.fk('qp-undo').dispatch('click'); H.flushTimers();
   await H.document.activeElement.dispatch('keydown', {key: 'Escape'});
+  // In the queue popover, removing or opening the last video moves focus to the popover's own (visible) heading.
+  for (const how of ['rm', 'open']) {
+    if (H.has('home-clear')) { await H.fk('home-clear').click(); H.flushTimers(); }
+    const v = cardRec(shelfCards('music')[0], 'smusic-card-');
+    await H.fk('smusic-q-' + v.id).click(); H.flushTimers();
+    await H.$('queue-btn').click();
+    const ctl = H.fk(how === 'rm' ? 'qp-rm-' + v.id : 'qp-open'); ctl.focus(); await ctl.dispatch('click'); H.flushTimers();
+    assert(!H.$('queue-pop').hidden && H.document.activeElement === H.$('qp-h'), 'The last video ' + (how === 'rm' ? 'removed' : 'opened') +
+      ' in the queue popover: focus on its heading');
+    await H.document.activeElement.dispatch('keydown', {key: 'Escape'});
+  }
+  await H.fk('smusic-q-' + d1.id).click(); H.flushTimers();
   // The queue popover from the masthead holds the same queue.
   await H.$('queue-btn').click();
   assert(!H.$('queue-pop').hidden && H.has('qp-open') && H.fk('qp-open').href === expectDest(d1), 'The queue popover offers the next video');
