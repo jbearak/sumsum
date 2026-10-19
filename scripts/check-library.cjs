@@ -3655,6 +3655,16 @@ async function checkHome(htmlPath, M) {
   assert.deepEqual(JSON.parse(H.storage.get('sumsum-sitting')), [], 'Clear');
   await H.fk('home-undo').click(); H.flushTimers();
   assert.deepEqual(JSON.parse(H.storage.get('sumsum-sitting')), [c1, c2].map(keyOf), 'Undo brings the queue back');
+  // Focus after a change removes the focused control: a moved-to-the-end row's other arrow, the neighbouring row, Undo after
+  // Clear, Open next after Undo, the queue heading when it empties.
+  H.fk('home-down-' + c1.id).focus(); await H.fk('home-down-' + c1.id).click(); H.flushTimers();
+  assert.equal(H.document.activeElement.getAttribute('data-fk'), 'home-up-' + c1.id, 'A row moved to the end keeps focus on its other arrow');
+  H.fk('home-up-' + c1.id).focus(); await H.fk('home-up-' + c1.id).click(); H.flushTimers();
+  H.fk('home-clear').focus(); await H.fk('home-clear').click(); H.flushTimers();
+  assert.equal(H.document.activeElement.getAttribute('data-fk'), 'home-undo', 'Clear moves focus to Undo');
+  await H.fk('home-undo').click(); H.flushTimers();
+  assert.equal(H.document.activeElement.getAttribute('data-fk'), 'home-open', 'Undo moves focus to Open next');
+  assert.deepEqual(JSON.parse(H.storage.get('sumsum-sitting')), [c1, c2].map(keyOf));
   const open = H.fk('home-open');
   assert.equal(open.href, expectDest(c1), 'Open next links the first video');
   assert(open.target === '_blank' && /noopener/.test(open.rel), 'in a new tab');
@@ -3755,9 +3765,26 @@ async function checkHome(htmlPath, M) {
     const c0 = H.fk('car-' + r0.id);
     assert(H.cls(c0).includes('opened') && c0.getAttribute('aria-label').includes(', ' + L.en.openedCar + ' ('), 'An opened car says so');
   }
+  // Removing the focused row moves focus to its neighbour, and the last one to the queue heading.
+  await H.navigate('home');
+  if (H.has('home-clear')) { await H.fk('home-clear').click(); H.flushTimers(); }
+  const [d1, d2] = shelfCards('music').slice(0, 2).map(a => cardRec(a, 'smusic-card-'));
+  await H.fk('smusic-q-' + d1.id).click(); H.flushTimers(); await H.fk('smusic-q-' + d2.id).click(); H.flushTimers();
+  H.fk('home-rm-' + d1.id).focus(); await H.fk('home-rm-' + d1.id).click(); H.flushTimers();
+  assert.equal(H.document.activeElement.getAttribute('data-fk'), 'home-rm-' + d2.id, 'Removing a row focuses the next one');
+  await H.fk('home-rm-' + d2.id).click(); H.flushTimers();
+  assert.equal(H.document.activeElement.getAttribute('data-fk'), 'home-qh', 'Removing the last row focuses the queue heading');
+  await H.fk('smusic-q-' + d1.id).click(); H.flushTimers();
+  // Surprise opened from the phone bar stays bound to its button when Home is drawn again.
+  await H.fk('tab-surprise').click();
+  const p2 = picked(); await H.fk('sp-q-' + p2.id).click(); H.flushTimers();
+  assert(!pop.hidden && H.fk('tab-surprise').getAttribute('aria-expanded') === 'true', 'The redrawn phone Surprise button still shows it is open');
+  await H.document.activeElement.dispatch('keydown', {key: 'Escape'});
+  assert(pop.hidden && H.document.activeElement === H.fk('tab-surprise'), 'Escape returns focus to the redrawn phone button');
+  await H.fk('home-rm-' + p2.id).click(); H.flushTimers();
   // The queue popover from the masthead holds the same queue.
   await H.$('queue-btn').click();
-  assert(!H.$('queue-pop').hidden && H.has('qp-open') && H.fk('qp-open').href === expectDest(c2), 'The queue popover offers the next video');
+  assert(!H.$('queue-pop').hidden && H.has('qp-open') && H.fk('qp-open').href === expectDest(d1), 'The queue popover offers the next video');
   await H.document.activeElement.dispatch('keydown', {key: 'Escape'}); assert(H.$('queue-pop').hidden);
   ok('Home: stored Spoken and Length that Browse hashes never change; offered videos only in Up next, the music shelf and ' +
     'Surprise; See all opens the same query with its count; twelve characters opening Browse with their counts; the queue (add, ' +
@@ -4388,6 +4415,9 @@ function checkCss(html) {
   assert(/position:fixed/.test(pop) && /inset-inline-end:16px/.test(pop) && !/(?:^|;)(?:left|right):/.test(pop) && pz > barZ && barZ > 4,
     'Popovers are placed logically, above the toolbar and the bottom bar');
   assert(/inset-inline:8px/.test(p760('.pop')) && /bottom:calc/.test(p760('.pop')), 'On phones a popover is a sheet above the bottom bar');
+  // The queue, Again and the queue bar use their own classes: the identification queues' .qtext links stretch over their item.
+  assert(/position:relative/.test(body('.srow,.arow')) && !/\b(?:qtext|qthumb|qlist)\b/.test(rules.filter(r => /\.(?:srow|arow|slist|alist|qbar)/.test(r.sel)).map(r => r.sel).join(' ')),
+    'Queue and Again rows contain their links');
   for (const sel of ['.qadd', '.qbtn', '.pop-x']) assert(/width:44px/.test(body(sel)) && /height:44px/.test(body(sel)), sel + ' is a 44 px target');
   assert(css.includes('@media (pointer:coarse) and (min-width:761px){.tab{min-height:44px}}'), 'On wide touch screens the tabs are 44 px targets');
   for (const r of rules.filter(x => /\.(?:mbtn|qcount|pop|qbar|foot-links)\b/.test(x.sel))) assert(!/#[0-9a-f]{3,8}\b/i.test(r.body), 'Colours are custom properties: ' + r.sel);
