@@ -6,7 +6,11 @@ Read this before changing `library.template.html`. What the UI must preserve is 
 
 The views nav has three items: Episode guide, Browse and Starred.
 
-Browse (`#/browse`) lists every upload with the filters. The old All uploads route, `#/uploads`, still lands there with its filters. The arrow beside Browse opens a menu of three pages:
+Browse (`#/browse`) lists every upload with the filters.
+
+- **Spoken** reads the language recorded for each video (Hebrew, English, Other languages, Not recorded). A record with two recorded languages counts under each, and the facet says it uses the recorded language, which is often unchecked against the audio.
+- **Length** is one choice at a time: up to 5, 10, 20 or 30 minutes. A video without a known duration shows only under Any length.
+- **An empty result** shows Oofnik's bin, drawn in CSS, with one button per active filter group. Each button gives the count that clearing that group alone would show. The old All uploads route, `#/uploads`, still lands there with its filters. The arrow beside Browse opens a menu of three pages:
 
 - **Identified videos** (`#/browse/identified`): every upload that is not awaiting identification, with the same filters.
 - **Videos to identify** (`#/browse/unidentified`): uploads in a production's `unidentified` queue and uploads linked only as `possible` copies, by production. `?prod=` shows one production.

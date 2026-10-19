@@ -548,6 +548,50 @@ async function checkUploads(H, M) {
   assert.equal(H.count(), N, 'Selecting no types includes all types');
   ok('counts ignore their own facet; zero-count selections retained; full vs short-series separate; multi-select');
 
+  // Spoken: from the recorded language; a mixed value counts in each group it names; empty and 'und' are Not recorded.
+  // Length: one choice at a time, up to N minutes; unknown durations pass only under Any.
+  const spokenOf = r => {
+    const parts = String(r.language ?? '').toLowerCase().split(/[^a-z]+/).filter(x => x && x !== 'und');
+    return parts.length ? [...new Set(parts.map(x => (x === 'he' || x === 'en' ? x : 'other')))] : ['none'];
+  };
+  const lenOk = (r, n) => Number(r.durationSeconds) > 0 && Number(r.durationSeconds) <= n * 60;
+  const SP = ['he', 'en', 'other', 'none'];
+  assert.equal(H.chipCount(H.fk('fsp-all')), N, 'All languages counts every upload');
+  for (const g of SP) assert.equal(H.chipCount(H.fk('fsp-' + g)), records.filter(r => spokenOf(r).includes(g)).length, 'Spoken count ' + g);
+  assert(SP.reduce((n, g) => n + H.chipCount(H.fk('fsp-' + g)), 0) >= N, 'Every upload is in at least one language group');
+  assert.equal(H.chipCount(H.fk('fl-any')), N);
+  for (const n of [5, 10, 20, 30]) assert.equal(H.chipCount(H.fk('fl-' + n)), records.filter(r => lenOk(r, n)).length, 'Length count ' + n);
+  await H.fk('fsp-he').click(); await H.fk('fsp-en').click();
+  const heEn = records.filter(r => spokenOf(r).some(g => g === 'he' || g === 'en'));
+  assert.equal(H.count(), heEn.length, 'Spoken choices add up (either language)');
+  await H.fk('fl-10').click(); await H.fk('fl-5').click();
+  assert.equal(H.fk('fl-10').getAttribute('aria-pressed'), 'false', 'Length is one choice at a time');
+  assert.equal(H.count(), heEn.filter(r => lenOk(r, 5)).length, 'Length narrows the result');
+  assert(/[?&]spoken=he%2Cen(&|$)/.test(H.location.hash) && /[?&]len=5(&|$)/.test(H.location.hash), 'Spoken and length are in the hash: ' + H.location.hash);
+  for (const k of [5, 10, 20, 30]) assert.equal(H.chipCount(H.fk('fl-' + k)), heEn.filter(r => lenOk(r, k)).length, 'Length counts ignore the length choice');
+  assert.equal(H.chipCount(H.fk('fsp-other')), records.filter(r => lenOk(r, 5) && spokenOf(r).includes('other')).length, 'Spoken counts follow the length');
+  assert(H.has('ux-sp-he') && H.has('ux-len'), 'Removable chips for both');
+  await H.fk('ux-len').click(); assert.equal(H.count(), heEn.length, 'Removing the length chip clears it');
+  await H.navigate('browse?spoken=none,bogus&len=7');
+  assert.equal(H.count(), records.filter(r => spokenOf(r).includes('none')).length, 'Unknown values in the hash are dropped');
+  await H.fk('fsp-all').click(); assert.equal(H.count(), N, 'All languages clears the spoken choice');
+  // An empty result shows the bin and one button per active filter group, each with what clearing it alone would show.
+  const lone = SERIES.map(sr => [sr, SP.find(g => records.some(r => spokenOf(r).includes(g)) &&
+    !records.some(r => r.series === sr && spokenOf(r).includes(g)))]).find(([, g]) => g);
+  if (lone) {
+    await H.fk('fs-' + lone[0]).click(); await H.fk('fsp-' + lone[1]).click();
+    assert.equal(H.count(), 0, 'No ' + lone[1] + ' uploads in ' + lone[0]);
+    const empty = H.byClass('empty')[0];
+    assert(!empty.hidden && H.byClass('bin', empty).length === 1 && H.byClass('bin', empty)[0].getAttribute('aria-hidden') === 'true', 'The bin, hidden from assistive technology');
+    assert.equal(H.fk('relax-series').textContent, tr('en', 'relaxFilter', {name: L.en.fSeries,
+      n: records.filter(r => spokenOf(r).includes(lone[1])).length.toLocaleString('en-US')}), 'Clearing the series would show the language');
+    assert.equal(H.fk('relax-spoken').textContent, tr('en', 'relaxFilter', {name: L.en.fSpoken, n: bySeries(lone[0]).toLocaleString('en-US')}));
+    await H.fk('relax-spoken').click(); assert.equal(H.count(), bySeries(lone[0]), 'A relax button clears its group');
+    await H.fk('fs-all').click();
+  }
+  assert.equal(H.count(), N);
+  ok('spoken and length filters: counts from the recorded language and duration, mixed languages in each group, one length at a time, hash, chips, the bin and its relax buttons');
+
   // Search: debounced typing, aliases, pasted links by hostname.
   const typed = async q => { H.$('u-search').value = q; await H.$('u-search').fire('input'); H.flushTimers(); return H.count(); };
   H.$('u-search').value = 'zzqx-no-such-upload'; await H.$('u-search').fire('input');

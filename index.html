@@ -691,6 +691,17 @@ details.legend>summary{cursor:pointer;padding:9px 14px;font-size:13px;font-weigh
 .more-row{display:flex;justify-content:center;padding-top:22px}
 .empty{padding:40px 20px;text-align:center;border:1.5px dashed var(--line-strong);border-radius:12px;margin-top:18px}
 .empty p{margin:0 0 14px;color:var(--muted)}
+/* Oofnik's bin: a ribbed can, a tipped lid and two eyes in the gap. */
+.bin{display:block;position:relative;width:64px;height:72px;margin:0 auto 14px}
+.bin::before{content:"";position:absolute;inset:auto 6px 0;height:52px;border:2px solid var(--line-strong);border-top:0;
+ border-radius:0 0 10px 10px;background:repeating-linear-gradient(90deg,var(--surface-3) 0 9px,var(--line-strong) 9px 11px)}
+.bin::after{content:"";position:absolute;top:4px;inset-inline:0;height:9px;border-radius:6px 6px 2px 2px;background:var(--line-strong);
+ transform:rotate(-12deg);transform-origin:0 100%}
+html[dir=rtl] .bin::after{transform:rotate(12deg);transform-origin:100% 100%}
+.bin i{position:absolute;top:14px;width:7px;height:7px;border-radius:50%;background:var(--ink)}
+.bin i:first-child{inset-inline-start:22px}
+.bin i:last-child{inset-inline-start:34px}
+.relax{display:flex;flex-wrap:wrap;justify-content:center;gap:8px}
 
 /* ---------- detail pages ---------- */
 .crumbs{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;font-size:13px;padding-top:18px;margin:0}
@@ -982,7 +993,9 @@ details.about>summary{cursor:pointer;font-weight:700;padding:12px 0;font-size:14
  .lang-thumb{transition:transform .18s ease-out}
  .lang-opt{transition:color .18s ease-out}
  .tp{animation:tp-in .14s ease-out}
+ .bin::after{animation:bin-lid .6s ease-out}
 }
+@keyframes bin-lid{from{transform:rotate(0)}}
 @keyframes tp-in{from{opacity:0;transform:translateY(-4px)}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important;scroll-behavior:auto!important}}
 @media (forced-colors:active){
@@ -1544,6 +1557,17 @@ en: {
  countUploads: '{n} of {total} uploads',
  showMore: 'Show {n} more',
  noUploadsMatch: 'No uploads match these filters.',
+ relaxFilter: 'Clear {name} · {n}',
+ fSpoken: 'Spoken',
+ spokenHelp: 'From the language recorded for each video.',
+ allLanguages: 'All languages',
+ spHe: 'Hebrew',
+ spEn: 'English',
+ spOther: 'Other languages',
+ spNone: 'Not recorded',
+ fLength: 'Length',
+ lenAny: 'Any length',
+ lenUpTo: 'Up to {n} min',
  starAria: 'Star {title}',
  starredToast: 'Starred. Stars stay in this browser only.',
  unstarredToast: 'Star removed.',
@@ -2124,6 +2148,17 @@ he: {
  countUploads: '{n} מתוך {total} העלאות',
  showMore: 'הצגת {n} נוספות',
  noUploadsMatch: 'אין העלאות שמתאימות למסננים.',
+ relaxFilter: 'ניקוי {name} · {n}',
+ fSpoken: 'שפה מדוברת',
+ spokenHelp: 'לפי השפה שנרשמה לכל סרטון.',
+ allLanguages: 'כל השפות',
+ spHe: 'עברית',
+ spEn: 'אנגלית',
+ spOther: 'שפות אחרות',
+ spNone: 'לא נרשמה',
+ fLength: 'אורך',
+ lenAny: 'כל אורך',
+ lenUpTo: 'עד {n} דקות',
  starAria: 'סימון בכוכב: {title}',
  starredToast: 'סומן בכוכב. הכוכבים נשארים רק בדפדפן הזה.',
  unstarredToast: 'הכוכב הוסר.',
@@ -3012,6 +3047,23 @@ function recsByVid(key) {
 const kindOf = r => (r.kind === 'episode' && r.programFormat === 'short-form' ? 'short-episode' :
  r.kind === 'episode' && r.completenessStatus === 'runtime-inferred' ? 'unverified' : r.kind);
 const mapKey = r => r.id || r.url;
+// Spoken language, from the language recorded for each record ('he', 'en', 'en-he', 'und' ...). A mixed value counts in each
+// group it names; an empty or 'und' value is Not recorded. The data records the language of the listing, often unchecked
+// against the audio, so the filter says it reads the recorded language.
+const SPOKEN = [['he', 'spHe'], ['en', 'spEn'], ['other', 'spOther'], ['none', 'spNone']];
+const spokenCache = new Map();
+function spokenOf(r) {
+ if (spokenCache.has(r)) return spokenCache.get(r);
+ const parts = String(r.language ?? '').toLowerCase().split(/[^a-z]+/).filter(x => x && x !== 'und');
+ const g = parts.length ? [...new Set(parts.map(x => (x === 'he' || x === 'en' ? x : 'other')))] : ['none'];
+ spokenCache.set(r, g); return g;
+}
+// Length: up to a number of minutes. A record without a known duration passes only when no length is chosen.
+const LENS = ['5', '10', '20', '30'];
+const lenOk = (r, len) => {
+ if (!len) return true;
+ const sec = Number(r.durationSeconds); return Number.isFinite(sec) && sec > 0 && sec <= Number(len) * 60;
+};
 const ownMapping = k => (Object.prototype.hasOwnProperty.call(mappings, k) ? mappings[k] : undefined);
 const localUrl = r => { const m = ownMapping(mapKey(r)) || ownMapping(r.url); return safeUrl(typeof m === 'string' ? m : m?.url); };
 const accCache = new Map(), bestCache = new Map(), destCache = new Map();
@@ -3547,7 +3599,7 @@ const state = {
  view: 'guide', prod: '', epId: '', recId: '', slot: null,
  g: {q: '', cov: new Set(), fmt: new Set(), ev: new Set(), conf: new Set(), unwatched: false, layout: 'album', more: false},
  u: {q: '', series: new Set(), kinds: new Set(), gs: new Set(), ag: new Set(), theme: '', character: '', starred: false, sort: 'series',
-  limit: 48},
+  spoken: new Set(), len: '', limit: 48},
  limits: new Map(), railOpen: false, filtersOpen: false, goalOpen: false, openTotals: new Set(), nextSkip: 0, mapOpen: '',
  todoOpen: new Map(), idProd: ''
 };
@@ -3577,7 +3629,7 @@ function queryString() {
   if (g.layout !== 'album') add('layout', g.layout);
  } else if (UVIEWS.includes(state.view)) {
   const u = state.u; add('q', u.q); add('series', csv(u.series)); add('kind', csv(u.kinds)); add('gs', csv(u.gs));
-  add('ag', csv(u.ag)); add('theme', u.theme); add('character', u.character);
+  add('ag', csv(u.ag)); add('spoken', csv(u.spoken)); add('len', u.len); add('theme', u.theme); add('character', u.character);
   if (u.starred && state.view !== 'starred') add('starred', '1');
   if (u.sort !== 'series') add('sort', u.sort);
  } else if (state.view === 'unidentified') add('prod', state.idProd);
@@ -3644,6 +3696,7 @@ function applyRoute(r) {
   const u = state.u; u.q = q.q || ''; setFrom(u.series, q.series, Object.keys(SERIES)); setFrom(u.kinds, q.kind, KINDS.map(k => k[0]));
   setFrom(u.gs, q.gs, !hasGuide ? [] : r.view === 'identified' ? ID_STATUS : GSTATUS.map(k => k[0]));
   setFrom(u.ag, agAlias(q.ag), AGROUPS.map(k => k[0]));
+  setFrom(u.spoken, q.spoken, SPOKEN.map(k => k[0])); u.len = LENS.includes(q.len) ? q.len : '';
   u.theme = TAG_KEYS.theme.has(q.theme) ? q.theme : ''; u.character = TAG_KEYS.character.has(q.character) ? q.character : '';
   u.starred = q.starred === '1' || q.saved === '1';
   u.sort = ['series', 'title', 'longest'].includes(q.sort) ? q.sort : 'series';
@@ -5179,7 +5232,7 @@ const identifiedMode = () => state.view === 'identified';
 const updateUploadsSoon = debounce(() => updateUploads(), 150);
 function resetUploadFilters() {
  const u = state.u; u.q = ''; u.series.clear(); u.kinds.clear(); u.gs.clear(); u.ag.clear(); u.theme = ''; u.character = '';
- u.starred = false; u.limit = 48;
+ u.spoken.clear(); u.len = ''; u.starred = false; u.limit = 48;
 }
 function uMatch(r, Q, omit) {
  const u = state.u;
@@ -5188,6 +5241,8 @@ function uMatch(r, Q, omit) {
  if (omit !== 'kinds' && u.kinds.size && !u.kinds.has(kindOf(r))) return false;
  if (omit !== 'gs' && u.gs.size && !u.gs.has(guideStatus(r))) return false;
  if (omit !== 'ag' && u.ag.size && !u.ag.has(accGroup(r))) return false;
+ if (omit !== 'spoken' && u.spoken.size && !spokenOf(r).some(g => u.spoken.has(g))) return false;
+ if (omit !== 'len' && !lenOk(r, u.len)) return false;
  if (omit !== 'theme' && u.theme && !(r.themes || []).some(v => tagKey(v) === u.theme)) return false;
  if (omit !== 'character' && u.character && !(r.characters || []).some(v => tagKey(v) === u.character)) return false;
  if (omit !== 'starred' && (u.starred || starredMode()) && !favorites.has(mapKey(r))) return false;
@@ -5197,7 +5252,8 @@ function uMatch(r, Q, omit) {
 // hash there (it has no chip in that view).
 const activeFilterCount = () => {
  const u = state.u;
- return u.series.size + u.kinds.size + u.gs.size + u.ag.size + (u.theme ? 1 : 0) + (u.character ? 1 : 0) +
+ return u.series.size + u.kinds.size + u.gs.size + u.ag.size + u.spoken.size + (u.len ? 1 : 0) + (u.theme ? 1 : 0) +
+  (u.character ? 1 : 0) +
   (u.starred && !starredMode() ? 1 : 0);
 };
 VIEWS.browse = VIEWS.identified = VIEWS.starred = function mountUploads(v) {
@@ -5274,6 +5330,21 @@ function selectGroup(id, titleKey, allKey, field, Q) {
  sel.value = state.u[id]; sel.addEventListener('change', e => { state.u[id] = e.target.value; state.u.limit = 48; updateUploads(); });
  g.append(sel); return g;
 }
+// Spoken: a record with two recorded languages counts under each, so the chips can add up to more than the total.
+function spokenGroup(Q) {
+ const u = state.u, m = new Map(); let total = 0;
+ for (const r of records) { if (!uMatch(r, Q, 'spoken')) continue; total++; for (const g of spokenOf(r)) m.set(g, (m.get(g) || 0) + 1); }
+ const set = k => () => { u.spoken.has(k) ? u.spoken.delete(k) : u.spoken.add(k); u.limit = 48; updateUploads(); };
+ return facetGroup('fSpoken', 'spoken', [chip(t('allLanguages'), total, !u.spoken.size, () => { u.spoken.clear(); u.limit = 48; updateUploads(); }, 'fsp-all'),
+  ...SPOKEN.map(([k, label]) => chip(t(label), m.get(k) || 0, u.spoken.has(k), set(k), 'fsp-' + k))], t('spokenHelp'));
+}
+// Length: one choice at a time (the steps nest), each counted as if chosen.
+function lengthGroup(Q) {
+ const u = state.u, rs = records.filter(r => uMatch(r, Q, 'len'));
+ const pickLen = k => () => { u.len = k; u.limit = 48; updateUploads(); };
+ return facetGroup('fLength', 'len', ['', ...LENS].map(k => chip(k ? t('lenUpTo', {n: fmtN(Number(k))}) : t('lenAny'),
+  k ? rs.filter(r => lenOk(r, k)).length : rs.length, u.len === k, pickLen(k), 'fl-' + (k || 'any'))));
+}
 // Facet groups, the Filters toggle label and the removable filter chips.
 function renderFacets(Q) {
  const u = state.u;
@@ -5284,7 +5355,8 @@ function renderFacets(Q) {
   facetGroup('fSeries', 'series', [chip(t('allSeries'), fs.total, !u.series.size, () => { u.series.clear(); u.limit = 48; updateUploads(); }, 'fs-all'),
    ...Object.keys(SERIES).map(k => chip(pick(...SERIES[k]), fs.m.get(k) || 0, u.series.has(k), toggleSet(u.series, k), 'fs-' + k))]),
   facetGroup('fKind', 'kind', KINDS.map(([k, label]) => chip(t(label), fkind.m.get(k) || 0, u.kinds.has(k), toggleSet(u.kinds, k), 'fk-' + k)),
-   t('kindHelp'))
+   t('kindHelp')),
+  spokenGroup(Q), lengthGroup(Q)
  ];
  if (hasGuide) {
   // Identified videos offers only the statuses it lists.
@@ -5310,6 +5382,8 @@ function renderFacets(Q) {
  for (const k of u.kinds) defs.push([t(KINDS.find(z => z[0] === k)[1]), () => u.kinds.delete(k), 'k-' + k]);
  for (const k of u.gs) defs.push([t(GSTATUS.find(z => z[0] === k)[1]), () => u.gs.delete(k), 'g-' + k]);
  for (const k of u.ag) defs.push([AGROUPS.find(z => z[0] === k)[1](), () => u.ag.delete(k), 'a-' + k]);
+ for (const k of u.spoken) defs.push([t(SPOKEN.find(z => z[0] === k)[1]), () => u.spoken.delete(k), 'sp-' + k]);
+ if (u.len) defs.push([t('lenUpTo', {n: fmtN(Number(u.len))}), () => { u.len = ''; }, 'len']);
  if (u.theme) defs.push([tagName(u.theme), () => { u.theme = ''; }, 'theme']);
  if (u.character) defs.push([tagName(u.character), () => { u.character = ''; }, 'character']);
  U.active.replaceChildren(...xchips(defs.map(([l, fn, k]) => [l, () => { fn(); u.limit = 48; }, k]), 'ux-', 'u-search', updateUploads));
@@ -5342,13 +5416,30 @@ function appendCards(rs) {
  for (const r of rs) { const li = uploadCard(r); U.items.set(r.id, li); U.shownIds.push(r.id); frag.append(li); }
  U.grid.append(frag);
 }
+// Oofnik's bin, drawn in CSS (no artwork), beside an empty result.
+function binArt() { const b = el('span', 'bin'); b.setAttribute('aria-hidden', 'true'); b.append(el('i'), el('i')); return b; }
 function renderCount() {
  const starredN = starredMode() ? starredCount() : 0;
  const total = starredMode() ? starredN : identifiedMode() ? menuCounts().identified : records.length;
  const parts = t('countUploads', {n: '\u0000', total: fmtN(total)}).split('\u0000');
  U.count.replaceChildren(txt(parts[0]), el('strong', '', fmtN(U.list.length)), txt(parts[1] || ''));
  U.empty.hidden = U.list.length !== 0;
- U.empty.replaceChildren(el('p', '', starredMode() && !starredN ? t('starredEmpty') : t('noUploadsMatch')));
+ if (U.list.length) { U.empty.replaceChildren(); return; }
+ if (starredMode() && !starredN) { U.empty.replaceChildren(el('p', '', t('starredEmpty'))); return; }
+ U.empty.replaceChildren(binArt(), el('p', '', t('noUploadsMatch')));
+ // One button per active filter group: what clearing that group alone would show.
+ const u = state.u, Q = parseQuery(u.q), relax = el('div', 'relax');
+ const groups = [['series', 'fSeries', () => u.series.size, () => u.series.clear()], ['kinds', 'fKind', () => u.kinds.size, () => u.kinds.clear()],
+  ['spoken', 'fSpoken', () => u.spoken.size, () => u.spoken.clear()], ['len', 'fLength', () => u.len, () => { u.len = ''; }],
+  ['gs', 'fGuide', () => u.gs.size, () => u.gs.clear()], ['ag', 'fAccess', () => u.ag.size, () => u.ag.clear()],
+  ['theme', 'fTheme', () => u.theme, () => { u.theme = ''; }], ['character', 'fCharacter', () => u.character, () => { u.character = ''; }]];
+ for (const [omit, key, on, clear] of groups) {
+  if (!on()) continue;
+  const n = records.reduce((c, r) => c + (uMatch(r, Q, omit) ? 1 : 0), 0); if (!n) continue;
+  relax.append(btn('btn ghost', t('relaxFilter', {name: t(key), n: fmtN(n)}), () => { clear(); u.limit = 48; updateUploads(); restoreFocus('u-count'); },
+   'relax-' + omit));
+ }
+ if (relax.children.length) U.empty.append(relax);
 }
 function renderMore() {
  U.more.replaceChildren();
