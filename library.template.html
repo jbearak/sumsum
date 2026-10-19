@@ -1319,8 +1319,6 @@ en: {
  goalHelp: 'Only core broadcast episodes count here. Short series, the talk show, home-video tapes, related series and Shalom ' +
   'Sesame are counted separately.',
  goalMore: 'Details',
- famClassic: 'Classic, 1983–1998',
- famModern: 'Modern, 2006–2015',
  goalWhole: 'with a whole-program link (unverified)',
  goalKnown: 'At least {n} episodes are known to exist',
  goalKnownHelp: '"Known to exist" adds identified episodes to documented or announced totals.',
@@ -1396,9 +1394,6 @@ en: {
  segOpen: 'Total unknown or contested',
  productions: 'Productions',
  allProductions: 'All productions',
- famRechov: 'Rechov Sumsum',
- famElmo: 'Elmo\'s talk show',
- famShalom: 'Shalom Sesame',
  fmt_core: 'Core broadcast episodes',
  'fmt_short-series': 'Short series: complete installments, not full episodes',
  'fmt_talk-show': 'Talk-show programs',
@@ -1950,8 +1945,6 @@ he: {
  goalHelp: 'נספרים כאן רק פרקי שידור מרכזיים. סדרות קצרות, תכנית האירוח, קלטות הווידאו, סדרות קשורות ושלום סומסום נספרים ' +
   'בנפרד.',
  goalMore: 'פרטים',
- famClassic: 'הקלאסי, 1983–1998',
- famModern: 'החדש, 2006–2015',
  goalWhole: 'עם קישור לתכנית שלמה (לא מאומת)',
  goalKnown: 'ידוע על {n} פרקים לפחות',
  goalKnownHelp: '״ידוע על״ מחבר את הפרקים שזוהו לסכומים שתועדו או הוכרזו.',
@@ -2027,9 +2020,6 @@ he: {
  segOpen: 'סך לא ידוע או שנוי במחלוקת',
  productions: 'הפקות',
  allProductions: 'כל ההפקות',
- famRechov: 'רחוב סומסום',
- famElmo: 'תכנית האירוח של אלמו',
- famShalom: 'שלום סומסום',
  fmt_core: 'פרקי שידור מרכזיים',
  'fmt_short-series': 'סדרה קצרה: פרקונים שלמים, לא פרקים מלאים',
  'fmt_talk-show': 'תכניות אירוח',
@@ -2762,15 +2752,16 @@ const services = (Array.isArray(servicesIn.services) ? servicesIn.services : [])
 /* ================= vocabulary ================= */
 // Tables looked up by data values have no prototype, so a value such as 'constructor' finds nothing.
 const bare = o => Object.assign(Object.create(null), o);
-const SERIES = bare({
- modern: ['Modern Rechov Sumsum', 'רחוב סומסום החדש'],
- classic: ['Classic Rechov Sumsum', 'רחוב סומסום הקלאסי'],
- 'shalom-classic': ['Classic Shalom Sesame', 'שלום סומסום הקלאסי'],
- 'shalom-modern': ['Modern Shalom Sesame', 'שלום סומסום החדש'],
- elmo: ["Elmo's talk show", 'תכנית האירוח של אלמו']
-});
-const FAMILY_OF = bare({classic: 'rechov', modern: 'rechov', elmo: 'elmo', 'shalom-classic': 'shalom', 'shalom-modern': 'shalom'});
-const FAMILIES = [['rechov', 'famRechov'], ['elmo', 'famElmo'], ['shalom', 'famShalom']];
+// payload.series (data/series.json, validated by the builder): the rail's families, the series with their labels and YouTube
+// search terms, and the goal rows (the core broadcast series counted toward core Rechov Sumsum), each in display order.
+const registry = !Array.isArray(payload) && payload.series && typeof payload.series === 'object' ? payload.series : {};
+const listOf = v => (Array.isArray(v) ? v.filter(x => x && typeof x === 'object') : []);
+const SERIES_INFO = bare(Object.fromEntries(listOf(registry.series).filter(s => typeof s.id === 'string').map(s => [s.id, s])));
+const SERIES = bare(Object.fromEntries(Object.values(SERIES_INFO).map(s => [s.id, [s.en, s.he]])));
+const FAMILY_OF = bare(Object.fromEntries(Object.values(SERIES_INFO).map(s => [s.id, s.family])));
+const FAMILIES = listOf(registry.families).filter(f => typeof f.id === 'string');
+const GOAL = listOf(registry.goal).filter(g => SERIES_INFO[g.series]);
+const GOAL_SERIES = new Set(GOAL.map(g => g.series));
 // 'related-series' (a related Israeli series or broadcast version) is counted separately from core Rechov Sumsum.
 const FORMATS = ['core', 'short-series', 'talk-show', 'home-video', 'related-series', 'queue'];
 const EP_FORMATS = ['core', 'short-series', 'talk-show', 'home-video', 'related-series'];
@@ -3158,11 +3149,12 @@ const prods = [...guide.productions].filter(p => p && p.id).sort((a, b) => (a.or
 const prodById = new Map(prods.map(p => [p.id, p]));
 const hasGuide = prods.length > 0;
 const fmtOf = p => (p && FORMATS.includes(p.format) ? p.format : 'core');
-const famOf = p => FAMILY_OF[p && p.series] || 'rechov';
-const isCoreRechov = p => fmtOf(p) === 'core' && famOf(p) === 'rechov';
-// Core Rechov first, then its queue, other Rechov formats, Elmo, Shalom.
-const prodRank = p => (isCoreRechov(p) ? 0 : famOf(p) === 'rechov' && fmtOf(p) === 'queue' ? 1 : famOf(p) === 'rechov' ? 2 :
- famOf(p) === 'elmo' ? 3 : 4);
+const famOf = p => FAMILY_OF[p && p.series] || '';
+const isCoreRechov = p => fmtOf(p) === 'core' && GOAL_SERIES.has(p && p.series);
+// Core Rechov first, then its queue and other formats of the goal series, then the other families in registry order (Elmo,
+// Shalom). A series outside the registry ranks last and is never core.
+const famRank = p => { const i = FAMILIES.findIndex(f => f.id === famOf(p)); return i < 0 ? FAMILIES.length + 2 : i + 2; };
+const prodRank = p => (isCoreRechov(p) ? 0 : GOAL_SERIES.has(p && p.series) ? (fmtOf(p) === 'queue' ? 1 : 2) : famRank(p));
 const byRank = (a, b) => prodRank(a) - prodRank(b) || (a.order ?? 99) - (b.order ?? 99);
 // A production without a name in either language falls back to its id rather than an empty heading.
 const prodName = p => (p ? pick(p.nameEn, p.nameHe) || String(p.id || '') : '');
@@ -3702,8 +3694,7 @@ function codeQuery(q) {
  for (const re of SE_CODE) { const sm = s.match(re); if (sm) return {n: Number(sm[2]), plain: true, season: Number(sm[1])}; }
  return null;
 }
-const searchPrefix = p => ({classic: 'רחוב סומסום', modern: 'רחוב סומסום', elmo: 'תכנית האירוח של אלמו', 'shalom-classic': 'Shalom Sesame',
- 'shalom-modern': 'Shalom Sesame'})[p && p.series] || 'Sesame';
+const searchPrefix = p => (p && SERIES_INFO[p.series] && SERIES_INFO[p.series].searchPrefix) || 'Sesame';
 function ytSearchUrl(p, words) {
  return 'https://www.youtube.com/results?search_query=' + encodeURIComponent((searchPrefix(p) + ' ' + (words || '')).trim());
 }
@@ -3717,7 +3708,7 @@ function heSearchTitle(p, s) {
  return w.replace(/\s+/g, ' ').trim();
 }
 function epSearchWords(e) {
- const p = prodById.get(e.production); const useEn = p && /^shalom/.test(p.series);
+ const p = prodById.get(e.production); const useEn = Boolean(p && SERIES_INFO[p.series] && SERIES_INFO[p.series].searchLanguage === 'en');
  // A story name searches better than a catalogue title that is only the series name and a number; such a title, with no
  // story name, searches by the production's number label (or season and episode) instead of an editorial English title.
  const he = heSearchTitle(p, heTitle(e)), bare = !he && !!heTitle(e).trim();
@@ -4453,8 +4444,8 @@ function goalPanel() {
  more.setAttribute('aria-expanded', String(state.goalOpen)); more.setAttribute('aria-controls', 'goal-detail-1');
  top.append(h2, el('p', 'note goal-detail', t('goalHelp'))); sec.append(top);
  const rows = el('div', 'goal-rows'); const openNames = [];
- for (const [series, key] of [['classic', 'famClassic'], ['modern', 'famModern']]) {
-  const ps = prods.filter(p => p.series === series && isCoreRechov(p)); if (!ps.length) continue;
+ for (const g of GOAL) {
+  const ps = prods.filter(p => p.series === g.series && isCoreRechov(p)); if (!ps.length) continue;
   const c = {'whole-candidate': 0, 'parts-only': 0, 'excerpt-only': 0, missing: 0};
   let slots = 0, gaps = 0, knownFloor = 0, inferFloor = 0, open = false;
   for (const p of ps) {
@@ -4462,7 +4453,7 @@ function goalPanel() {
    slots += m.slots; gaps += m.inferredGaps; knownFloor += m.knownFloor; inferFloor += m.numberingFloor;
    if (m.ts !== 'known') { open = true; openNames.push(prodName(p)); }
   }
-  const row = el('div', 'goal-row'); row.append(el('h3', '', iso(t(key))));
+  const row = el('div', 'goal-row'); row.append(el('h3', '', iso(pick(g.en, g.he))));
   const parts = statParts(c, slots, gaps); row.append(meter(parts, open, 'big', meterLabel(parts, open)));
   const big = el('p', 'goal-big'); big.append(el('strong', '', fmtN(c['whole-candidate'])), el('span', '', t('goalWhole'))); row.append(big);
   const fl = el('p', 'goal-floor'); fl.append(el('span', '', t('goalKnown', {n: fmtN(knownFloor)})));
@@ -4553,9 +4544,9 @@ function renderRail() {
  all.append(el('span', 'ri-name', t('allProductions')), el('span', 'ri-stat', t('seasonN', {n: fmtN(epById.size)})));
  if (!state.prod) all.setAttribute('aria-current', 'true');
  const li0 = el('li'); li0.append(all); ul0.append(li0); list.append(ul0);
- for (const [fam, key] of FAMILIES) {
-  const ps = prods.filter(p => famOf(p) === fam && (listed(p) || p.id === state.prod)).sort(byRank); if (!ps.length) continue;
-  list.append(el('p', 'rail-fam', t(key))); const ul = el('ul');
+ for (const f of FAMILIES) {
+  const ps = prods.filter(p => famOf(p) === f.id && (listed(p) || p.id === state.prod)).sort(byRank); if (!ps.length) continue;
+  list.append(el('p', 'rail-fam', pick(f.en, f.he))); const ul = el('ul');
   for (const p of ps) {
    const m = prodModel(p), f = fmtOf(p), a = go(prodRoute(p.id), '', 'rail-item'); fk(a, 'rail-' + p.id);
    const sub = el('span', 'ri-sub'); sub.append(el('span', '', iso(p.years)));

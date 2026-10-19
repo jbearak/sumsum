@@ -22,7 +22,6 @@ from pathlib import Path
 from urllib.parse import unquote, urlsplit
 
 ROOT = Path(__file__).resolve().parents[1]
-SERIES = {"modern", "classic", "shalom-classic", "shalom-modern", "elmo"}
 KINDS = {"episode", "clip", "collection", "unverified"}
 # Record access listings. 'licensed' is an official storefront or library-streaming listing (hoopla, Apple TV, Prime Video);
 # data/licensed-services.json says what each service needs. 'direct-link-discovered' is written by apply_player_links().
@@ -434,7 +433,7 @@ def evidence_detail_problems(detail, level, role_of, by_record):
     return out
 
 
-def validate_guide(guide, records, source):
+def validate_guide(guide, records, source, series):
     """Validate the episode-guide contract against the merged records. Returns warnings; raises on errors."""
     errors, warnings = [], []
     err = errors.append
@@ -473,8 +472,8 @@ def validate_guide(guide, records, source):
         for k in ("numberLabelEn", "numberLabelHe"):
             if isinstance(p.get(k), str) and not p[k].strip():
                 err(f"{where}: {k} must not be empty (omit it for season and episode codes)")
-        if not enum_ok(p.get("series"), SERIES):
-            err(f"{where}: unknown series {p.get('series')!r}")
+        if not enum_ok(p.get("series"), series):
+            err(f"{where}: unknown series {p.get('series')!r} (series are listed in data/series.json)")
         if not enum_ok(p.get("format"), FORMATS):
             err(f"{where}: format must be one of {sorted(FORMATS)}, got {p.get('format')!r}")
         total = p.get("expectedTotal")
@@ -748,6 +747,20 @@ def validate_guide(guide, records, source):
             elif rid in linked:
                 err(f"unidentified[{pid!r}]: record {rid!r} is also linked to {linked[rid][0]!r}")
             queued[rid] = pid
+    # An upload is filed under one series; one linked to, or queued under, a production of another series is listed
+    # under that series in Browse but counted with the production in the guide. Checked once the guide is otherwise valid.
+    if not errors:
+        filed = {}
+        for rid, eids in linked.items():
+            for eid in eids:
+                filed.setdefault(rid, set()).add(episodes[eid]["production"])
+        for rid, pid in queued.items():
+            filed.setdefault(rid, set()).add(pid)
+        crossed = sorted(f"{rid} ({r['series']}, in {pid})" for rid, pids in filed.items() for r in by_record.get(rid, [])[:1]
+                         for pid in sorted(pids) if productions[pid].get("series") != r["series"])
+        if crossed:
+            warnings.append(f"{len(crossed)} uploads belong to a production of another series: " + "; ".join(crossed[:5])
+                            + (" ..." if len(crossed) > 5 else ""))
     unknown_prod = {}
     for r in records:
         ref = r.get("guideEpisodeId")
@@ -767,14 +780,13 @@ def validate_guide(guide, records, source):
     return warnings
 
 
-def guide_counts(guide):
+def guide_counts(guide, goal_series):
     prods = {p["id"]: p for p in guide["productions"]}
-    rechov = {"classic", "modern"}
     roles = {e["id"]: [u["role"] for u in e.get("uploads", [])] for e in guide["episodes"]}
     core, other = Counter(), Counter()
     for e in guide["episodes"]:
         p = prods[e["production"]]
-        bucket = core if p["format"] == "core" and p["series"] in rechov else other
+        bucket = core if p["format"] == "core" and p["series"] in goal_series else other
         bucket[coverage_of(roles[e["id"]])] += 1
     return {
         "productions": len(prods),
@@ -786,7 +798,7 @@ def guide_counts(guide):
     }
 
 
-def load_guide(path, records, explicit):
+def load_guide(path, records, explicit, series):
     if not path.exists():
         if explicit:
             raise ValueError(f"Guide file not found: {path}")
@@ -798,10 +810,72 @@ def load_guide(path, records, explicit):
         raise ValueError(f"{path.name}: invalid JSON: {error}") from None
     guide = parse_json(text, path.name)
     check_unicode(guide, path.name)
-    warnings = validate_guide(guide, records, path.name)
+    warnings = validate_guide(guide, records, path.name, series)
     guide = {**guide, "productions": guide.get("productions", []), "episodes": guide.get("episodes", []),
              "unidentified": guide.get("unidentified", {})}
     return guide, hashlib.sha256(raw).hexdigest(), warnings
+
+
+# The series registry (data/series.json): the guide rail's families, the series every record and production names, and
+# the core broadcast series counted toward the core Rechov Sumsum goal. The app reads all of it from the payload.
+SERIES_FIELDS = ("id", "en", "he", "family", "searchPrefix", "searchLanguage")
+
+
+def load_series(path):
+    data = load_json(path)
+    name = path.name
+    if not isinstance(data, dict):
+        raise ValueError(f"{name}: expected an object with families, series and goal")
+    families, series, goal = data.get("families"), data.get("series"), data.get("goal")
+    for key, value in (("families", families), ("series", series), ("goal", goal)):
+        if not isinstance(value, list) or not value:
+            raise ValueError(f"{name}: {key} must be a non-empty array")
+    seen = set()
+    for i, f in enumerate(families, 1):
+        where = f"{name}, family {i}"
+        if not isinstance(f, dict) or not isinstance(f.get("id"), str) or not SLUG_RE.match(f["id"]):
+            raise ValueError(f"{where}: id must be a lowercase slug")
+        if f["id"] in seen:
+            raise ValueError(f"{where}: duplicate family id {f['id']!r}")
+        seen.add(f["id"])
+        problem = _pair_problem(f, f"{name}, family {f['id']!r}")
+        if problem:
+            raise ValueError(problem)
+    family_of = {}
+    for i, s in enumerate(series, 1):
+        where = f"{name}, series {i}"
+        if not isinstance(s, dict) or not isinstance(s.get("id"), str) or not SLUG_RE.match(s["id"]):
+            raise ValueError(f"{where}: id must be a lowercase slug")
+        where = f"{name}, series {s['id']!r}"
+        if s["id"] in family_of or s["id"] in RESERVED_IDS:
+            raise ValueError(f"{where}: duplicate or reserved series id")
+        problem = _pair_problem(s, where)
+        if problem:
+            raise ValueError(problem)
+        if not enum_ok(s.get("family"), seen):
+            raise ValueError(f"{where}: family {s.get('family')!r} is not listed in families")
+        if not _nonempty(s.get("searchPrefix")):
+            raise ValueError(f"{where}: searchPrefix must be non-empty text")
+        if s.get("searchLanguage") not in ("he", "en"):
+            raise ValueError(f"{where}: searchLanguage must be 'he' or 'en'")
+        family_of[s["id"]] = s["family"]
+    rows = []
+    for i, g in enumerate(goal, 1):
+        where = f"{name}, goal row {i}"
+        if not isinstance(g, dict) or not enum_ok(g.get("series"), family_of):
+            raise ValueError(f"{where}: series must be a listed series id")
+        if g["series"] in rows:
+            raise ValueError(f"{where}: series {g['series']!r} is listed twice")
+        problem = _pair_problem(g, where)
+        if problem:
+            raise ValueError(problem)
+        rows.append(g["series"])
+    # The panel is about one family's core broadcasts ("Rechov Sumsum core broadcasts").
+    if len({family_of[x] for x in rows}) > 1:
+        raise ValueError(f"{name}: goal series must belong to one family")
+    return {"families": [{k: f[k] for k in ("id", "en", "he")} for f in families],
+            "series": [{k: s[k] for k in SERIES_FIELDS} for s in series],
+            "goal": [{k: g[k] for k in ("series", "en", "he")} for g in goal]}
 
 
 # Licensed services (data/licensed-services.json): how each licensed service is reached, with sourced facts. A record with
@@ -1111,10 +1185,14 @@ def main():
     parser.add_argument("inputs", nargs="*", type=Path)
     parser.add_argument("--output", type=Path, default=ROOT / "index.html")
     parser.add_argument("--guide", type=Path, help="episode guide JSON (default: data/episode-guide.json if it exists)")
+    parser.add_argument("--series", type=Path, default=ROOT / "data/series.json", help="series registry JSON")
     parser.add_argument("--services", type=Path,
                         help="licensed services JSON (default: data/licensed-services.json if it exists)")
     args = parser.parse_args()
     inputs = args.inputs or sorted((ROOT / "data").glob("*-records.json"))
+    series_path = args.series if args.series.is_absolute() else ROOT / args.series
+    registry = load_series(series_path)
+    series_ids = {s["id"] for s in registry["series"]}
     records = []
     seen = {}
     origin = {}  # record id -> (url, "file, entry n") of its first occurrence, for duplicate-id errors
@@ -1143,8 +1221,9 @@ def main():
             for field in ("sourceUrl", "directUrl"):
                 if r.get(field) and not valid_url(r[field]):
                     raise ValueError(f"{path.name}, entry {offset}: invalid {field} ({url_problem(r[field])})")
-            if not enum_ok(r.get("series"), SERIES):
-                raise ValueError(f"{path.name}, entry {offset}: unknown series {r.get('series')!r}")
+            if not enum_ok(r.get("series"), series_ids):
+                raise ValueError(f"{path.name}, entry {offset}: unknown series {r.get('series')!r} "
+                                 f"(series are listed in {series_path.name})")
             if not enum_ok(r.get("kind"), KINDS):
                 raise ValueError(f"{path.name}, entry {offset}: unknown kind {r.get('kind')!r}")
             if not (r.get("titleEn") or r.get("titleHe") or r.get("title")):
@@ -1207,7 +1286,8 @@ def main():
     guide_path = args.guide or ROOT / "data/episode-guide.json"
     if not guide_path.is_absolute():
         guide_path = ROOT / guide_path
-    guide, guide_sha, guide_warnings = load_guide(guide_path, records, explicit=args.guide is not None)
+    guide, guide_sha, guide_warnings = load_guide(guide_path, records, explicit=args.guide is not None,
+                                                   series=series_ids)
     services_path = args.services or ROOT / "data/licensed-services.json"
     if not services_path.is_absolute():
         services_path = ROOT / services_path
@@ -1218,9 +1298,10 @@ def main():
         "playerLinksDiscovered": discovered,
         "playbackVerifiedWithoutVpn": sum(r.get("playbackVerified") is True and r.get("playbackWithoutVpn") is True for r in records),
         "inputFiles": [p.name for p in inputs],
+        "seriesFile": series_path.name,
     }
     if guide is not None:
-        meta.update({"guideFile": guide_path.name, "guideSha256": guide_sha, "guideCounts": guide_counts(guide)})
+        meta.update({"guideFile": guide_path.name, "guideSha256": guide_sha, "guideCounts": guide_counts(guide, {g["series"] for g in registry["goal"]})})
     else:
         notices.append(f"No episode guide ({guide_path.name} not found): embedded an empty guide; the app opens on All uploads.")
     if services is not None:
@@ -1228,7 +1309,7 @@ def main():
     else:
         notices.append(f"No licensed services file ({services_path.name} not found): licensed listings are labelled without "
                        "their access terms.")
-    payload = {"meta": meta, "records": records, "guide": guide if guide is not None else EMPTY_GUIDE}
+    payload = {"meta": meta, "series": registry, "records": records, "guide": guide if guide is not None else EMPTY_GUIDE}
     if services is not None:
         payload["services"] = services
     # Escape HTML-significant characters inside the script data block. JSON strings

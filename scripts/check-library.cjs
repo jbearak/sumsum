@@ -36,7 +36,17 @@ assert(namesAt > 0 && namesEnd > namesAt, 'Tag name map found');
 const NAMES = vm.runInNewContext('var names = ' + appSource.slice(namesAt + 'const names = '.length, namesEnd + 3) + 'names');
 
 // ---------------------------------------------------------------- independent model of the data
-const SERIES = ['modern', 'classic', 'shalom-classic', 'shalom-modern', 'elmo'];
+// The series registry (payload.series, from data/series.json): set from each booted payload by model(), like the services.
+// The rules below (what counts as core, how productions rank) are the checker's own; the registry supplies the facts.
+let SERIES = [], GOAL = [], FAMILY_ORDER = [], FAMILY_OF = {};
+const useSeries = payload => {
+  const reg = payload && payload.series && typeof payload.series === 'object' ? payload.series : {};
+  const list = v => (Array.isArray(v) ? v.filter(x => x && typeof x.id === 'string') : []);
+  SERIES = list(reg.series).map(x => x.id);
+  FAMILY_OF = Object.fromEntries(list(reg.series).map(x => [x.id, x.family]));
+  FAMILY_ORDER = list(reg.families).map(x => x.id);
+  GOAL = (Array.isArray(reg.goal) ? reg.goal : []).filter(x => x && SERIES.includes(x.series));
+};
 const KINDS = ['episode', 'short-episode', 'unverified', 'clip', 'collection'];
 const ROLES = ['whole-candidate', 'alternate-edition', 'part', 'excerpt'];
 const EVS = ['metadata-checked', 'playback-started', 'complete-playback-reviewed', 'reference-compared'];
@@ -198,7 +208,7 @@ function assertFailedMark(H, w, failed, where) {
 }
 
 function model(payload) {
-  useServices(payload);
+  useServices(payload); useSeries(payload);
   const records = payload.records, recById = new Map(records.map(r => [r.id, r]));
   const g = payload.guide && Array.isArray(payload.guide.productions) ? payload.guide : {productions: [], episodes: [], unidentified: {}};
   const prods = [...g.productions].sort((a, b) => (a.order ?? 99) - (b.order ?? 99));
@@ -324,9 +334,14 @@ function model(payload) {
     .filter(a => typeof a.text === 'string' && a.text.trim());
   const altText = (e, lang = 'en') => altLabels(e).map(a => (lang === 'he' ? a.labelHe || a.labelEn : a.labelEn || a.labelHe) || a.text).join(' · ');
   const fmt = p => p.format;
-  const isCoreRechov = p => p.format === 'core' && ['classic', 'modern'].includes(p.series);
-  const famRank = p => (isCoreRechov(p) ? 0 : ['classic', 'modern'].includes(p.series) && p.format === 'queue' ? 1 :
-    ['classic', 'modern'].includes(p.series) ? 2 : p.series === 'elmo' ? 3 : 4);
+  const goalSeries = GOAL.map(x => x.series);
+  const isCoreRechov = p => p.format === 'core' && goalSeries.includes(p.series);
+  // Core Rechov, then the goal series' queue, their other formats, then each other family in registry order; unregistered last.
+  const famRank = p => {
+    if (isCoreRechov(p)) return 0;
+    if (goalSeries.includes(p.series)) return p.format === 'queue' ? 1 : 2;
+    const i = FAMILY_ORDER.indexOf(FAMILY_OF[p.series]); return i < 0 ? FAMILY_ORDER.length + 2 : i + 2;
+  };
   const epsOf = new Map(prods.map(p => [p.id, eps.filter(e => e.production === p.id)
     .sort((a, b) => num(a.season) - num(b.season) || num(a.number) - num(b.number) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))]));
   const prodModel = p => {
@@ -912,12 +927,12 @@ async function checkGuide(H, M) {
   const goal = H.byClass('goal')[0];
   if (prods.some(M.isCoreRechov)) {
     assert(goal, 'Goal panel present');
-    for (const series of ['classic', 'modern']) {
+    for (const {series, en: label} of GOAL) {
       const ps = prods.filter(p => p.series === series && M.isCoreRechov(p)); if (!ps.length) continue;
       const ms = ps.map(M.prodModel);
       const known = ms.reduce((s, m) => s + m.knownFloor, 0), inferred = ms.reduce((s, m) => s + m.numberingFloor, 0);
       const whole = ps.reduce((s, p) => s + M.epsOf.get(p.id).filter(e => cov(e) === 'whole-candidate').length, 0);
-      const row = H.byClass('goal-row', goal).find(n => n.children[0].textContent === L.en[series === 'classic' ? 'famClassic' : 'famModern']);
+      const row = H.byClass('goal-row', goal).find(n => n.children[0].textContent === label);
       assert(row, 'Goal row for ' + series);
       assert(row.textContent.includes(tr('en', 'goalKnown', {n: known.toLocaleString('en-US')})), `${series} known floor ${known}`);
       assert.equal(row.textContent.includes(tr('en', 'goalInferred', {n: inferred.toLocaleString('en-US')})), inferred > known,
@@ -1684,6 +1699,51 @@ async function sweep(H, M) {
 }
 
 // ---------------------------------------------------------------- guide-absent mode
+// A sixth series in a family of its own, with a core production that comes first in production order: the registry alone
+// gives it a Browse chip, a rail heading after the others and its YouTube search terms, and it never counts as core
+// Rechov Sumsum (not in the goal rows or the separate list's exclusions, never Up next's preferred episode).
+async function checkSeriesRegistry(htmlPath) {
+  const url = 'https://www.youtube.com/watch?v=TestStreet01';
+  const H = harness(boot(htmlPath, {payload: p => {
+    p.series.families.push({id: 'test-fam', en: 'Test family', he: 'משפחת בדיקה'});
+    p.series.series.push({id: 'test-street', en: 'Test Street', he: 'רחוב בדיקה', family: 'test-fam', searchPrefix: 'Test Street',
+      searchLanguage: 'en'});
+    p.records.push({id: 'test-rec-1', url, series: 'test-street', kind: 'episode', titleEn: 'Test Street: The Big Test',
+      durationSeconds: 1500, themes: [], characters: []});
+    p.guide.productions.push({id: 'test-core', series: 'test-street', format: 'core', order: -1, years: '2026', nameEn: 'Test Street core',
+      nameHe: 'רחוב בדיקה, הפקה', expectedTotal: 2, seasons: [{season: 1, numbering: 'documented', expectedEpisodes: 2}], totalsEvidence: []});
+    p.guide.episodes.push({id: 'test-ep-1', production: 'test-core', season: 1, number: 1, confidence: 'documented',
+      titleEn: 'The Big Test', titleHe: 'הבדיקה הגדולה', uploads: [{recordId: 'test-rec-1', role: 'whole-candidate'}]},
+    {id: 'test-ep-2', production: 'test-core', season: 1, number: 2, confidence: 'documented', titleEn: 'The Missing Test',
+      titleHe: 'הבדיקה החסרה', uploads: []});
+    return p;
+  }}));
+  const goalLabels = H.payload.series.goal.map(g => g.en);
+  await H.navigate('browse');
+  const chips = H.fkAll('fs-test-street');
+  assert.equal(chips.length, 1, 'A registered series gets a Browse chip'); assert.equal(H.chipCount(chips[0]), 1);
+  assert.equal(chips[0].parentElement.children.filter(c => /^fs-/.test(c.getAttribute?.('data-fk') || '')).at(-1), chips[0],
+    'Series chips follow the registry order');
+  await H.navigate('record/test-rec-1'); assert(H.text().includes('Test Street'), 'Record pages name the series from the registry');
+  await H.navigate('guide');
+  const fams = H.byClass('rail-fam', H.tree).map(n => n.textContent);
+  assert.equal(fams.at(-1), 'Test family', 'A new family is a rail heading after the registered ones');
+  assert(H.has('rail-test-core'), 'Its production is on the rail');
+  assert.deepEqual(H.byClass('goal-row').map(r => r.children[0].textContent), goalLabels, 'The goal panel keeps only the goal series rows');
+  assert(H.byClass('sep-list').some(l => l.textContent.includes('Test Street core')), 'A non-goal core production is counted separately');
+  for (const lang of ['en', 'he']) {
+    if (H.document.documentElement.lang !== lang) await H.flipLang();
+    await H.navigate('episode/test-ep-2');
+    const search = H.find(n => n.tagName === 'a' && String(n.href).startsWith('https://www.youtube.com/results'));
+    assert(search.length && search.every(a => a.href.includes(encodeURIComponent('Test Street') + '%20') && /Missing/.test(decodeURIComponent(a.href))),
+      `${lang}: YouTube searches use the series' prefix and English title words`);
+  }
+  await H.flipLang();
+  await H.navigate('home');
+  assert.notEqual(H.fk('next-watch').href, url, 'Up next prefers core Rechov Sumsum, not a core production of another series');
+  ok('series registry: a new series and family get a Browse chip, a rail heading and their own search terms, and stay out of core Rechov Sumsum');
+}
+
 async function checkWithoutGuide(htmlPath) {
   const H = harness(boot(htmlPath, {payload: p => { delete p.guide; return p; }}));
   const M = model(H.payload);
@@ -4280,7 +4340,6 @@ const CONTRAST_PAIRS = [
   ['strip numbers: whole', 'whole-ink', 'whole', 4.5], ['strip numbers: parts', 'ink', 'parts-bg', 4.5], ['strip numbers: excerpts', 'ink', 'excerpt-bg', 4.5],
   ['strip numbers: expected', 'muted', 'unknown-bg', 4.5], ['missing numbers and errors on the page', 'missing', 'bg', 4.5],
   ['missing numbers and errors on cards', 'missing', 'surface', 4.5],
-  ...['modern', 'classic', 'shalom-classic', 'shalom-modern', 'elmo'].map(c => [`series kicker: ${c}`, 'ser-' + c, 'surface', 4.5]),
   ['host chip on a dark thumbnail', 'host-ink', 'host-bg@#000000', 4.5], ['duration on a white thumbnail', 'scrim-ink', 'scrim@#ffffff', 4.5],
   ['masthead text', 'mast-ink', 'brand', 4.5], ['tab labels', 'mast-ink-soft', 'brand', 4.5], ['hovered tab labels', 'mast-ink-soft', 'mast-hover@brand', 4.5],
   ['tab counts', 'mast-ink-soft', 'mast-chip@brand', 4.5], ['tab counts, hovered', 'mast-ink-soft', 'mast-chip@mast-hover@brand', 4.5], ['the current tab and the checked language', 'mast-current-ink', 'mast-current', 4.5],
@@ -4293,11 +4352,14 @@ const CONTRAST_PAIRS = [
   ...['whole', 'parts', 'excerpt', 'missing', 'unknown'].flatMap(c => [[`${c} marks on cards`, c, 'surface', 3], [`${c} marks on the ${c} tint`, c, c + '-bg', 3]]),
   ...['ok', 'public', 'vpn', 'lic', 'bad'].map(c => [`access mark: ${c}`, 'acc-' + c, 'surface', 3]), ['the star', 'star-ink', 'surface', 3]
 ];
+// Each series kicker colour (--ser-ID, one per registered series; checkThemeTokens ties them to the registry).
+const seriesPairs = T => Object.keys(T.schemeLight.tokens).filter(k => k.startsWith('ser-'))
+  .map(k => [`series kicker: ${k.slice(4)}`, k, 'surface', 4.5]);
 function contrastRows(T) {
-  const rows = [];
+  const rows = [], pairs = [...CONTRAST_PAIRS, ...seriesPairs(T)];
   for (const palette of T.palettes) for (const scheme of ['light', 'dark']) {
     const t = T.resolve(palette, scheme).tokens;
-    for (const [label, fg, bg, min] of CONTRAST_PAIRS) {
+    for (const [label, fg, bg, min] of pairs) {
       const r = contrast(colourOf(t, fg), colourOf(t, bg));
       rows.push({palette, scheme, label, fg, bg, min, ratio: r, ok: r >= min});
     }
@@ -4308,8 +4370,16 @@ function contrastRows(T) {
 // Theme tokens: every colour in the stylesheet is a custom property of the token rules; every palette defines every palette
 // token (light) and at least the default's dark tokens; the palette lists of the stylesheet, the preferences script and the
 // strings agree; and the key pairs reach their contrast in every palette and scheme.
-function checkThemeTokens(html, theme) {
+function checkThemeTokens(html, theme, seriesIds) {
   const css = html.match(/<style>([\s\S]*?)<\/style>/)[1], T = themeTokens(css);
+  // Every registered series has a kicker colour in both schemes and a .ser-ID class bound to it; no colour is left over.
+  const serOf = r => Object.keys(r.tokens).filter(k => k.startsWith('ser-')).map(k => k.slice(4)).sort();
+  assert.deepEqual(serOf(T.schemeLight), [...seriesIds].sort(), 'The light scheme rule has a --ser-ID colour for each registered series, and no other');
+  assert.deepEqual(serOf(T.schemeDark), [...seriesIds].sort(), 'The dark scheme rule has a --ser-ID colour for each registered series, and no other');
+  for (const id of seriesIds) {
+    assert(T.top.some(r => r.sel && r.sel.split(',').map(x => x.trim()).includes('.ser-' + id) &&
+      r.body.replace(/\s/g, '').includes(`--series-ink:var(--ser-${id})`)), `.ser-${id} sets --series-ink to var(--ser-${id})`);
+  }
   // Colour literals appear only in token rules (forced colours use system colours).
   const literal = /#[0-9a-f]{3,8}\b|\b(?:rgba?|hsla?|hwb|lab|lch|oklab|oklch|color-mix)\(|(?<![\w-])(?:white|black|red|green|blue|yellow|orange|purple|pink|brown|gr[ae]y|silver|navy|teal|maroon|olive|lime|aqua|fuchsia)(?![\w-])/i;
   const walk = (list, where) => {
@@ -4373,7 +4443,7 @@ function checkThemeTokens(html, theme) {
   assert.deepEqual(bad.map(r => `${r.palette} ${r.scheme}: ${r.label} (--${r.fg} on --${r.bg}) ${r.ratio.toFixed(2)} < ${r.min}`), [],
     'Contrast in every palette and scheme');
   ok(`theme tokens: ${T.palettes.length} palettes (${T.palettes.join(', ')}; ${T.default} the default) define ${P.size} palette tokens, light and dark, over ${S.size} shared ` +
-    `ones; colours only in tokens; ${rows.length} contrast pairs pass (${CONTRAST_PAIRS.length} per palette and scheme)`);
+    `ones; colours only in tokens; ${rows.length} contrast pairs pass (${CONTRAST_PAIRS.length + seriesPairs(T).length} per palette and scheme)`);
   return T;
 }
 
@@ -4626,10 +4696,11 @@ function builderChecks(builder, dir) {
   const write = (name, value) => { const f = path.join(dir, name); fs.writeFileSync(f, typeof value === 'string' ? value : JSON.stringify(value)); return f; };
   const guideFile = write('empty-guide.json', {productions: [], episodes: [], unidentified: {}});
   const rec = (id, url, extra = {}) => ({id, url, series: 'classic', kind: 'episode', titleEn: 'Fixture ' + id, ...extra});
-  const run = (records, {guide = guideFile, keep = false, services = null} = {}) => {
+  const run = (records, {guide = guideFile, keep = false, services = null, series = null} = {}) => {
     const input = write('fixture-records.json', typeof records === 'string' ? records : {records});
     const out = path.join(dir, 'out.html'); if (!keep) fs.writeFileSync(out, 'KEEP');
-    const r = spawnSync('python3', [builder, input, '--guide', guide, ...(services ? ['--services', services] : []), '--output', out],
+    const r = spawnSync('python3', [builder, input, '--guide', guide, ...(services ? ['--services', services] : []),
+      ...(series ? ['--series', series] : []), '--output', out],
       {encoding: 'utf8'});
     return {status: r.status, text: (r.stdout || '') + (r.stderr || ''), out: fs.readFileSync(out, 'utf8')};
   };
@@ -4655,6 +4726,29 @@ function builderChecks(builder, dir) {
     fails(run([rec('fx-u', bad)]), /valid public url required/, 'URL the browser rejects: ' + bad);
   }
   fails(run([rec('fx-k', 'https://www.youtube.com/watch?v=AAAAAAAAAA1', {series: ['classic']})]), /unknown series/, 'list-valued series');
+  // The series registry: a series added there is accepted and embedded; a malformed registry is refused.
+  const registry = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'data', 'series.json'), 'utf8'));
+  const withSeries = edit => { const reg = JSON.parse(JSON.stringify(registry)); edit(reg); return write('series.json', reg); };
+  const usSeries = {id: 'us-street', en: 'US street', he: 'רחוב אמריקאי', family: 'us', searchPrefix: 'Street', searchLanguage: 'en'};
+  const addUs = reg => { reg.families.push({id: 'us', en: 'US', he: 'אמריקאי'}); reg.series.push({...usSeries}); };
+  const usBuild = run([rec('fx-us', 'https://www.youtube.com/watch?v=AAAAAAAAAA1', {series: 'us-street'})], {series: withSeries(addUs)});
+  assert.equal(usBuild.status, 0, usBuild.text);
+  const usPayload = JSON.parse(usBuild.out.match(/<script id="library-data" type="application\/json">([\s\S]*?)<\/script>/)[1]);
+  assert.deepEqual(usPayload.series.series.at(-1), usSeries, 'The registry is embedded with the added series');
+  fails(run([rec('fx-us', 'https://www.youtube.com/watch?v=AAAAAAAAAA1', {series: 'us-street'})]), /unknown series 'us-street'.*series\.json/,
+    'a series missing from the registry');
+  for (const [label, edit, pattern] of [
+    ['duplicate series id', reg => reg.series.push({...reg.series[0]}), /series 'modern': duplicate or reserved series id/],
+    ['unknown family', reg => reg.series.push({...usSeries}), /series 'us-street': family 'us' is not listed in families/],
+    ['list-valued family', reg => reg.series.push({...usSeries, family: ['us']}), /family \['us'\] is not listed/],
+    ['Hebrew label without Hebrew', reg => { addUs(reg); reg.series.at(-1).he = 'US'; }, /series 'us-street'\.he has no Hebrew letters/],
+    ['search language', reg => { addUs(reg); reg.series.at(-1).searchLanguage = 'fr'; }, /searchLanguage must be 'he' or 'en'/],
+    ['goal across families', reg => { addUs(reg); reg.goal.push({series: 'us-street', en: 'US', he: 'אמריקאי'}); }, /goal series must belong to one family/],
+    ['goal series listed twice', reg => reg.goal.push({...reg.goal[0]}), /goal row 3: series 'classic' is listed twice/],
+    ['goal row without labels', reg => reg.goal.push({series: 'elmo'}), /goal row 3 must be \{en, he\}/],
+    ['empty families', reg => { reg.families = []; }, /families must be a non-empty array/]]) {
+    fails(run([rec('fx-r', 'https://www.youtube.com/watch?v=AAAAAAAAAA1')], {series: withSeries(edit)}), pattern, 'series registry: ' + label);
+  }
   const verified = run([rec('fx-p', 'https://www.youtube.com/watch?v=AAAAAAAAAA1', {playbackVerified: true, playbackWithoutVpn: true})]);
   assert.equal(verified.status, 0); assert(/playbackVerified without playbackUrl/.test(verified.text), 'Playback evidence without playbackUrl is reported');
   // Guide validation: malformed values and evidence details that the app would ignore.
@@ -4667,6 +4761,11 @@ function builderChecks(builder, dir) {
   const detail = (extra = {}) => ({level: 'complete-playback-reviewed', recordId: 'fx-w', url: 'https://www.youtube.com/watch?v=AAAAAAAAAA1',
     checkedAt: '2026-10-17', ...extra});
   assert.equal(run(recs, {guide: guide({evidence: 'complete-playback-reviewed', evidenceDetail: detail()})}).status, 0, 'A valid evidence detail builds');
+  const crossed = run(recs, {guide: guide({}, {series: 'modern'})});
+  assert.equal(crossed.status, 0, crossed.text);
+  assert(/2 uploads belong to a production of another series: fx-w \(classic, in fx-prod\); fx-x \(classic, in fx-prod\)/.test(crossed.text),
+    'An upload linked to a production of another series is reported');
+  assert(!/production of another series/.test(run(recs, {guide: guide({})}).text), 'Uploads of the production\'s own series are not reported');
   for (const [label, episode, pattern] of [
     ['level disagrees', {evidence: 'metadata-checked', evidenceDetail: detail({level: 'reference-compared'})}, /disagrees with the episode's evidence/],
     ['level missing', {evidence: 'reference-compared', evidenceDetail: detail({level: undefined})}, /level must be one of/],
@@ -4983,8 +5082,9 @@ async function run() {
   await checkStarredAndHash(htmlPath, M);
   await checkRouteAliases(htmlPath, M);
   await checkRobustness(htmlPath, M);
+  if (M.hasGuide) await checkSeriesRegistry(htmlPath);
   checkCss(app.html);
-  checkThemeTokens(app.html, app.window.sumsumTheme);
+  checkThemeTokens(app.html, app.window.sumsumTheme, (app.payload.series?.series || []).map(x => x.id));
   checkBuilder();
   console.log(`PASS ${path.basename(htmlPath)} (${M.hasGuide ? 'with episode guide' : 'no episode guide'}):`);
   for (const line of passed) console.log('  - ' + line);

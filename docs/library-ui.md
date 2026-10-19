@@ -11,7 +11,7 @@ The views nav has four items: Home, Episode guide, Browse and Starred. Phones al
 **Home** (`#/home`) is the start view when the guide exists; without a guide the library starts on Browse. It holds:
 
 - Two stored preferences, Spoken (All languages, Hebrew, English) and Length (any, or up to 5, 10, 20 or 30 minutes). They are `sumsum-spoken` and `sumsum-length`. They shape what Home and Surprise offer, never the guide, and a Browse hash never changes them.
-- **Up next.** This is the next core Rechov Sumsum episode not marked watched, with its best *offered* whole or alternate copy.
+- **Up next.** This is the next core Rechov Sumsum episode (a core production of a goal series in `data/series.json`) not marked watched, with its best *offered* whole or alternate copy.
   - **Offered:** not marked as needing a VPN, a card or a purchase, not failed or region-limited in a check, and within the preferences.
   - **Choosing the copy:** the copy is picked among the episode's offered copies, so a copy that isn't offered never hides one that is.
   - **When no episode fits:** Up next offers any offered video.
