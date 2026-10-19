@@ -16,7 +16,9 @@ git clone https://github.com/jbearak/sumsum.git
 
 The interface is in English. The English/עברית switch at the top of the page changes it to Hebrew, laid out right to left.
 
-The Episode guide goes through each series episode by episode. Browse lists every video, clips and songs included, with filters for series, type, where it plays, theme and character. Videos open on their original site in a new tab.
+Home opens on the next episode to watch, a queue for the current sitting, the videos opened recently, the characters and a shelf of songs. Its Spoken and Length choices narrow what it offers. Surprise me picks a video at random. The Episode guide goes through each series episode by episode. Browse lists every video, clips and songs included, with filters for series, type, spoken language, length, where it plays, theme and character. Videos open on their original site in a new tab.
+
+What the index has not found is listed under "Not found" at the bottom of the page.
 
 Each episode's coverage label (Whole link, Parts only, Excerpts only or Missing) says what is linked, and its evidence label (Details checked, not test-played; Seen to play; Checked in full; or Compared with a reference) says how far the project has checked that link. Tiles show an evidence badge only above the first level, which every linked episode has. Evidence is about the link, not about what you have watched.
 
@@ -31,11 +33,11 @@ hoopla, Apple TV and Prime Video are library or paid services, not free uploads.
 
 ## Your stars and marks
 
-Stars, watched marks and any Vimeo link you paste into a Hop! listing are saved in your browser, not in the repository. Browsers keep them per site, so the GitHub Pages copy and a copy opened from your disk have separate lists. To move them, open "About, evidence levels and backup" at the bottom of the page and use its Export backup and Import backup or collector report buttons. Export a backup before you move the file or change browsers.
+Stars, watched marks, the videos you opened, the queue and any Vimeo link you paste into a Hop! listing are saved in your browser, not in the repository. Browsers keep them per site, so the GitHub Pages copy and a copy opened from your disk have separate lists. To move them, open "About, evidence levels and backup" at the bottom of the page and use its Export backup and Import backup or collector report buttons. Export a backup before you move the file or change browsers.
 
 ## Contributing
 
-If you collect these programmes, the Missing episodes and Videos to identify pages, in the menu beside Browse, show what the index lacks and what still needs a name.
+If you collect these programmes, the Missing episodes page (the "Not found" link at the bottom of the page) and the Videos to identify page it links to show what the index lacks and what still needs a name.
 
 First read [AGENTS.md](AGENTS.md) and the doc in [docs/](docs/) that covers your change; AGENTS.md lists them. They are written for the AI agents that maintain the index, and their parts about Zen, Proton VPN and 1Password describe the maintainer's own setup. Their rules for numbering episodes, linking uploads and recording evidence apply to everyone. The notes in [research/](research/) cite the sources behind episode totals and identifications.
 
