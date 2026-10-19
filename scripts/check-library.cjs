@@ -3836,6 +3836,27 @@ async function checkHome(htmlPath, M) {
   await H.$('queue-btn').click();
   assert(!H.$('queue-pop').hidden && H.has('qp-open') && H.fk('qp-open').href === expectDest(d1), 'The queue popover offers the next video');
   await H.document.activeElement.dispatch('keydown', {key: 'Escape'}); assert(H.$('queue-pop').hidden);
+  // Unstarring a card from the Starred shelf hands focus to its neighbour's star, and the last one to the page heading. On
+  // Starred, Surprise picks only what is still starred.
+  {
+    const st = new Map([['sumsum-favorites', JSON.stringify([c1, c3].map(keyOf))]]), H3 = harness(boot(htmlPath, {storage: st}));
+    const first = H3.find(n => (n.getAttribute?.('data-fk') || '').startsWith('sstarred-star-')).map(n => n.getAttribute('data-fk'));
+    assert.equal(first.length, 2, 'Two starred cards');
+    H3.fk(first[0]).focus(); await H3.fk(first[0]).click();
+    assert.equal(H3.document.activeElement.getAttribute('data-fk'), first[1], 'Unstarring a shelf card focuses the next one');
+    await H3.fk(first[1]).click();
+    assert.equal(H3.document.activeElement, H3.h1(), 'Unstarring the last one focuses the page heading');
+    st.set('sumsum-favorites', JSON.stringify([c1, c3].map(keyOf)));
+    const H4 = harness(boot(htmlPath, {storage: st, hash: '#/starred'})), pop4 = H4.$('surprise-pop');
+    await H4.$('surprise-btn').click();
+    const pick4 = () => { const a = H4.find(n => (n.getAttribute?.('data-fk') || '').startsWith('sp-card-'), pop4)[0]; return a && a.getAttribute('data-fk').slice(8); };
+    const p1 = pick4(); assert([c1.id, c3.id].includes(p1), 'Surprise on Starred picks a starred video');
+    await H4.fk('sp-star-' + p1).dispatch('click'); H4.flushTimers();
+    await H4.fk('sp-another').dispatch('click');
+    const p2 = pick4(); assert(p2 && p2 !== p1 && [c1.id, c3.id].includes(p2), 'After unstarring, Another picks only what is still starred');
+    await H4.fk('sp-star-' + p2).dispatch('click'); H4.flushTimers();
+    assert(!H4.has('sp-another'), 'Nothing left to pick: no Another');
+  }
   // A stored queue key that matches no record stays stored and unseen, and moving a row swaps it with the next row shown.
   {
     const [kA, kB] = [c1, c3].map(keyOf), st = new Map([['sumsum-sitting', JSON.stringify([kA, 'zz-no-such-record', kB])]]);

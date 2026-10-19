@@ -4219,7 +4219,10 @@ function starBtn(r, key) {
   if (UVIEWS.includes(state.view)) { starChanged(r, b); return; }
   // An open popover (a Surprise pick's star) stays open and is drawn again.
   if (pops.open) { redraw(focusKey, [], true); return; }
-  mount(false); restoreFocus(focusKey);
+  // A shelf card that leaves its shelf (unstarred from Starred) hands focus to its neighbour's star, else the page heading.
+  const sib = b._li && b._li.parentElement ? [...b._li.parentElement.children] : [], at = sib.indexOf(b._li);
+  const near = [sib[at + 1], sib[at - 1]].filter(x => x && x._starKey).map(x => x._starKey);
+  mount(false); if (!restoreFocus(focusKey, ...near) && $('view-title')) $('view-title').focus();
  }, key);
  b._star = r; b.innerHTML = ICON.star; b.setAttribute('aria-pressed', String(favorites.has(mapKey(r))));
  b.setAttribute('aria-label', t('starAria', {title: recTitle(r)}));
@@ -6134,7 +6137,8 @@ function homeCard(r, prefix) {
  body.append(accessLine(r));
  const act = el('div', 'h-act');
  if (destination(r)) act.append(fk(ticket(viewed(watchLink(recWatchB(r), true, 'btn', recTitle(r)), r), r), prefix + 'w-' + r.id));
- act.append(queueBtn(r, prefix + 'q-' + r.id), starBtn(r, prefix + 'star-' + r.id));
+ const sb = starBtn(r, prefix + 'star-' + r.id); sb._li = li; li._starKey = prefix + 'star-' + r.id;
+ act.append(queueBtn(r, prefix + 'q-' + r.id), sb);
  card.append(art, body, act); li.append(card); return li;
 }
 // A shelf keeps the order its shuffle button gave it until the next press, so re-rendering (a star, the queue) never moves
@@ -6354,7 +6358,10 @@ const surprise = {hist: [], pos: -1, pool: [], face: 0};
 const DIE = ['א', 'ב', 'ג', 'ד', 'ה', 'ו'];
 function surprisePool() { return UVIEWS.includes(state.view) && U.list ? U.list.filter(offerable) : records.filter(pickable); }
 function rollSurprise() {
+ // The list may have changed since the last pick (a pick unstarred on Starred): picks come from what is there now.
+ surprise.pool = surprisePool();
  const pool = surprise.pool, cur = surprise.hist[surprise.pos];
+ if (!pool.length) { surprise.hist = []; surprise.pos = -1; }
  if (pool.length) {
   let r = pool[Math.floor(rand() * pool.length)];
   for (let k = 0; k < 8 && pool.length > 1 && r === cur; k++) r = pool[Math.floor(rand() * pool.length)];
@@ -6383,7 +6390,7 @@ function renderSurprise() {
   const ul = el('ul', 'pick'); ul.append(homeCard(r, 'sp-')); body.append(ul);
   const act = el('div', 'pop-act');
   if (surprise.pos > 0) act.append(btn('btn ghost', t('previous'), () => { surprise.pos--; renderSurprise(); restoreFocus('sp-prev', 'sp-another'); }, 'sp-prev'));
-  if (surprise.pool.length > 1) act.append(btn('btn', t('another'), () => { rollSurprise(); renderSurprise(); restoreFocus('sp-another'); }, 'sp-another'));
+  if (surprise.pool.length > 1 || (surprise.pool.length === 1 && surprise.pool[0] !== r)) act.append(btn('btn', t('another'), () => { rollSurprise(); renderSurprise(); restoreFocus('sp-another'); }, 'sp-another'));
   body.append(act);
  }
  pop.replaceChildren(head, body); pop.setAttribute('aria-labelledby', 'surprise-h');
