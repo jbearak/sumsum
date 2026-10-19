@@ -1,9 +1,19 @@
 {
-  "schemaVersion": 1,
-  "auditedAt": "2026-10-17",
-  "catalogPath": "data/sesame-records.json",
-  "catalogSha256": "bb40d0e61cc336e89c703a02f1d4663ac36126c06cf9623679e09a8da701077e",
-  "scope": "Existing catalog links only. No media downloads, no catalog/UI edits, no complete-playback verification.",
+  "schemaVersion": 2,
+  "auditedAt": "2026-10-18",
+  "catalogPaths": [
+    "data/sesame-records.json",
+    "data/youtube-records.json",
+    "data/archive-org-records.json",
+    "data/other-host-records.json"
+  ],
+  "schema1Catalog": {
+    "path": "data/sesame-records.json",
+    "sha256": "bb40d0e61cc336e89c703a02f1d4663ac36126c06cf9623679e09a8da701077e",
+    "commit": "011a072",
+    "note": "The single catalog file and its hash audited in schema 1."
+  },
+  "scope": "Both Shalom Sesame series. Schema 2 adds the episode guide (data/episode-guide.json), licensed storefront routes for the 2010 series, the missing parts found for Welcome to Israel and the classic Aleph-Bet Telethon, and the new classic copies. Metadata only: no media downloads, no complete-playback verification.",
   "definitions": {
     "canonicalEpisode": "A distinct named Shalom Sesame home-video program; duplicates, broadcast edits, songs and trailers are not additional episodes.",
     "title-verified candidate": "An existing single-upload whole-episode candidate with title or primary-numbering evidence; media completeness remains unreviewed.",
@@ -12,7 +22,9 @@
     "missing": "No single whole-upload candidate and no episode-part upload. Short studio scenes or trailers may still be linked.",
     "wholeUploadCandidatePolicy": "Use a canonical episode title or primary-numbered identity and long-form runtime. Two substantially shorter than reference editions are tracked separately. Runtime alone never proves completeness.",
     "runtimeComparisons": "Library runtimes are approximate and editions vary; shorter runtimes are a review flag, not proof that an upload is missing scenes.",
-    "yearComparisons": "Production/copyright year, original home-video release and later dubbed/broadcast dates differ. Secondary rollout years are labeled provisional rather than merged into primary program-year fields."
+    "yearComparisons": "Production/copyright year, original home-video release and later dubbed/broadcast dates differ. Secondary rollout years are labeled provisional rather than merged into primary program-year fields.",
+    "licensed-whole-candidate": "A licensed storefront or library-service listing of the whole programme (hoopla, Apple TV, Prime Video). It needs an account, a purchase or a library card; it is a link to a whole programme, not a free upload and not playback evidence. Records carry access \"licensed\".",
+    "complete-looking part set": "All labelled parts of a split upload are linked and their summed length is close to the reference runtime. Metadata only: continuity, overlaps and the ending are unchecked."
   },
   "sources": {
     "umass": {
@@ -92,6 +104,36 @@
       "url": "https://en.wikipedia.org/w/index.php?title=Shalom_Sesame&oldid=1371814228",
       "type": "secondary-year-chronology",
       "supports": "Provisional wave-year grouping 1990 for 6–8,1991 for 9–11; modern DVD rollout 2010–11. Exact rollout dates not independently confirmed for every title."
+    },
+    "official-store-2012": {
+      "title": "Sesame Street official store, \"Shalom Sesame 2010 #1\"-\"#12\" DVDs (archived 2012)",
+      "url": "https://web.archive.org/web/2012/http://store.sesamestreet.org/Product.aspx?cp=21415_21456_21463&pc=6EAM0976",
+      "type": "primary-producer-store",
+      "supports": "Numbered DVDs #1-#12, item numbers 6EAM0976-6EAM0988 (6EAM0978 not used); \"a brand new series of 12 episodes\". The guide cites each item page on its episode."
+    },
+    "official-about-2010": {
+      "title": "About Shalom Sesame, official site (archived 2010)",
+      "url": "https://web.archive.org/web/20101207092056/http://www.shalomsesame.org/about.html",
+      "type": "primary-producer-page",
+      "supports": "\"twelve half-hour episodes on DVD\"."
+    },
+    "official-dvd-2012": {
+      "title": "Shalom Sesame official site, /about/dvd (archived 2012)",
+      "url": "https://web.archive.org/web/20120912052326/http://www.shalomsesame.org:80/about/dvd",
+      "type": "primary-producer-page",
+      "supports": "The twelve programme titles."
+    },
+    "hoopla-season-2": {
+      "title": "hoopla: Shalom Sesame - Season 2",
+      "url": "https://www.hoopladigital.com/television/shalom-sesame-season-2/11516275",
+      "type": "licensed-library-service",
+      "supports": "Episodes 1-12 with minute-rounded runtimes; free with a participating library card. hoopla calls the 2010 series \"Season 2\"."
+    },
+    "alljudaica-classic": {
+      "title": "All Judaica, Shalom Sesame complete set (classic)",
+      "url": "https://www.alljudaica.com/Shalom-Sesame-Complete-Set-6-DVDs-p/7993.htm",
+      "type": "primary-retailer-product-listing",
+      "supports": "Numbered classic shows 1-11."
     }
   },
   "summaries": [
@@ -102,22 +144,39 @@
         "umass",
         "classic-retailer"
       ],
-      "catalogUploadRecordCount": 53,
+      "catalogUploadRecordCount": 127,
       "uniqueCanonicalEpisodesWithWholeUploadCandidates": 11,
-      "wholeUploadCandidateLinkCount": 18,
-      "additionalPossiblyShortenedUploadLinkCount": 2,
-      "uniqueCanonicalEpisodesWithDirectTitleWholeCandidate": 9,
-      "uniqueCanonicalEpisodesWithOnlyNumberResolvedWholeCandidate": 2,
+      "wholeUploadCandidateLinkCount": 31,
       "verifiedCompleteSingleUploadEpisodeCount": 0,
       "uniqueCanonicalEpisodesWithEpisodeParts": 10,
-      "uniqueCanonicalEpisodesWithAllLabeledEpisodeParts": 9,
-      "episodePartLinkCount": 27,
-      "trailerLinkCount": 0,
-      "studioOrStorySegmentLinkCount": 1,
+      "uniqueCanonicalEpisodesWithAllLabeledEpisodeParts": 10,
+      "episodePartLinkCount": 28,
       "uniqueCanonicalEpisodesMissingSingleWholeUploadCandidate": 0,
       "statusCounts": {
         "title-verified candidate": 11
-      }
+      },
+      "guideCoverage": "11 of 11 whole candidates (unchanged); new copies added as whole candidates, alternate editions, parts and excerpts.",
+      "schema1Counts": {
+        "note": "Counts from schema 1 (commit 011a072; data/sesame-records.json only). Not recomputed for schema 2.",
+        "catalogUploadRecordCount": 53,
+        "wholeUploadCandidateLinkCount": 18,
+        "additionalPossiblyShortenedUploadLinkCount": 2,
+        "uniqueCanonicalEpisodesWithDirectTitleWholeCandidate": 9,
+        "uniqueCanonicalEpisodesWithOnlyNumberResolvedWholeCandidate": 2,
+        "trailerLinkCount": 0,
+        "studioOrStorySegmentLinkCount": 1
+      },
+      "catalogUploadRecordCountByFile": {
+        "archive-org-records.json": 9,
+        "sesame-records.json": 53,
+        "youtube-records.json": 65
+      },
+      "wholeUploadCandidateLinkCountByAccess": {
+        "free": 31
+      },
+      "alternateEditionLinkCount": 6,
+      "excerptLinkCount": 16,
+      "countsFrom": "Link counts recomputed from data/episode-guide.json on 2026-10-18; record counts from every data/*-records.json file."
     },
     {
       "series": "shalom-modern",
@@ -127,23 +186,49 @@
         "urj",
         "oru-hebrew"
       ],
-      "catalogUploadRecordCount": 257,
-      "uniqueCanonicalEpisodesWithWholeUploadCandidates": 0,
-      "wholeUploadCandidateLinkCount": 0,
-      "additionalPossiblyShortenedUploadLinkCount": 0,
-      "uniqueCanonicalEpisodesWithDirectTitleWholeCandidate": 0,
-      "uniqueCanonicalEpisodesWithOnlyNumberResolvedWholeCandidate": 0,
+      "catalogUploadRecordCount": 324,
+      "uniqueCanonicalEpisodesWithWholeUploadCandidates": 12,
+      "wholeUploadCandidateLinkCount": 31,
       "verifiedCompleteSingleUploadEpisodeCount": 0,
       "uniqueCanonicalEpisodesWithEpisodeParts": 2,
-      "uniqueCanonicalEpisodesWithAllLabeledEpisodeParts": 1,
-      "episodePartLinkCount": 3,
-      "trailerLinkCount": 12,
-      "studioOrStorySegmentLinkCount": 11,
-      "uniqueCanonicalEpisodesMissingSingleWholeUploadCandidate": 12,
+      "uniqueCanonicalEpisodesWithAllLabeledEpisodeParts": 2,
+      "episodePartLinkCount": 4,
+      "uniqueCanonicalEpisodesMissingSingleWholeUploadCandidate": 0,
       "statusCounts": {
-        "parts-only": 2,
-        "missing": 10
-      }
+        "licensed listings only": 10,
+        "licensed listings; complete-looking two-part set": 1,
+        "whole-candidate (community DVD rip), licensed listings and a complete-looking two-part set": 1
+      },
+      "wholeCandidateBasis": {
+        "licensedListingsOnly": 11,
+        "freeCommunityWholeCandidate": 1,
+        "note": "Licensed routes: hoopla 12 programmes, Apple TV 9, Prime Video 8 (Missing Menorah listed twice). KET's PBS edition of programme 2 is a free stream limited to its broadcast area by a location check; it is an alternate edition, not a licensed route."
+      },
+      "uniqueCanonicalEpisodesWithoutFreeWholeUpload": 11,
+      "schema1Counts": {
+        "note": "Counts from schema 1 (commit 011a072; data/sesame-records.json only). Not recomputed for schema 2.",
+        "catalogUploadRecordCount": 257,
+        "wholeUploadCandidateLinkCount": 0,
+        "additionalPossiblyShortenedUploadLinkCount": 0,
+        "uniqueCanonicalEpisodesWithDirectTitleWholeCandidate": 0,
+        "uniqueCanonicalEpisodesWithOnlyNumberResolvedWholeCandidate": 0,
+        "trailerLinkCount": 12,
+        "studioOrStorySegmentLinkCount": 11
+      },
+      "catalogUploadRecordCountByFile": {
+        "archive-org-records.json": 5,
+        "other-host-records.json": 37,
+        "sesame-records.json": 257,
+        "youtube-records.json": 25
+      },
+      "wholeUploadCandidateLinkCountByAccess": {
+        "free": 1,
+        "licensed": 30
+      },
+      "alternateEditionLinkCount": 1,
+      "excerptLinkCount": 43,
+      "possibleLinkCount": 1,
+      "countsFrom": "Link counts recomputed from data/episode-guide.json on 2026-10-18; record counts from every data/*-records.json file."
     }
   ],
   "episodes": [
@@ -189,7 +274,9 @@
             "manitoba"
           ],
           "identificationNote": "Uploader metadata gives the show number. The external primary catalog maps that number to this title; this is not based on upload order. The title card has not been watched."
-        },
+        }
+      ],
+      "alternateEditionUploads": [
         {
           "catalogId": "yt-dZNOBb3zqLw",
           "url": "https://www.youtube.com/watch?v=dZNOBb3zqLw",
@@ -199,9 +286,10 @@
           "uploader": "dayingale",
           "sourceType": "community",
           "catalogKind": "episode",
-          "role": "whole-upload-candidate",
+          "role": "alternate-edition",
           "identificationMethod": "canonical-title",
-          "playbackReviewed": false
+          "playbackReviewed": false,
+          "reclassifiedInSchema2": "English with Hebrew subtitles (\"דובר אנגלית ומתורגם לעברית\"); schema 1 listed it as a whole-upload candidate, the guide links it as an alternate edition."
         }
       ],
       "shortenedOrUncertainLongUploads": [],
@@ -274,12 +362,40 @@
         "Review a candidate from start to credits against its canonical episode identity and known edition before marking it complete."
       ],
       "associatedCatalogIds": [
+        "ia-ShalomSesameVHS-26365b5c89",
+        "yt-1VH4ylQ1wJc",
+        "yt-Dw26x8vCkQ0",
         "yt-XCsTpvlCBa8",
         "yt-dZNOBb3zqLw",
-        "yt-sww_5EwBSwQ",
-        "yt-Dw26x8vCkQ0",
-        "yt-1VH4ylQ1wJc"
-      ]
+        "yt-m5xLLZreMkw",
+        "yt-sww_5EwBSwQ"
+      ],
+      "guideEpisodeId": "shalom-classic-01",
+      "guideCoverage": "whole-candidate",
+      "guideEvidence": "metadata-checked",
+      "addedInSchema2": {
+        "whole-candidate": [
+          {
+            "catalogId": "yt-m5xLLZreMkw",
+            "url": "https://www.youtube.com/watch?v=m5xLLZreMkw",
+            "title": "Shalom #Sesame Show 1: The Land of #Israel [learn Hebrew]",
+            "uploader": "Sybil Kibble",
+            "durationSeconds": 1952,
+            "guideRole": "whole-candidate"
+          }
+        ],
+        "excerpt": [
+          {
+            "catalogId": "ia-ShalomSesameVHS-26365b5c89",
+            "url": "https://archive.org/details/ShalomSesameVHS/Shalom%20Sesame.mp4",
+            "title": "Shalom Sesame Shows 1-5",
+            "uploader": "TheVideoLover's Media Library",
+            "durationSeconds": 9430,
+            "guideRole": "excerpt"
+          }
+        ]
+      },
+      "schema2Note": "The archive.org VHS compilation ia-ShalomSesameVHS-26365b5c89 (\"Shows 1-5\", 2:37:10) is linked to shows 1-5 as an excerpt; programme boundaries in it were not checked. dayingale's schema-1 copy yt-dZNOBb3zqLw, English with Hebrew subtitles (\"דובר אנגלית ומתורגם לעברית\"), is an alternate edition (alternateEditionUploads), not a whole-upload candidate."
     },
     {
       "id": "shalom-classic-02",
@@ -323,7 +439,9 @@
             "manitoba"
           ],
           "identificationNote": "Uploader metadata gives the show number. The external primary catalog maps that number to this title; this is not based on upload order. The title card has not been watched."
-        },
+        }
+      ],
+      "alternateEditionUploads": [
         {
           "catalogId": "yt-aZmEKLOp9YI",
           "url": "https://www.youtube.com/watch?v=aZmEKLOp9YI",
@@ -333,9 +451,10 @@
           "uploader": "dayingale",
           "sourceType": "community",
           "catalogKind": "episode",
-          "role": "whole-upload-candidate",
+          "role": "alternate-edition",
           "identificationMethod": "canonical-title",
-          "playbackReviewed": false
+          "playbackReviewed": false,
+          "reclassifiedInSchema2": "English with Hebrew subtitles (\"דובר אנגלית ומתורגם לעברית\"); schema 1 listed it as a whole-upload candidate, the guide links it as an alternate edition."
         }
       ],
       "shortenedOrUncertainLongUploads": [
@@ -408,12 +527,29 @@
         "Review a candidate from start to credits against its canonical episode identity and known edition before marking it complete."
       ],
       "associatedCatalogIds": [
-        "yt-Pvb-ziyleaA",
-        "yt-aZmEKLOp9YI",
-        "yt-Zdrzz3ozH7o",
+        "ia-ShalomSesameVHS-26365b5c89",
         "yt-2laiCZSU1_4",
+        "yt-Pvb-ziyleaA",
+        "yt-Zdrzz3ozH7o",
+        "yt-aZmEKLOp9YI",
         "yt-mmwuT8Yrlzk"
-      ]
+      ],
+      "guideEpisodeId": "shalom-classic-02",
+      "guideCoverage": "whole-candidate",
+      "guideEvidence": "metadata-checked",
+      "addedInSchema2": {
+        "excerpt": [
+          {
+            "catalogId": "ia-ShalomSesameVHS-26365b5c89",
+            "url": "https://archive.org/details/ShalomSesameVHS/Shalom%20Sesame.mp4",
+            "title": "Shalom Sesame Shows 1-5",
+            "uploader": "TheVideoLover's Media Library",
+            "durationSeconds": 9430,
+            "guideRole": "excerpt"
+          }
+        ]
+      },
+      "schema2Note": "dayingale's schema-1 copy yt-aZmEKLOp9YI, English with Hebrew subtitles (\"דובר אנגלית ומתורגם לעברית\"), is an alternate edition (alternateEditionUploads), not a whole-upload candidate."
     },
     {
       "id": "shalom-classic-03",
@@ -470,7 +606,9 @@
           "role": "whole-upload-candidate",
           "identificationMethod": "canonical-title",
           "playbackReviewed": false
-        },
+        }
+      ],
+      "alternateEditionUploads": [
         {
           "catalogId": "yt-h_tBVbWoplo",
           "url": "https://www.youtube.com/watch?v=h_tBVbWoplo",
@@ -480,9 +618,10 @@
           "uploader": "dayingale",
           "sourceType": "community",
           "catalogKind": "episode",
-          "role": "whole-upload-candidate",
+          "role": "alternate-edition",
           "identificationMethod": "canonical-title",
-          "playbackReviewed": false
+          "playbackReviewed": false,
+          "reclassifiedInSchema2": "English with Hebrew subtitles (\"דובר אנגלית ומתורגם לעברית\"); schema 1 listed it as a whole-upload candidate, the guide links it as an alternate edition."
         }
       ],
       "shortenedOrUncertainLongUploads": [],
@@ -555,13 +694,30 @@
         "Review a candidate from start to credits against its canonical episode identity and known edition before marking it complete."
       ],
       "associatedCatalogIds": [
+        "ia-ShalomSesameVHS-26365b5c89",
+        "yt-1Snb0OVhmko",
+        "yt-AIC4Ov_NWZg",
         "yt-FxoTj7jZKuk",
         "yt-OCiyjivPMA8",
-        "yt-h_tBVbWoplo",
-        "yt-1Snb0OVhmko",
         "yt-VS1FpvkPOQg",
-        "yt-AIC4Ov_NWZg"
-      ]
+        "yt-h_tBVbWoplo"
+      ],
+      "guideEpisodeId": "shalom-classic-03",
+      "guideCoverage": "whole-candidate",
+      "guideEvidence": "metadata-checked",
+      "addedInSchema2": {
+        "excerpt": [
+          {
+            "catalogId": "ia-ShalomSesameVHS-26365b5c89",
+            "url": "https://archive.org/details/ShalomSesameVHS/Shalom%20Sesame.mp4",
+            "title": "Shalom Sesame Shows 1-5",
+            "uploader": "TheVideoLover's Media Library",
+            "durationSeconds": 9430,
+            "guideRole": "excerpt"
+          }
+        ]
+      },
+      "schema2Note": "dayingale's schema-1 copy yt-h_tBVbWoplo, English with Hebrew subtitles (\"דובר אנגלית ומתורגם לעברית\"), is an alternate edition (alternateEditionUploads), not a whole-upload candidate."
     },
     {
       "id": "shalom-classic-04",
@@ -680,11 +836,38 @@
         "Only the generic numbered whole-upload title is linked. Its number resolves to the canonical title in primary library metadata; confirm the actual video title card/content during playback review."
       ],
       "associatedCatalogIds": [
-        "yt-dkW2lNq4Ul4",
+        "ia-ShalomSesameVHS-26365b5c89",
         "yt--T8TApBXq3c",
+        "yt-1ykIDrEVVdU",
+        "yt-dkW2lNq4Ul4",
         "yt-uc1Jh0x4G1I",
-        "yt-1ykIDrEVVdU"
-      ]
+        "yt-yDhr_XU14Vg"
+      ],
+      "guideEpisodeId": "shalom-classic-04",
+      "guideCoverage": "whole-candidate",
+      "guideEvidence": "metadata-checked",
+      "addedInSchema2": {
+        "whole-candidate": [
+          {
+            "catalogId": "yt-yDhr_XU14Vg",
+            "url": "https://www.youtube.com/watch?v=yDhr_XU14Vg",
+            "title": "Shalom Sesame-The People of Israel",
+            "uploader": "thaddeus chambers",
+            "durationSeconds": 1954,
+            "guideRole": "whole-candidate"
+          }
+        ],
+        "excerpt": [
+          {
+            "catalogId": "ia-ShalomSesameVHS-26365b5c89",
+            "url": "https://archive.org/details/ShalomSesameVHS/Shalom%20Sesame.mp4",
+            "title": "Shalom Sesame Shows 1-5",
+            "uploader": "TheVideoLover's Media Library",
+            "durationSeconds": 9430,
+            "guideRole": "excerpt"
+          }
+        ]
+      }
     },
     {
       "id": "shalom-classic-05",
@@ -803,11 +986,65 @@
         "Only the generic numbered whole-upload title is linked. Its number resolves to the canonical title in primary library metadata; confirm the actual video title card/content during playback review."
       ],
       "associatedCatalogIds": [
+        "ia-ShalomSesameVHS-26365b5c89",
+        "ia-clideo_editor_efc1c1236c854666b580b5b291d96113-27a1b38466",
+        "yt-5MT4uSuJmfI",
         "yt-VNjR-rAVPPs",
-        "yt-s1LAGj9h4kw",
+        "yt-e9Ld8je1cYI",
         "yt-j_5G1MkrmyA",
-        "yt-e9Ld8je1cYI"
-      ]
+        "yt-s1LAGj9h4kw",
+        "yt-sv6ilBstSN8",
+        "yt-tazuHX_gpcg"
+      ],
+      "guideEpisodeId": "shalom-classic-05",
+      "guideCoverage": "whole-candidate",
+      "guideEvidence": "metadata-checked",
+      "addedInSchema2": {
+        "whole-candidate": [
+          {
+            "catalogId": "yt-5MT4uSuJmfI",
+            "url": "https://www.youtube.com/watch?v=5MT4uSuJmfI",
+            "title": "Shalom #Sesame Show 5: #Jerusalem [bilingual education]",
+            "uploader": "Sybil Kibble",
+            "durationSeconds": 1753,
+            "guideRole": "whole-candidate"
+          },
+          {
+            "catalogId": "yt-tazuHX_gpcg",
+            "url": "https://www.youtube.com/watch?v=tazuHX_gpcg",
+            "title": "Shalom Sesame show 5 Jerusalem",
+            "uploader": "thaddeus chambers",
+            "durationSeconds": 1873,
+            "guideRole": "whole-candidate"
+          },
+          {
+            "catalogId": "ia-clideo_editor_efc1c1236c854666b580b5b291d96113-27a1b38466",
+            "url": "https://archive.org/details/clideo_editor_efc1c1236c854666b580b5b291d96113/clideo_editor_efc1c1236c854666b580b5b291d96113.mp4",
+            "title": "Shalom Sesame EP5: Jerusalem (DVD Rip)",
+            "uploader": "Wabbu597",
+            "durationSeconds": 1800,
+            "guideRole": "whole-candidate"
+          }
+        ],
+        "excerpt": [
+          {
+            "catalogId": "yt-sv6ilBstSN8",
+            "url": "https://www.youtube.com/watch?v=sv6ilBstSN8",
+            "title": "Opening to Shalom Sesame - Show 5: Jerusalem 1986 VHS (1988 Reprint, Redone with Capture Card)",
+            "uploader": "Sam AKA Dank Mozart’s Media Corner 2003",
+            "durationSeconds": 128,
+            "guideRole": "excerpt"
+          },
+          {
+            "catalogId": "ia-ShalomSesameVHS-26365b5c89",
+            "url": "https://archive.org/details/ShalomSesameVHS/Shalom%20Sesame.mp4",
+            "title": "Shalom Sesame Shows 1-5",
+            "uploader": "TheVideoLover's Media Library",
+            "durationSeconds": 9430,
+            "guideRole": "excerpt"
+          }
+        ]
+      }
     },
     {
       "id": "shalom-classic-06",
@@ -919,11 +1156,101 @@
         "Review a candidate from start to credits against its canonical episode identity and known edition before marking it complete."
       ],
       "associatedCatalogIds": [
-        "yt-cZ1TVctGUpw",
-        "yt-paWkpXAXcjw",
+        "ia-y-2mate.is-chanukah-shalom-sesame-60fps-jbnqtfil-ehw-720p-1712856242-708e30acf2",
         "yt-2hb9nmyWu6w",
+        "yt-8R8OmOaxgME",
+        "yt-JBNQTFilEHw",
+        "yt-XFieHOIAxg8",
+        "yt-cZ1TVctGUpw",
+        "yt-huW1CNdncqg",
+        "yt-jemMXiFI31E",
+        "yt-kVd6xoJy_iA",
+        "yt-kqgZAkN1Jmc",
+        "yt-paWkpXAXcjw",
+        "yt-rwsdw0VyDUk",
         "yt-zoXwFRH_OXk"
-      ]
+      ],
+      "guideEpisodeId": "shalom-classic-06",
+      "guideCoverage": "whole-candidate",
+      "guideEvidence": "metadata-checked",
+      "addedInSchema2": {
+        "whole-candidate": [
+          {
+            "catalogId": "yt-huW1CNdncqg",
+            "url": "https://www.youtube.com/watch?v=huW1CNdncqg",
+            "title": "#Shalom #Sesame Show 6: #Hanukkah [Learn Hebrew]",
+            "uploader": "Sybil Kibble",
+            "durationSeconds": 1918,
+            "guideRole": "whole-candidate"
+          },
+          {
+            "catalogId": "yt-XFieHOIAxg8",
+            "url": "https://www.youtube.com/watch?v=XFieHOIAxg8",
+            "title": "Shalom Sesame",
+            "uploader": "Derp",
+            "durationSeconds": 1979,
+            "guideRole": "whole-candidate"
+          },
+          {
+            "catalogId": "yt-JBNQTFilEHw",
+            "url": "https://www.youtube.com/watch?v=JBNQTFilEHw",
+            "title": "Chanukah | Shalom Sesame | 60fps",
+            "uploader": "Nostalgia Done Right",
+            "durationSeconds": 1928,
+            "guideRole": "whole-candidate"
+          },
+          {
+            "catalogId": "ia-y-2mate.is-chanukah-shalom-sesame-60fps-jbnqtfil-ehw-720p-1712856242-708e30acf2",
+            "url": "https://archive.org/details/y-2mate.is-chanukah-shalom-sesame-60fps-jbnqtfil-ehw-720p-1712856242/y2mate.is%20-%20Chanukah%20_%20Shalom%20Sesame%20_%2060fps-JBNQTFilEHw-720p-1712856242.mp4",
+            "title": "Chanukah Shalom Sesame 60fps DVD Rip Classic",
+            "uploader": "Original Airings Pictures",
+            "durationSeconds": 1928,
+            "guideRole": "whole-candidate"
+          },
+          {
+            "catalogId": "yt-kVd6xoJy_iA",
+            "url": "https://www.youtube.com/watch?v=kVd6xoJy_iA",
+            "title": "Shalom Sesame Chanukah",
+            "uploader": "T'Lynn Braun",
+            "durationSeconds": 1956,
+            "guideRole": "whole-candidate"
+          }
+        ],
+        "excerpt": [
+          {
+            "catalogId": "yt-8R8OmOaxgME",
+            "url": "https://www.youtube.com/watch?v=8R8OmOaxgME",
+            "title": "שלום סומסום: חנוכה- אלה הם חייך כד קטן",
+            "uploader": "נוסטה לגיה",
+            "durationSeconds": 154,
+            "guideRole": "excerpt"
+          },
+          {
+            "catalogId": "yt-rwsdw0VyDUk",
+            "url": "https://www.youtube.com/watch?v=rwsdw0VyDUk",
+            "title": "שלום סומסום: חנוכה- שיר הסביבון",
+            "uploader": "נוסטה לגיה",
+            "durationSeconds": 30,
+            "guideRole": "excerpt"
+          },
+          {
+            "catalogId": "yt-kqgZAkN1Jmc",
+            "url": "https://www.youtube.com/watch?v=kqgZAkN1Jmc",
+            "title": "שלום סומסום: חנוכה- המספר 8",
+            "uploader": "נוסטה לגיה",
+            "durationSeconds": 45,
+            "guideRole": "excerpt"
+          },
+          {
+            "catalogId": "yt-jemMXiFI31E",
+            "url": "https://www.youtube.com/watch?v=jemMXiFI31E",
+            "title": "Shalom sesame show 6 end credits",
+            "uploader": "Thaddeus Chambers",
+            "durationSeconds": 113,
+            "guideRole": "excerpt"
+          }
+        ]
+      }
     },
     {
       "id": "shalom-classic-07",
@@ -992,8 +1319,25 @@
       ],
       "associatedCatalogIds": [
         "yt-UKO0HdFDQ0A",
-        "yt-WbxNshR-8kU"
-      ]
+        "yt-WbxNshR-8kU",
+        "yt-mqS8t5H83d8"
+      ],
+      "guideEpisodeId": "shalom-classic-07",
+      "guideCoverage": "whole-candidate",
+      "guideEvidence": "metadata-checked",
+      "addedInSchema2": {
+        "whole-candidate": [
+          {
+            "catalogId": "yt-mqS8t5H83d8",
+            "url": "https://www.youtube.com/watch?v=mqS8t5H83d8",
+            "title": "Shalom #Sesame  Show 7: Sing Around the Seasons [bilingual education]",
+            "uploader": "Sybil Kibble",
+            "durationSeconds": 2021,
+            "guideRole": "whole-candidate"
+          }
+        ]
+      },
+      "schema2Note": "yt-WbxNshR-8kU (34:12, titled with the programme name) is now classified as an episode."
     },
     {
       "id": "shalom-classic-08",
@@ -1109,11 +1453,14 @@
         "Review a candidate from start to credits against its canonical episode identity and known edition before marking it complete."
       ],
       "associatedCatalogIds": [
-        "yt-eAa0TLqIZ1Q",
-        "yt-gC5SwGmFvvw",
+        "yt-Dup9n75ADJo",
         "yt-NjJ3KCVFEn4",
-        "yt-Dup9n75ADJo"
-      ]
+        "yt-eAa0TLqIZ1Q",
+        "yt-gC5SwGmFvvw"
+      ],
+      "guideEpisodeId": "shalom-classic-08",
+      "guideCoverage": "whole-candidate",
+      "guideEvidence": "metadata-checked"
     },
     {
       "id": "shalom-classic-09",
@@ -1190,17 +1537,31 @@
           "uploader": "nostalgiateenable",
           "expectedPartCountFromLabels": 3,
           "presentParts": [
+            1,
             2,
             3
           ],
-          "missingParts": [
-            1
-          ],
-          "allLabeledPartsPresent": false,
-          "totalLinkedDurationSeconds": 1334,
+          "missingParts": [],
+          "allLabeledPartsPresent": true,
+          "totalLinkedDurationSeconds": 2234,
           "fullEpisodeCompletenessVerified": false,
           "countsAsSingleWholeUpload": false,
           "links": [
+            {
+              "catalogId": "yt-nZAFB1zzstg",
+              "url": "https://www.youtube.com/watch?v=nZAFB1zzstg",
+              "catalogTitle": "Aleph-Bet Telethon, part 1 of 3",
+              "originalTitle": "Shalom Sesame: Aleph-Bet Telethon (1/3)",
+              "durationSeconds": 900,
+              "uploader": "nostalgiateenable",
+              "sourceType": "community",
+              "catalogKind": "clip",
+              "role": "episode-part",
+              "identificationMethod": "canonical-title",
+              "playbackReviewed": false,
+              "partNumber": 1,
+              "note": "A cookie-free metadata request from a non-Israeli connection on 2026-10-18 reported a content-claim block by Global Media Egypt; where it applies is not established."
+            },
             {
               "catalogId": "yt-ouNVTX0nuXI",
               "url": "https://www.youtube.com/watch?v=ouNVTX0nuXI",
@@ -1238,15 +1599,51 @@
       "completenessVerified": false,
       "todos": [
         "Review a candidate from start to credits against its canonical episode identity and known edition before marking it complete.",
-        "Find or replace missing numbered part 1 of 3 in the existing Aleph-Bet Telethon split upload."
+        "Check where the content-claim block on part 1 (yt-nZAFB1zzstg) applies."
       ],
       "associatedCatalogIds": [
-        "yt-aCe9MfpAtqk",
-        "yt-trl8wZ4zDIA",
+        "ia-TheVistaGroup-ShalomSesameAlephBetTelethon-a00b674368",
+        "yt-SYaHsPrZMXM",
+        "yt-Vy4SWYI8h5Y",
         "yt-Yo365rmez08",
+        "yt-aCe9MfpAtqk",
+        "yt-nZAFB1zzstg",
         "yt-ouNVTX0nuXI",
-        "yt-SYaHsPrZMXM"
-      ]
+        "yt-trl8wZ4zDIA"
+      ],
+      "guideEpisodeId": "shalom-classic-09",
+      "guideCoverage": "whole-candidate",
+      "guideEvidence": "metadata-checked",
+      "addedInSchema2": {
+        "whole-candidate": [
+          {
+            "catalogId": "yt-Vy4SWYI8h5Y",
+            "url": "https://www.youtube.com/watch?v=Vy4SWYI8h5Y",
+            "title": "Shalom Sesame Aleph-Bet Telethon",
+            "uploader": "thaddeus chambers",
+            "durationSeconds": 2272,
+            "guideRole": "whole-candidate"
+          },
+          {
+            "catalogId": "ia-TheVistaGroup-ShalomSesameAlephBetTelethon-a00b674368",
+            "url": "https://archive.org/details/TheVistaGroup-ShalomSesameAlephBetTelethon/Shalom%20Sesame%20VHS%3A%20Aleph%20Bet%20Telethon%20-%20Discovering%20the%20Hebrew%20Letters%20%E2%80%A2%2060%20FPS%201991.mp4",
+            "title": "1991 VHS • Shalom Sesame: Aleph Bet Telethon - Discovering the Hebrew Letters 60 FPS",
+            "uploader": "The Vista Group",
+            "durationSeconds": 2263,
+            "guideRole": "whole-candidate"
+          }
+        ],
+        "part": [
+          {
+            "catalogId": "yt-nZAFB1zzstg",
+            "url": "https://www.youtube.com/watch?v=nZAFB1zzstg",
+            "title": "Shalom Sesame: Aleph-Bet Telethon (1/3)",
+            "uploader": "nostalgiateenable",
+            "durationSeconds": 900,
+            "guideRole": "part"
+          }
+        ]
+      }
     },
     {
       "id": "shalom-classic-10",
@@ -1371,12 +1768,87 @@
         "Review a candidate from start to credits against its canonical episode identity and known edition before marking it complete."
       ],
       "associatedCatalogIds": [
+        "ia-shalom-sesame-russian-f94d266c31",
+        "yt-038ARUy-R5Q",
+        "yt-1awryn0jV6k",
+        "yt-5s7_cyXuTKE",
+        "yt-AgTb97ZmJuA",
+        "yt-Ey0PwPuJY-c",
+        "yt-JlQIT-C8jS4",
+        "yt-YkBoYEkSeSY",
         "yt-gtlmeDpjmq4",
         "yt-hjf2sFySZMc",
-        "yt-1awryn0jV6k",
-        "yt-YkBoYEkSeSY",
-        "yt-038ARUy-R5Q"
-      ]
+        "yt-r2pij9JlF8Y",
+        "yt-xtNtlc6Bim4"
+      ],
+      "guideEpisodeId": "shalom-classic-10",
+      "guideCoverage": "whole-candidate",
+      "guideEvidence": "metadata-checked",
+      "addedInSchema2": {
+        "whole-candidate": [
+          {
+            "catalogId": "yt-AgTb97ZmJuA",
+            "url": "https://www.youtube.com/watch?v=AgTb97ZmJuA",
+            "title": "Shalom Sesame: Passover VHS (1991) (USA)",
+            "uploader": "Jesse Coffey",
+            "durationSeconds": 2252,
+            "guideRole": "whole-candidate"
+          }
+        ],
+        "alternate-edition": [
+          {
+            "catalogId": "ia-shalom-sesame-russian-f94d266c31",
+            "url": "https://archive.org/details/shalom-sesame-russian/%D7%A8%D7%97%D7%95%D7%91%20%D7%A1%D7%95%D7%9E%D7%A1%D7%95%D7%9D%20-%20%D7%A2%D7%95%D7%A0%D7%94%205%20%D7%A4%D7%A8%D7%A7%2017%20-%20%D7%A4%D7%A1%D7%97%20%28%D7%93%D7%99%D7%91%D7%95%D7%91%20%D7%9C%D7%A8%D7%95%D7%A1%D7%99%D7%AA%29%281%29.mp4",
+            "title": "Шалом Сезам (Russian)",
+            "uploader": "l3l3g0fr0g",
+            "durationSeconds": 2141,
+            "guideRole": "alternate-edition"
+          }
+        ],
+        "excerpt": [
+          {
+            "catalogId": "yt-JlQIT-C8jS4",
+            "url": "https://www.youtube.com/watch?v=JlQIT-C8jS4",
+            "title": "שלום סומסום: פסח- לנקות לחג הפסח",
+            "uploader": "נוסטה לגיה",
+            "durationSeconds": 32,
+            "guideRole": "excerpt"
+          },
+          {
+            "catalogId": "yt-r2pij9JlF8Y",
+            "url": "https://www.youtube.com/watch?v=r2pij9JlF8Y",
+            "title": "שלום סומסום: פסח- ים סוף",
+            "uploader": "נוסטה לגיה",
+            "durationSeconds": 40,
+            "guideRole": "excerpt"
+          },
+          {
+            "catalogId": "yt-xtNtlc6Bim4",
+            "url": "https://www.youtube.com/watch?v=xtNtlc6Bim4",
+            "title": "שלום סומסום: פסח- המספר 10",
+            "uploader": "נוסטה לגיה",
+            "durationSeconds": 65,
+            "guideRole": "excerpt"
+          },
+          {
+            "catalogId": "yt-5s7_cyXuTKE",
+            "url": "https://www.youtube.com/watch?v=5s7_cyXuTKE",
+            "title": "Shalom Sesame Passover",
+            "uploader": "Ethan Joesph Donn",
+            "durationSeconds": 58,
+            "guideRole": "excerpt"
+          },
+          {
+            "catalogId": "yt-Ey0PwPuJY-c",
+            "url": "https://www.youtube.com/watch?v=Ey0PwPuJY-c",
+            "title": "Rechov SumSum - Alan King Segment",
+            "uploader": "musicmaker72",
+            "durationSeconds": 92,
+            "guideRole": "excerpt"
+          }
+        ]
+      },
+      "schema2Note": "ia-shalom-sesame-russian-f94d266c31 is a Russian dub of this programme whose file is named \"רחוב סומסום - עונה 5 פרק 17 - פסח\": uploaders' Rechov Sumsum \"season 4-5\" labels refer to Shalom Sesame, not to an original Israeli season."
     },
     {
       "id": "shalom-classic-11",
@@ -1493,11 +1965,36 @@
         "Review a candidate from start to credits against its canonical episode identity and known edition before marking it complete."
       ],
       "associatedCatalogIds": [
-        "yt-aSIbH-uLfo8",
+        "ia-TheVistaGroup-ShalomSesameKingsSingIsrael-750506cc73",
+        "yt-6Vr2fTZ6hxM",
         "yt-ZCEGHaOioJs",
-        "yt-zDj0phDsg1Y",
-        "yt-6Vr2fTZ6hxM"
-      ]
+        "yt-aSIbH-uLfo8",
+        "yt-dQJtsp8Tnjg",
+        "yt-zDj0phDsg1Y"
+      ],
+      "guideEpisodeId": "shalom-classic-11",
+      "guideCoverage": "whole-candidate",
+      "guideEvidence": "metadata-checked",
+      "addedInSchema2": {
+        "whole-candidate": [
+          {
+            "catalogId": "yt-dQJtsp8Tnjg",
+            "url": "https://www.youtube.com/watch?v=dQJtsp8Tnjg",
+            "title": "Shalom #Sesame Show 11: Kids Sing #Israel [Learn Hebrew]",
+            "uploader": "Sybil Kibble",
+            "durationSeconds": 2303,
+            "guideRole": "whole-candidate"
+          },
+          {
+            "catalogId": "ia-TheVistaGroup-ShalomSesameKingsSingIsrael-750506cc73",
+            "url": "https://archive.org/details/TheVistaGroup-ShalomSesameKingsSingIsrael/Shalom%20Sesame%20VHS%3A%20Kings%20Sing%20Israel%20%28Grouches%20Don%27t%29%20%E2%80%A2%2060%20FPS%201991.mp4",
+            "title": "1991 VHS • Shalom Sesame: Kings Sing Israel (Grouches Don't) 60 FPS",
+            "uploader": "The Vista Group",
+            "durationSeconds": 2333,
+            "guideRole": "whole-candidate"
+          }
+        ]
+      }
     },
     {
       "id": "shalom-modern-01",
@@ -1522,7 +2019,7 @@
           "sourceId": "apple-welcome"
         }
       ],
-      "coverageStatus": "parts-only",
+      "coverageStatus": "licensed listings; complete-looking two-part set",
       "wholeUploadCandidates": [],
       "shortenedOrUncertainLongUploads": [],
       "episodePartGroups": [
@@ -1531,16 +2028,29 @@
           "uploader": "nostalgiateenable",
           "expectedPartCountFromLabels": 2,
           "presentParts": [
+            1,
             2
           ],
-          "missingParts": [
-            1
-          ],
-          "allLabeledPartsPresent": false,
-          "totalLinkedDurationSeconds": 759,
+          "missingParts": [],
+          "allLabeledPartsPresent": true,
+          "totalLinkedDurationSeconds": 1659,
           "fullEpisodeCompletenessVerified": false,
           "countsAsSingleWholeUpload": false,
           "links": [
+            {
+              "catalogId": "yt-ncg_vcMXQBY",
+              "url": "https://www.youtube.com/watch?v=ncg_vcMXQBY",
+              "catalogTitle": "Welcome to Israel, part 1 of 2",
+              "originalTitle": "Shalom Sesame: Welcome to Israel (1/2)",
+              "durationSeconds": 900,
+              "uploader": "nostalgiateenable",
+              "sourceType": "community",
+              "catalogKind": "clip",
+              "role": "episode-part",
+              "identificationMethod": "canonical-title",
+              "playbackReviewed": false,
+              "partNumber": 1
+            },
             {
               "catalogId": "yt-iuUHBFIbiRc",
               "url": "https://www.youtube.com/watch?v=iuUHBFIbiRc",
@@ -1577,17 +2087,167 @@
       "segments": [],
       "completenessVerified": false,
       "todos": [
-        "Find a single whole-episode link or another complete licensed edition; current trailers/studio segments do not establish full-episode coverage.",
-        "Find Welcome to Israel part 1 of 2; only part 2 of 2 is currently linked."
+        "Review the licensed or two-part edition from start to credits before any completeness claim.",
+        "Check where the content-claim block on part 1 applies."
       ],
       "programMetadataYear": 2010,
       "programMetadataYearSources": [
         "apple-welcome"
       ],
       "associatedCatalogIds": [
+        "dm-x22572r",
+        "dm-x7po0fb",
+        "dm-x7po1jg",
+        "web-2891664a2f",
+        "web-e2b8d4e75b",
+        "web-eafbd74e64",
+        "yt-4AMUSbFQQFw",
+        "yt-HYTD386GmXI",
         "yt-O2fjYzdYXWo",
-        "yt-iuUHBFIbiRc"
-      ]
+        "yt-du0UdEa29kU",
+        "yt-iuUHBFIbiRc",
+        "yt-ncg_vcMXQBY"
+      ],
+      "guideEpisodeId": "shalom-modern-01",
+      "guideCoverage": "whole-candidate",
+      "guideEvidence": "metadata-checked",
+      "addedInSchema2": {
+        "whole-candidate": [
+          {
+            "catalogId": "web-2891664a2f",
+            "url": "https://www.hoopladigital.com/title/11516275",
+            "title": "Shalom Sesame - Welcome To Israel",
+            "uploader": "hoopla (publisher: SISU Home Entertainment)",
+            "durationSeconds": 1680,
+            "guideRole": "whole-candidate",
+            "service": "hoopla",
+            "access": "licensed"
+          },
+          {
+            "catalogId": "web-eafbd74e64",
+            "url": "https://tv.apple.com/us/movie/shalom-sesame---welcome-to-israel/umc.cmc.2mg7y4zqbxrjsi0gjab3ocffq",
+            "title": "Shalom Sesame - Welcome to Israel",
+            "uploader": "Apple TV (studio: Sesame Workshop)",
+            "durationSeconds": 1620,
+            "guideRole": "whole-candidate",
+            "service": "Apple TV",
+            "access": "licensed"
+          },
+          {
+            "catalogId": "web-e2b8d4e75b",
+            "url": "https://www.primevideo.com/detail/Shalom-Sesame---Welcome-to-Israel/0HOJE0VM8TD71OMAZE4ZT476IN",
+            "title": "Shalom Sesame - Welcome to Israel",
+            "uploader": "Prime Video (studio: Sesame Workshop)",
+            "durationSeconds": 1658,
+            "guideRole": "whole-candidate",
+            "service": "Prime Video",
+            "access": "licensed"
+          }
+        ],
+        "part": [
+          {
+            "catalogId": "yt-ncg_vcMXQBY",
+            "url": "https://www.youtube.com/watch?v=ncg_vcMXQBY",
+            "title": "Shalom Sesame: Welcome to Israel (1/2)",
+            "uploader": "nostalgiateenable",
+            "durationSeconds": 900,
+            "guideRole": "part"
+          }
+        ],
+        "excerpt": [
+          {
+            "catalogId": "yt-4AMUSbFQQFw",
+            "url": "https://www.youtube.com/watch?v=4AMUSbFQQFw",
+            "title": "Shalom Sesame: Bienvenidos a Israel",
+            "uploader": "Proyecto Efrain",
+            "durationSeconds": 491,
+            "guideRole": "excerpt"
+          },
+          {
+            "catalogId": "dm-x22572r",
+            "url": "https://www.dailymotion.com/video/x22572r",
+            "title": "Shalom Sesame - \"Welcome to Israel\" Preview",
+            "uploader": "Filmow",
+            "durationSeconds": 96,
+            "guideRole": "excerpt"
+          },
+          {
+            "catalogId": "dm-x7po0fb",
+            "url": "https://www.dailymotion.com/video/x7po0fb",
+            "title": "Shalom Sesame - \"Welcome to Israel\" Preview",
+            "uploader": "Filmow",
+            "durationSeconds": 97,
+            "guideRole": "excerpt"
+          },
+          {
+            "catalogId": "dm-x7po1jg",
+            "url": "https://www.dailymotion.com/video/x7po1jg",
+            "title": "Shalom Sesame - \"Welcome to Israel\" Preview",
+            "uploader": "Filmow",
+            "durationSeconds": 97,
+            "guideRole": "excerpt"
+          },
+          {
+            "catalogId": "yt-du0UdEa29kU",
+            "url": "https://www.youtube.com/watch?v=du0UdEa29kU",
+            "title": "Shalom Sesame - \"Welcome to Israel\" Preview",
+            "uploader": "Anneliese van der Pol",
+            "durationSeconds": 97,
+            "guideRole": "excerpt"
+          },
+          {
+            "catalogId": "yt-HYTD386GmXI",
+            "url": "https://www.youtube.com/watch?v=HYTD386GmXI",
+            "title": "Opening To Shalom Sesame:Welcome To Israel 2010 DVD",
+            "uploader": "ThePreviewsGuy DVDOpenings",
+            "durationSeconds": 236,
+            "guideRole": "excerpt"
+          }
+        ]
+      },
+      "licensedRoutes": [
+        {
+          "catalogId": "web-2891664a2f",
+          "service": "hoopla",
+          "url": "https://www.hoopladigital.com/title/11516275",
+          "listedRuntimeSeconds": 1680,
+          "access": "licensed"
+        },
+        {
+          "catalogId": "web-eafbd74e64",
+          "service": "Apple TV",
+          "url": "https://tv.apple.com/us/movie/shalom-sesame---welcome-to-israel/umc.cmc.2mg7y4zqbxrjsi0gjab3ocffq",
+          "listedRuntimeSeconds": 1620,
+          "access": "licensed"
+        },
+        {
+          "catalogId": "web-e2b8d4e75b",
+          "service": "Prime Video",
+          "url": "https://www.primevideo.com/detail/Shalom-Sesame---Welcome-to-Israel/0HOJE0VM8TD71OMAZE4ZT476IN",
+          "listedRuntimeSeconds": 1658,
+          "access": "licensed"
+        }
+      ],
+      "storeItem": "6EAM0976",
+      "freeWholeCandidates": [],
+      "completeLookingPartSet": {
+        "uploader": "nostalgiateenable",
+        "parts": [
+          {
+            "part": 1,
+            "catalogId": "yt-ncg_vcMXQBY",
+            "durationSeconds": 900
+          },
+          {
+            "part": 2,
+            "catalogId": "yt-iuUHBFIbiRc",
+            "durationSeconds": 759
+          }
+        ],
+        "totalSeconds": 1659,
+        "referenceRuntime": "27-28 minutes (licensed listings, minute-rounded)",
+        "finding": "Metadata only. Part 1 was found on 2026-10-18; a cookie-free metadata request from a non-Israeli connection reported a content-claim block by Sesame Workshop. Where the block applies is not established. Continuity is unchecked."
+      }
     },
     {
       "id": "shalom-modern-02",
@@ -1606,7 +2266,7 @@
         "modern-set"
       ],
       "referenceRuntimes": [],
-      "coverageStatus": "parts-only",
+      "coverageStatus": "whole-candidate (community DVD rip), licensed listings and a complete-looking two-part set",
       "wholeUploadCandidates": [],
       "shortenedOrUncertainLongUploads": [],
       "episodePartGroups": [
@@ -1701,16 +2361,180 @@
       ],
       "completenessVerified": false,
       "todos": [
-        "Find a single whole-episode link or another complete licensed edition; current trailers/studio segments do not establish full-episode coverage.",
-        "Review Missing Menorah parts 1 and 2 together; the labeled set is present and totals 27:37 but has not been checked for cuts, gaps or duplicated boundaries."
+        "Review the DVD rip or the two-part set from start to credits before any completeness claim."
       ],
       "associatedCatalogIds": [
-        "yt-wUPF62TNh3U",
+        "ia-shalom-sesame-scenes-of-kids-playing-with-dreidels-hq",
+        "ia-shalom-sesame-scenes-of-people-lighting-menorahs-hq",
+        "ia-sschanukah9910-bb67343517",
+        "web-702657276b",
+        "web-998e5de790",
+        "web-b10f25ac40",
+        "web-c25158a5db",
+        "web-e12b9b658b",
         "yt-NV-ddVH-iiM",
-        "yt-vs4JjvvjewE",
+        "yt-mX5rF4ADqqY",
+        "yt-ozg5XXchlEs",
         "yt-tGW3jDoiJvA",
-        "yt-ozg5XXchlEs"
-      ]
+        "yt-vs4JjvvjewE",
+        "yt-wUPF62TNh3U"
+      ],
+      "guideEpisodeId": "shalom-modern-02",
+      "guideCoverage": "whole-candidate",
+      "guideEvidence": "metadata-checked",
+      "addedInSchema2": {
+        "whole-candidate": [
+          {
+            "catalogId": "web-e12b9b658b",
+            "url": "https://www.hoopladigital.com/title/11567637",
+            "title": "Chanukah: The Missing Menorah",
+            "uploader": "hoopla (publisher: SISU Home Entertainment)",
+            "durationSeconds": 1680,
+            "guideRole": "whole-candidate",
+            "service": "hoopla",
+            "access": "licensed"
+          },
+          {
+            "catalogId": "web-998e5de790",
+            "url": "https://tv.apple.com/us/movie/shalom-sesame---chanukah-the-missing-menorah/umc.cmc.5qflazsxwsild1siv9ix62xbb",
+            "title": "Shalom Sesame - Chanukah: The Missing Menorah",
+            "uploader": "Apple TV (studio: Sesame Workshop)",
+            "durationSeconds": 1620,
+            "guideRole": "whole-candidate",
+            "service": "Apple TV",
+            "access": "licensed"
+          },
+          {
+            "catalogId": "web-b10f25ac40",
+            "url": "https://www.primevideo.com/detail/0SXJDRDU0VM0SNGTKRU7IXEX2V",
+            "title": "Chanukah: The Missing Menorah",
+            "uploader": "Prime Video (studio: Sesame Workshop)",
+            "durationSeconds": 1707,
+            "guideRole": "whole-candidate",
+            "service": "Prime Video",
+            "access": "licensed"
+          },
+          {
+            "catalogId": "web-c25158a5db",
+            "url": "https://www.primevideo.com/detail/Shalom-Sesame---Chanukah-The-Missing-Menorah/0JC7Q67RFSVOUFF3XNEGJ7WA6D",
+            "title": "Shalom Sesame - Chanukah: The Missing Menorah",
+            "uploader": "Prime Video (studio: Sesame Workshop)",
+            "durationSeconds": 1656,
+            "guideRole": "whole-candidate",
+            "service": "Prime Video",
+            "access": "licensed"
+          },
+          {
+            "catalogId": "ia-sschanukah9910-bb67343517",
+            "url": "https://archive.org/details/sschanukah9910/Shalom%20Sesame/SS_CHANUKAH_9910.mp4",
+            "title": "Shalom Sesame Chanukah",
+            "uploader": "tfgbd",
+            "durationSeconds": 1658,
+            "guideRole": "whole-candidate"
+          }
+        ],
+        "alternate-edition": [
+          {
+            "catalogId": "web-702657276b",
+            "url": "https://ket.org/program/shalom-sesame-chanukah-the-missing-menorah/shalom-sesame-chanukah-the-missing-menorah/",
+            "title": "Shalom Sesame - Chanukah: The Missing Menorah",
+            "uploader": "KET (Kentucky PBS member network)",
+            "durationSeconds": null,
+            "guideRole": "alternate-edition",
+            "service": "KET",
+            "access": "region-limited broadcaster stream"
+          }
+        ],
+        "excerpt": [
+          {
+            "catalogId": "ia-shalom-sesame-scenes-of-kids-playing-with-dreidels-hq",
+            "url": "https://archive.org/details/shalom-sesame-scenes-of-kids-playing-with-dreidels-hq",
+            "title": "Shalom Sesame Scenes Of Kids Playing With Dreidels ( HQ)",
+            "uploader": "Mina Hebert",
+            "durationSeconds": 23,
+            "guideRole": "excerpt"
+          },
+          {
+            "catalogId": "ia-shalom-sesame-scenes-of-people-lighting-menorahs-hq",
+            "url": "https://archive.org/details/shalom-sesame-scenes-of-people-lighting-menorahs-hq",
+            "title": "Shalom Sesame Scenes Of People Lighting Menorahs ( HQ)",
+            "uploader": "Mina Hebert",
+            "durationSeconds": 25,
+            "guideRole": "excerpt"
+          },
+          {
+            "catalogId": "yt-mX5rF4ADqqY",
+            "url": "https://www.youtube.com/watch?v=mX5rF4ADqqY",
+            "title": "Shalom Sesame - \"Chanukah: The Missing Menorah\" Sneak Peek",
+            "uploader": "Anneliese van der Pol",
+            "durationSeconds": 95,
+            "guideRole": "excerpt"
+          }
+        ]
+      },
+      "licensedRoutes": [
+        {
+          "catalogId": "web-e12b9b658b",
+          "service": "hoopla",
+          "url": "https://www.hoopladigital.com/title/11567637",
+          "listedRuntimeSeconds": 1680,
+          "access": "licensed"
+        },
+        {
+          "catalogId": "web-998e5de790",
+          "service": "Apple TV",
+          "url": "https://tv.apple.com/us/movie/shalom-sesame---chanukah-the-missing-menorah/umc.cmc.5qflazsxwsild1siv9ix62xbb",
+          "listedRuntimeSeconds": 1620,
+          "access": "licensed"
+        },
+        {
+          "catalogId": "web-b10f25ac40",
+          "service": "Prime Video",
+          "url": "https://www.primevideo.com/detail/0SXJDRDU0VM0SNGTKRU7IXEX2V",
+          "listedRuntimeSeconds": 1707,
+          "access": "licensed"
+        },
+        {
+          "catalogId": "web-c25158a5db",
+          "service": "Prime Video",
+          "url": "https://www.primevideo.com/detail/Shalom-Sesame---Chanukah-The-Missing-Menorah/0JC7Q67RFSVOUFF3XNEGJ7WA6D",
+          "listedRuntimeSeconds": 1656,
+          "access": "licensed"
+        }
+      ],
+      "regionLimitedRoutes": [
+        {
+          "catalogId": "web-702657276b",
+          "service": "KET",
+          "url": "https://ket.org/program/shalom-sesame-chanukah-the-missing-menorah/shalom-sesame-chanukah-the-missing-menorah/",
+          "listedRuntimeSeconds": null,
+          "access": "region-limited broadcaster stream",
+          "note": "Free to viewers in KET's broadcast area after a browser location check, and to its donors anywhere in the United States; not a licensed route. Linked as an alternate edition."
+        }
+      ],
+      "storeItem": "6EAM0977",
+      "freeWholeCandidates": [
+        "ia-sschanukah9910-bb67343517"
+      ],
+      "completeLookingPartSet": {
+        "uploader": "nostalgiateenable",
+        "parts": [
+          {
+            "part": 1,
+            "catalogId": "yt-tGW3jDoiJvA",
+            "durationSeconds": 900
+          },
+          {
+            "part": 2,
+            "catalogId": "yt-ozg5XXchlEs",
+            "durationSeconds": 757
+          }
+        ],
+        "totalSeconds": 1657,
+        "referenceRuntime": "27-28 minutes (licensed listings); the official timed rundown lists 25:55 of segments before the closing and credits",
+        "finding": "Metadata only; continuity, overlap at the part boundary and the ending are unchecked."
+      },
+      "freeWholeCandidateNote": "ia-sschanukah9910-bb67343517 is title 1 of a community DVD image (27:38). The 2010 attribution is inferred from the disc structure (twelve 96-107 s sneak peeks) and from the runtime matching the two-part set; the item does not name the series. KET's PBS page (web-702657276b) may be an edition with an added insert."
     },
     {
       "id": "shalom-modern-03",
@@ -1735,7 +2559,7 @@
           "sourceId": "apple-shabbat"
         }
       ],
-      "coverageStatus": "missing",
+      "coverageStatus": "licensed listings only",
       "wholeUploadCandidates": [],
       "shortenedOrUncertainLongUploads": [],
       "episodePartGroups": [],
@@ -1772,16 +2596,119 @@
       ],
       "completenessVerified": false,
       "todos": [
-        "Find a single whole-episode link or another complete licensed edition; current trailers/studio segments do not establish full-episode coverage."
+        "Licensed listings only: no free whole upload is known. Review a licensed edition, or find a free whole copy."
       ],
       "programMetadataYear": 2010,
       "programMetadataYearSources": [
         "apple-shabbat"
       ],
       "associatedCatalogIds": [
+        "web-0114d0ead1",
+        "web-53a422161a",
+        "web-61b318f5fb",
+        "yt-HmnvEBfjJFk",
+        "yt-RszEGDhfzio",
+        "yt-TIYU0pwgQ0U",
         "yt-ZyRrM6KNtQg",
+        "yt-lre-LLz-UzE",
         "yt-ucEIPOxR-bs"
-      ]
+      ],
+      "guideEpisodeId": "shalom-modern-03",
+      "guideCoverage": "whole-candidate",
+      "guideEvidence": "metadata-checked",
+      "addedInSchema2": {
+        "whole-candidate": [
+          {
+            "catalogId": "web-53a422161a",
+            "url": "https://www.hoopladigital.com/title/11567633",
+            "title": "Shabbat Shalom, Grover!",
+            "uploader": "hoopla (publisher: SISU Home Entertainment)",
+            "durationSeconds": 1680,
+            "guideRole": "whole-candidate",
+            "service": "hoopla",
+            "access": "licensed"
+          },
+          {
+            "catalogId": "web-0114d0ead1",
+            "url": "https://tv.apple.com/us/movie/shalom-sesame---shabbat-shalom-grover/umc.cmc.h7ep2bsvd8po40e0ut4bnyf5",
+            "title": "Shalom Sesame - Shabbat Shalom, Grover!",
+            "uploader": "Apple TV (studio: Sesame Workshop)",
+            "durationSeconds": 1620,
+            "guideRole": "whole-candidate",
+            "service": "Apple TV",
+            "access": "licensed"
+          },
+          {
+            "catalogId": "web-61b318f5fb",
+            "url": "https://www.primevideo.com/detail/Shalom-Sesame---Shabbat-Shalom-Grover/0N4M7NLD16Y41NC39YZHLEZTFM",
+            "title": "Shalom Sesame - Shabbat Shalom, Grover!",
+            "uploader": "Prime Video (studio: Sesame Workshop)",
+            "durationSeconds": 1668,
+            "guideRole": "whole-candidate",
+            "service": "Prime Video",
+            "access": "licensed"
+          }
+        ],
+        "excerpt": [
+          {
+            "catalogId": "yt-HmnvEBfjJFk",
+            "url": "https://www.youtube.com/watch?v=HmnvEBfjJFk",
+            "title": "Shalom Sesame: ¡Shabat shalom Grover!",
+            "uploader": "Proyecto Efrain",
+            "durationSeconds": 531,
+            "guideRole": "excerpt"
+          },
+          {
+            "catalogId": "yt-TIYU0pwgQ0U",
+            "url": "https://www.youtube.com/watch?v=TIYU0pwgQ0U",
+            "title": "Shalom Sesame: La creación",
+            "uploader": "Proyecto Efrain",
+            "durationSeconds": 139,
+            "guideRole": "excerpt"
+          },
+          {
+            "catalogId": "yt-RszEGDhfzio",
+            "url": "https://www.youtube.com/watch?v=RszEGDhfzio",
+            "title": "Shalom Sesame Shabbat Shalom Grover Full Studio",
+            "uploader": "Najshon",
+            "durationSeconds": 516,
+            "guideRole": "excerpt"
+          },
+          {
+            "catalogId": "yt-lre-LLz-UzE",
+            "url": "https://www.youtube.com/watch?v=lre-LLz-UzE",
+            "title": "Shalom Sesame: Creation",
+            "uploader": "Shalom Sesame",
+            "durationSeconds": 125,
+            "guideRole": "excerpt"
+          }
+        ]
+      },
+      "licensedRoutes": [
+        {
+          "catalogId": "web-53a422161a",
+          "service": "hoopla",
+          "url": "https://www.hoopladigital.com/title/11567633",
+          "listedRuntimeSeconds": 1680,
+          "access": "licensed"
+        },
+        {
+          "catalogId": "web-0114d0ead1",
+          "service": "Apple TV",
+          "url": "https://tv.apple.com/us/movie/shalom-sesame---shabbat-shalom-grover/umc.cmc.h7ep2bsvd8po40e0ut4bnyf5",
+          "listedRuntimeSeconds": 1620,
+          "access": "licensed"
+        },
+        {
+          "catalogId": "web-61b318f5fb",
+          "service": "Prime Video",
+          "url": "https://www.primevideo.com/detail/Shalom-Sesame---Shabbat-Shalom-Grover/0N4M7NLD16Y41NC39YZHLEZTFM",
+          "listedRuntimeSeconds": 1668,
+          "access": "licensed"
+        }
+      ],
+      "storeItem": "6EAM0979",
+      "freeWholeCandidates": []
     },
     {
       "id": "shalom-modern-04",
@@ -1800,7 +2727,7 @@
         "modern-set"
       ],
       "referenceRuntimes": [],
-      "coverageStatus": "missing",
+      "coverageStatus": "licensed listings only",
       "wholeUploadCandidates": [],
       "shortenedOrUncertainLongUploads": [],
       "episodePartGroups": [],
@@ -1823,11 +2750,58 @@
       "segments": [],
       "completenessVerified": false,
       "todos": [
-        "Find a single whole-episode link or another complete licensed edition; current trailers/studio segments do not establish full-episode coverage."
+        "Licensed listings only: no free whole upload is known. Review a licensed edition, or find a free whole copy."
       ],
       "associatedCatalogIds": [
+        "web-18aa82b2f5",
+        "web-3abc864c13",
         "yt-tSF94y2NvmM"
-      ]
+      ],
+      "guideEpisodeId": "shalom-modern-04",
+      "guideCoverage": "whole-candidate",
+      "guideEvidence": "metadata-checked",
+      "addedInSchema2": {
+        "whole-candidate": [
+          {
+            "catalogId": "web-3abc864c13",
+            "url": "https://www.hoopladigital.com/title/11567635",
+            "title": "Grover Plants a Tree",
+            "uploader": "hoopla (publisher: SISU Home Entertainment)",
+            "durationSeconds": 1620,
+            "guideRole": "whole-candidate",
+            "service": "hoopla",
+            "access": "licensed"
+          },
+          {
+            "catalogId": "web-18aa82b2f5",
+            "url": "https://www.primevideo.com/detail/Shalom-Sesame---Grover-Plants-a-Tree/0QSR8TOG9E9IT19S40A9NUFKZ0",
+            "title": "Shalom Sesame - Grover Plants a Tree",
+            "uploader": "Prime Video (studio: Sesame Workshop)",
+            "durationSeconds": 1612,
+            "guideRole": "whole-candidate",
+            "service": "Prime Video",
+            "access": "licensed"
+          }
+        ]
+      },
+      "licensedRoutes": [
+        {
+          "catalogId": "web-3abc864c13",
+          "service": "hoopla",
+          "url": "https://www.hoopladigital.com/title/11567635",
+          "listedRuntimeSeconds": 1620,
+          "access": "licensed"
+        },
+        {
+          "catalogId": "web-18aa82b2f5",
+          "service": "Prime Video",
+          "url": "https://www.primevideo.com/detail/Shalom-Sesame---Grover-Plants-a-Tree/0QSR8TOG9E9IT19S40A9NUFKZ0",
+          "listedRuntimeSeconds": 1612,
+          "access": "licensed"
+        }
+      ],
+      "storeItem": "6EAM0980",
+      "freeWholeCandidates": []
     },
     {
       "id": "shalom-modern-05",
@@ -1846,7 +2820,7 @@
         "modern-set"
       ],
       "referenceRuntimes": [],
-      "coverageStatus": "missing",
+      "coverageStatus": "licensed listings only",
       "wholeUploadCandidates": [],
       "shortenedOrUncertainLongUploads": [],
       "episodePartGroups": [],
@@ -1896,13 +2870,107 @@
       ],
       "completenessVerified": false,
       "todos": [
-        "Find a single whole-episode link or another complete licensed edition; current trailers/studio segments do not establish full-episode coverage."
+        "Licensed listings only: no free whole upload is known. Review a licensed edition, or find a free whole copy."
       ],
       "associatedCatalogIds": [
+        "web-3e18700e97",
+        "web-45709322a1",
+        "web-c6530951e1",
+        "yt-40TON929_tI",
+        "yt-Rj3EOfMuOmk",
+        "yt-bPetjKCQxHc",
         "yt-jtNcl3w85cg",
-        "yt-yYr7eRCeG1E",
-        "yt-Rj3EOfMuOmk"
-      ]
+        "yt-wiy7DdVThnE",
+        "yt-yYr7eRCeG1E"
+      ],
+      "guideEpisodeId": "shalom-modern-05",
+      "guideCoverage": "whole-candidate",
+      "guideEvidence": "metadata-checked",
+      "addedInSchema2": {
+        "whole-candidate": [
+          {
+            "catalogId": "web-c6530951e1",
+            "url": "https://www.hoopladigital.com/title/11567636",
+            "title": "Mitzvah on the Street",
+            "uploader": "hoopla (publisher: SISU Home Entertainment)",
+            "durationSeconds": 1980,
+            "guideRole": "whole-candidate",
+            "service": "hoopla",
+            "access": "licensed"
+          },
+          {
+            "catalogId": "web-3e18700e97",
+            "url": "https://tv.apple.com/us/movie/shalom-sesame---mitzvah-on-the-street/umc.cmc.evvghynjr1auapsc1h64cgsl",
+            "title": "Shalom Sesame - Mitzvah on the Street",
+            "uploader": "Apple TV (studio: Sesame Workshop)",
+            "durationSeconds": 1920,
+            "guideRole": "whole-candidate",
+            "service": "Apple TV",
+            "access": "licensed"
+          },
+          {
+            "catalogId": "web-45709322a1",
+            "url": "https://www.primevideo.com/detail/Shalom-Sesame---Mitzvah-on-the-Street/0QBPFN5LVYF2WBURUGOAR9P7KQ",
+            "title": "Shalom Sesame - Mitzvah on the Street",
+            "uploader": "Prime Video (studio: Sesame Workshop)",
+            "durationSeconds": 1962,
+            "guideRole": "whole-candidate",
+            "service": "Prime Video",
+            "access": "licensed"
+          }
+        ],
+        "excerpt": [
+          {
+            "catalogId": "yt-40TON929_tI",
+            "url": "https://www.youtube.com/watch?v=40TON929_tI",
+            "title": "Shalom Sesame: Mitzvah en la calle",
+            "uploader": "Proyecto Efrain",
+            "durationSeconds": 578,
+            "guideRole": "excerpt"
+          },
+          {
+            "catalogId": "yt-bPetjKCQxHc",
+            "url": "https://www.youtube.com/watch?v=bPetjKCQxHc",
+            "title": "Shalom Sesame: Mitzvah imposible",
+            "uploader": "Proyecto Efrain",
+            "durationSeconds": 259,
+            "guideRole": "excerpt"
+          },
+          {
+            "catalogId": "yt-wiy7DdVThnE",
+            "url": "https://www.youtube.com/watch?v=wiy7DdVThnE",
+            "title": "Shalom Sesame: Mitzvah Impossible",
+            "uploader": "Shalom Sesame",
+            "durationSeconds": 245,
+            "guideRole": "excerpt"
+          }
+        ]
+      },
+      "licensedRoutes": [
+        {
+          "catalogId": "web-c6530951e1",
+          "service": "hoopla",
+          "url": "https://www.hoopladigital.com/title/11567636",
+          "listedRuntimeSeconds": 1980,
+          "access": "licensed"
+        },
+        {
+          "catalogId": "web-3e18700e97",
+          "service": "Apple TV",
+          "url": "https://tv.apple.com/us/movie/shalom-sesame---mitzvah-on-the-street/umc.cmc.evvghynjr1auapsc1h64cgsl",
+          "listedRuntimeSeconds": 1920,
+          "access": "licensed"
+        },
+        {
+          "catalogId": "web-45709322a1",
+          "service": "Prime Video",
+          "url": "https://www.primevideo.com/detail/Shalom-Sesame---Mitzvah-on-the-Street/0QBPFN5LVYF2WBURUGOAR9P7KQ",
+          "listedRuntimeSeconds": 1962,
+          "access": "licensed"
+        }
+      ],
+      "storeItem": "6EAM0981",
+      "freeWholeCandidates": []
     },
     {
       "id": "shalom-modern-06",
@@ -1921,7 +2989,7 @@
         "modern-set"
       ],
       "referenceRuntimes": [],
-      "coverageStatus": "missing",
+      "coverageStatus": "licensed listings only",
       "wholeUploadCandidates": [],
       "shortenedOrUncertainLongUploads": [],
       "episodePartGroups": [],
@@ -1958,12 +3026,59 @@
       ],
       "completenessVerified": false,
       "todos": [
-        "Find a single whole-episode link or another complete licensed edition; current trailers/studio segments do not establish full-episode coverage."
+        "Licensed listings only: no free whole upload is known. Review a licensed edition, or find a free whole copy."
       ],
       "associatedCatalogIds": [
-        "yt-Zk0UG2I6v98",
-        "yt-PSq6FVfm0fg"
-      ]
+        "web-601657fb9c",
+        "web-e07300906d",
+        "yt-PSq6FVfm0fg",
+        "yt-Zk0UG2I6v98"
+      ],
+      "guideEpisodeId": "shalom-modern-06",
+      "guideCoverage": "whole-candidate",
+      "guideEvidence": "metadata-checked",
+      "addedInSchema2": {
+        "whole-candidate": [
+          {
+            "catalogId": "web-601657fb9c",
+            "url": "https://www.hoopladigital.com/title/11567631",
+            "title": "Be Happy, It's Purim!",
+            "uploader": "hoopla (publisher: SISU Home Entertainment)",
+            "durationSeconds": 2040,
+            "guideRole": "whole-candidate",
+            "service": "hoopla",
+            "access": "licensed"
+          },
+          {
+            "catalogId": "web-e07300906d",
+            "url": "https://tv.apple.com/us/movie/shalom-sesame---be-happy-its-purim/umc.cmc.537kuxyu2cb9pamgv4kalvzg0",
+            "title": "Shalom Sesame - Be Happy, It's Purim!",
+            "uploader": "Apple TV (studio: Sesame Workshop)",
+            "durationSeconds": 1980,
+            "guideRole": "whole-candidate",
+            "service": "Apple TV",
+            "access": "licensed"
+          }
+        ]
+      },
+      "licensedRoutes": [
+        {
+          "catalogId": "web-601657fb9c",
+          "service": "hoopla",
+          "url": "https://www.hoopladigital.com/title/11567631",
+          "listedRuntimeSeconds": 2040,
+          "access": "licensed"
+        },
+        {
+          "catalogId": "web-e07300906d",
+          "service": "Apple TV",
+          "url": "https://tv.apple.com/us/movie/shalom-sesame---be-happy-its-purim/umc.cmc.537kuxyu2cb9pamgv4kalvzg0",
+          "listedRuntimeSeconds": 1980,
+          "access": "licensed"
+        }
+      ],
+      "storeItem": "6EAM0982",
+      "freeWholeCandidates": []
     },
     {
       "id": "shalom-modern-07",
@@ -1982,7 +3097,7 @@
         "modern-set"
       ],
       "referenceRuntimes": [],
-      "coverageStatus": "missing",
+      "coverageStatus": "licensed listings only",
       "wholeUploadCandidates": [],
       "shortenedOrUncertainLongUploads": [],
       "episodePartGroups": [],
@@ -2019,12 +3134,71 @@
       ],
       "completenessVerified": false,
       "todos": [
-        "Find a single whole-episode link or another complete licensed edition; current trailers/studio segments do not establish full-episode coverage."
+        "Licensed listings only: no free whole upload is known. Review a licensed edition, or find a free whole copy.",
+        "fb-222297518859390 (a JCC Association Facebook video titled after this programme) could not be read without login; it is linked as a possible copy (never counted) until its length and contents can be read."
       ],
       "associatedCatalogIds": [
+        "fb-222297518859390",
+        "web-49a992cfc0",
+        "web-fec3f7bc93",
         "yt-ZcMWc-Ty1x0",
         "yt-kcSX2USdZl4"
-      ]
+      ],
+      "guideEpisodeId": "shalom-modern-07",
+      "guideCoverage": "whole-candidate",
+      "guideEvidence": "metadata-checked",
+      "addedInSchema2": {
+        "whole-candidate": [
+          {
+            "catalogId": "web-fec3f7bc93",
+            "url": "https://www.hoopladigital.com/title/11567632",
+            "title": "It's Passover, Grover!",
+            "uploader": "hoopla (publisher: SISU Home Entertainment)",
+            "durationSeconds": 1560,
+            "guideRole": "whole-candidate",
+            "service": "hoopla",
+            "access": "licensed"
+          },
+          {
+            "catalogId": "web-49a992cfc0",
+            "url": "https://www.primevideo.com/detail/Shalom-Sesame---Its-Passover-Grover/0KABCJCKEWSHIY6425PEC6K4TL",
+            "title": "Shalom Sesame - It's Passover, Grover!",
+            "uploader": "Prime Video (studio: Sesame Workshop)",
+            "durationSeconds": 1533,
+            "guideRole": "whole-candidate",
+            "service": "Prime Video",
+            "access": "licensed"
+          }
+        ],
+        "possible": [
+          {
+            "catalogId": "fb-222297518859390",
+            "url": "https://www.facebook.com/JCCAssociationOfNorthAmerica/videos/its-passover-grover/222297518859390/",
+            "title": "It's Passover, Grover!",
+            "uploader": "JCC Association of North America",
+            "durationSeconds": null,
+            "guideRole": "possible"
+          }
+        ]
+      },
+      "licensedRoutes": [
+        {
+          "catalogId": "web-fec3f7bc93",
+          "service": "hoopla",
+          "url": "https://www.hoopladigital.com/title/11567632",
+          "listedRuntimeSeconds": 1560,
+          "access": "licensed"
+        },
+        {
+          "catalogId": "web-49a992cfc0",
+          "service": "Prime Video",
+          "url": "https://www.primevideo.com/detail/Shalom-Sesame---Its-Passover-Grover/0KABCJCKEWSHIY6425PEC6K4TL",
+          "listedRuntimeSeconds": 1533,
+          "access": "licensed"
+        }
+      ],
+      "storeItem": "6EAM0983",
+      "freeWholeCandidates": []
     },
     {
       "id": "shalom-modern-08",
@@ -2049,7 +3223,7 @@
           "sourceId": "oru-hebrew"
         }
       ],
-      "coverageStatus": "missing",
+      "coverageStatus": "licensed listings only",
       "wholeUploadCandidates": [],
       "shortenedOrUncertainLongUploads": [],
       "episodePartGroups": [],
@@ -2086,16 +3260,101 @@
       ],
       "completenessVerified": false,
       "todos": [
-        "Find a single whole-episode link or another complete licensed edition; current trailers/studio segments do not establish full-episode coverage."
+        "Licensed listings only: no free whole upload is known. Review a licensed edition, or find a free whole copy."
       ],
       "programMetadataYear": 2010,
       "programMetadataYearSources": [
         "oru-hebrew"
       ],
       "associatedCatalogIds": [
+        "web-a0650a7f47",
+        "web-c4d571bb52",
+        "web-eaf8c55495",
+        "yt-2fGAoneXsTg",
+        "yt-C9XDItmUAgk",
         "yt-LNGW6xfR3zI",
         "yt-PCqRRfJVH6Q"
-      ]
+      ],
+      "guideEpisodeId": "shalom-modern-08",
+      "guideCoverage": "whole-candidate",
+      "guideEvidence": "metadata-checked",
+      "addedInSchema2": {
+        "whole-candidate": [
+          {
+            "catalogId": "web-c4d571bb52",
+            "url": "https://www.hoopladigital.com/title/11567628",
+            "title": "Grover Learns Hebrew",
+            "uploader": "hoopla (publisher: SISU Home Entertainment)",
+            "durationSeconds": 1380,
+            "guideRole": "whole-candidate",
+            "service": "hoopla",
+            "access": "licensed"
+          },
+          {
+            "catalogId": "web-eaf8c55495",
+            "url": "https://tv.apple.com/us/movie/shalom-sesame---grover-learns-hebrew/umc.cmc.6aq9r9ag6we9k4s4daiz083fj",
+            "title": "Shalom Sesame - Grover Learns Hebrew",
+            "uploader": "Apple TV (studio: Sesame Workshop)",
+            "durationSeconds": 1380,
+            "guideRole": "whole-candidate",
+            "service": "Apple TV",
+            "access": "licensed"
+          },
+          {
+            "catalogId": "web-a0650a7f47",
+            "url": "https://www.primevideo.com/detail/Shalom-Sesame---Grover-Learns-Hebrew/0RQUV7KWPA00558E2TT8YC75UG",
+            "title": "Shalom Sesame - Grover Learns Hebrew",
+            "uploader": "Prime Video (studio: Sesame Workshop)",
+            "durationSeconds": 1382,
+            "guideRole": "whole-candidate",
+            "service": "Prime Video",
+            "access": "licensed"
+          }
+        ],
+        "excerpt": [
+          {
+            "catalogId": "yt-2fGAoneXsTg",
+            "url": "https://www.youtube.com/watch?v=2fGAoneXsTg",
+            "title": "Grover Learns Hebrew -Shalom Sesame - SISU/Kol-Ami",
+            "uploader": "Haim Scheininger",
+            "durationSeconds": 104,
+            "guideRole": "excerpt"
+          },
+          {
+            "catalogId": "yt-C9XDItmUAgk",
+            "url": "https://www.youtube.com/watch?v=C9XDItmUAgk",
+            "title": "Shalom Sesame: Grover aprende hebreo",
+            "uploader": "Proyecto Efrain",
+            "durationSeconds": 390,
+            "guideRole": "excerpt"
+          }
+        ]
+      },
+      "licensedRoutes": [
+        {
+          "catalogId": "web-c4d571bb52",
+          "service": "hoopla",
+          "url": "https://www.hoopladigital.com/title/11567628",
+          "listedRuntimeSeconds": 1380,
+          "access": "licensed"
+        },
+        {
+          "catalogId": "web-eaf8c55495",
+          "service": "Apple TV",
+          "url": "https://tv.apple.com/us/movie/shalom-sesame---grover-learns-hebrew/umc.cmc.6aq9r9ag6we9k4s4daiz083fj",
+          "listedRuntimeSeconds": 1380,
+          "access": "licensed"
+        },
+        {
+          "catalogId": "web-a0650a7f47",
+          "service": "Prime Video",
+          "url": "https://www.primevideo.com/detail/Shalom-Sesame---Grover-Learns-Hebrew/0RQUV7KWPA00558E2TT8YC75UG",
+          "listedRuntimeSeconds": 1382,
+          "access": "licensed"
+        }
+      ],
+      "storeItem": "6EAM0984",
+      "freeWholeCandidates": []
     },
     {
       "id": "shalom-modern-09",
@@ -2114,7 +3373,7 @@
         "modern-set"
       ],
       "referenceRuntimes": [],
-      "coverageStatus": "missing",
+      "coverageStatus": "licensed listings only",
       "wholeUploadCandidates": [],
       "shortenedOrUncertainLongUploads": [],
       "episodePartGroups": [],
@@ -2137,11 +3396,76 @@
       "segments": [],
       "completenessVerified": false,
       "todos": [
-        "Find a single whole-episode link or another complete licensed edition; current trailers/studio segments do not establish full-episode coverage."
+        "Licensed listings only: no free whole upload is known. Review a licensed edition, or find a free whole copy."
       ],
       "associatedCatalogIds": [
+        "web-9293904524",
+        "web-99cf261353",
+        "web-d73e884475",
         "yt-vTVWZwNZehM"
-      ]
+      ],
+      "guideEpisodeId": "shalom-modern-09",
+      "guideCoverage": "whole-candidate",
+      "guideEvidence": "metadata-checked",
+      "addedInSchema2": {
+        "whole-candidate": [
+          {
+            "catalogId": "web-d73e884475",
+            "url": "https://www.hoopladigital.com/title/11567634",
+            "title": "Countdown to Shavuot",
+            "uploader": "hoopla (publisher: SISU Home Entertainment)",
+            "durationSeconds": 1740,
+            "guideRole": "whole-candidate",
+            "service": "hoopla",
+            "access": "licensed"
+          },
+          {
+            "catalogId": "web-9293904524",
+            "url": "https://tv.apple.com/us/movie/shalom-sesame---countdown-to-shavuot/umc.cmc.1qvw9g163lm1hwh8o911muc2a",
+            "title": "Shalom Sesame - Countdown to Shavuot",
+            "uploader": "Apple TV (studio: Sesame Workshop)",
+            "durationSeconds": 1680,
+            "guideRole": "whole-candidate",
+            "service": "Apple TV",
+            "access": "licensed"
+          },
+          {
+            "catalogId": "web-99cf261353",
+            "url": "https://www.primevideo.com/detail/Shalom-Sesame---Countdown-to-Shavuot/0R5JLP85TO40WQZ3C683PXIG30",
+            "title": "Shalom Sesame - Countdown to Shavuot",
+            "uploader": "Prime Video (studio: Sesame Workshop)",
+            "durationSeconds": 1735,
+            "guideRole": "whole-candidate",
+            "service": "Prime Video",
+            "access": "licensed"
+          }
+        ]
+      },
+      "licensedRoutes": [
+        {
+          "catalogId": "web-d73e884475",
+          "service": "hoopla",
+          "url": "https://www.hoopladigital.com/title/11567634",
+          "listedRuntimeSeconds": 1740,
+          "access": "licensed"
+        },
+        {
+          "catalogId": "web-9293904524",
+          "service": "Apple TV",
+          "url": "https://tv.apple.com/us/movie/shalom-sesame---countdown-to-shavuot/umc.cmc.1qvw9g163lm1hwh8o911muc2a",
+          "listedRuntimeSeconds": 1680,
+          "access": "licensed"
+        },
+        {
+          "catalogId": "web-99cf261353",
+          "service": "Prime Video",
+          "url": "https://www.primevideo.com/detail/Shalom-Sesame---Countdown-to-Shavuot/0R5JLP85TO40WQZ3C683PXIG30",
+          "listedRuntimeSeconds": 1735,
+          "access": "licensed"
+        }
+      ],
+      "storeItem": "6EAM0985",
+      "freeWholeCandidates": []
     },
     {
       "id": "shalom-modern-10",
@@ -2160,7 +3484,7 @@
         "modern-set"
       ],
       "referenceRuntimes": [],
-      "coverageStatus": "missing",
+      "coverageStatus": "licensed listings only",
       "wholeUploadCandidates": [],
       "shortenedOrUncertainLongUploads": [],
       "episodePartGroups": [],
@@ -2243,17 +3567,46 @@
       "segments": [],
       "completenessVerified": false,
       "todos": [
-        "Find a single whole-episode link or another complete licensed edition; current trailers/studio segments do not establish full-episode coverage."
+        "Licensed listings only: no free whole upload is known. Review a licensed edition, or find a free whole copy."
       ],
       "auditNotes": [
         "Official PartsI–III total 6:36. They form a short studio-story sequence, not the full modern episode. Do not count this as all episode parts present."
       ],
       "associatedCatalogIds": [
-        "yt-sAs1rfZ-Cew",
-        "yt-lfImV2Pj3TU",
+        "web-9e0ef4d39d",
         "yt-TlcJ3eIg8kg",
-        "yt-eMrAFo03ejU"
-      ]
+        "yt-eMrAFo03ejU",
+        "yt-lfImV2Pj3TU",
+        "yt-sAs1rfZ-Cew"
+      ],
+      "guideEpisodeId": "shalom-modern-10",
+      "guideCoverage": "whole-candidate",
+      "guideEvidence": "metadata-checked",
+      "addedInSchema2": {
+        "whole-candidate": [
+          {
+            "catalogId": "web-9e0ef4d39d",
+            "url": "https://www.hoopladigital.com/title/11567629",
+            "title": "The Sticky Shofar",
+            "uploader": "hoopla (publisher: SISU Home Entertainment)",
+            "durationSeconds": 1620,
+            "guideRole": "whole-candidate",
+            "service": "hoopla",
+            "access": "licensed"
+          }
+        ]
+      },
+      "licensedRoutes": [
+        {
+          "catalogId": "web-9e0ef4d39d",
+          "service": "hoopla",
+          "url": "https://www.hoopladigital.com/title/11567629",
+          "listedRuntimeSeconds": 1620,
+          "access": "licensed"
+        }
+      ],
+      "storeItem": "6EAM0986",
+      "freeWholeCandidates": []
     },
     {
       "id": "shalom-modern-11",
@@ -2278,7 +3631,7 @@
           "sourceId": "apple-sukkah"
         }
       ],
-      "coverageStatus": "missing",
+      "coverageStatus": "licensed listings only",
       "wholeUploadCandidates": [],
       "shortenedOrUncertainLongUploads": [],
       "episodePartGroups": [],
@@ -2301,15 +3654,82 @@
       "segments": [],
       "completenessVerified": false,
       "todos": [
-        "Find a single whole-episode link or another complete licensed edition; current trailers/studio segments do not establish full-episode coverage."
+        "Licensed listings only: no free whole upload is known. Review a licensed edition, or find a free whole copy."
       ],
       "programMetadataYear": 2010,
       "programMetadataYearSources": [
         "apple-sukkah"
       ],
       "associatedCatalogIds": [
-        "yt-ACh9ZM1RG70"
-      ]
+        "web-ba751dd764",
+        "web-bae15db50f",
+        "web-fcddb3015d",
+        "yt-ACh9ZM1RG70",
+        "yt-kQqBSbt7pHA"
+      ],
+      "guideEpisodeId": "shalom-modern-11",
+      "guideCoverage": "whole-candidate",
+      "guideEvidence": "metadata-checked",
+      "addedInSchema2": {
+        "whole-candidate": [
+          {
+            "catalogId": "web-bae15db50f",
+            "url": "https://www.hoopladigital.com/title/11567630",
+            "title": "Monsters in the Sukkah",
+            "uploader": "hoopla (publisher: SISU Home Entertainment)",
+            "durationSeconds": 1560,
+            "guideRole": "whole-candidate",
+            "service": "hoopla",
+            "access": "licensed"
+          },
+          {
+            "catalogId": "web-fcddb3015d",
+            "url": "https://tv.apple.com/us/movie/shalom-sesame---monsters-in-the-sukkah/umc.cmc.3tcgr41lod41m65q10ueylwqt",
+            "title": "Shalom Sesame - Monsters In the Sukkah",
+            "uploader": "Apple TV (studio: Sesame Workshop)",
+            "durationSeconds": 1500,
+            "guideRole": "whole-candidate",
+            "service": "Apple TV",
+            "access": "licensed"
+          }
+        ],
+        "excerpt": [
+          {
+            "catalogId": "yt-kQqBSbt7pHA",
+            "url": "https://www.youtube.com/watch?v=kQqBSbt7pHA",
+            "title": "Monsters In The Sukkah - Shalom Sesame- SISU/Kol-Ami",
+            "uploader": "Haim Scheininger",
+            "durationSeconds": 98,
+            "guideRole": "excerpt"
+          },
+          {
+            "catalogId": "web-ba751dd764",
+            "url": "https://www.tvguide.com/videos/shalom-sesame/6003457499/shalom-sesame-monsters-in-the-sukkah/3677088",
+            "title": "Shalom Sesame: Monsters In The Sukkah",
+            "uploader": "TV Guide",
+            "durationSeconds": 62,
+            "guideRole": "excerpt"
+          }
+        ]
+      },
+      "licensedRoutes": [
+        {
+          "catalogId": "web-bae15db50f",
+          "service": "hoopla",
+          "url": "https://www.hoopladigital.com/title/11567630",
+          "listedRuntimeSeconds": 1560,
+          "access": "licensed"
+        },
+        {
+          "catalogId": "web-fcddb3015d",
+          "service": "Apple TV",
+          "url": "https://tv.apple.com/us/movie/shalom-sesame---monsters-in-the-sukkah/umc.cmc.3tcgr41lod41m65q10ueylwqt",
+          "listedRuntimeSeconds": 1500,
+          "access": "licensed"
+        }
+      ],
+      "storeItem": "6EAM0987",
+      "freeWholeCandidates": []
     },
     {
       "id": "shalom-modern-12",
@@ -2328,7 +3748,7 @@
         "modern-set"
       ],
       "referenceRuntimes": [],
-      "coverageStatus": "missing",
+      "coverageStatus": "licensed listings only",
       "wholeUploadCandidates": [],
       "shortenedOrUncertainLongUploads": [],
       "episodePartGroups": [],
@@ -2351,11 +3771,58 @@
       "segments": [],
       "completenessVerified": false,
       "todos": [
-        "Find a single whole-episode link or another complete licensed edition; current trailers/studio segments do not establish full-episode coverage."
+        "Licensed listings only: no free whole upload is known. Review a licensed edition, or find a free whole copy."
       ],
       "associatedCatalogIds": [
+        "web-8953b3ddef",
+        "web-92b7ba4241",
         "yt-WORFaRqA0JQ"
-      ]
+      ],
+      "guideEpisodeId": "shalom-modern-12",
+      "guideCoverage": "whole-candidate",
+      "guideEvidence": "metadata-checked",
+      "addedInSchema2": {
+        "whole-candidate": [
+          {
+            "catalogId": "web-92b7ba4241",
+            "url": "https://www.hoopladigital.com/title/11567638",
+            "title": "Adventures in Israel",
+            "uploader": "hoopla (publisher: SISU Home Entertainment)",
+            "durationSeconds": 1620,
+            "guideRole": "whole-candidate",
+            "service": "hoopla",
+            "access": "licensed"
+          },
+          {
+            "catalogId": "web-8953b3ddef",
+            "url": "https://tv.apple.com/us/movie/shalom-sesame---adventures-in-israel/umc.cmc.2nqwh65kknbt41fl7gxbvw2du",
+            "title": "Shalom Sesame - Adventures in Israel",
+            "uploader": "Apple TV (studio: Sesame Workshop)",
+            "durationSeconds": 1620,
+            "guideRole": "whole-candidate",
+            "service": "Apple TV",
+            "access": "licensed"
+          }
+        ]
+      },
+      "licensedRoutes": [
+        {
+          "catalogId": "web-92b7ba4241",
+          "service": "hoopla",
+          "url": "https://www.hoopladigital.com/title/11567638",
+          "listedRuntimeSeconds": 1620,
+          "access": "licensed"
+        },
+        {
+          "catalogId": "web-8953b3ddef",
+          "service": "Apple TV",
+          "url": "https://tv.apple.com/us/movie/shalom-sesame---adventures-in-israel/umc.cmc.2nqwh65kknbt41fl7gxbvw2du",
+          "listedRuntimeSeconds": 1620,
+          "access": "licensed"
+        }
+      ],
+      "storeItem": "6EAM0988",
+      "freeWholeCandidates": []
     }
   ],
   "unassignedCatalogRecords": [
@@ -4028,7 +5495,8 @@
         "shalom-classic-10",
         "shalom-classic-11"
       ],
-      "task": "Verify all 11 classic candidate identities and start-to-credits completeness. Prioritize generic-number-only People of Israel and Jerusalem."
+      "task": "Verify all 11 classic candidate identities and start-to-credits completeness. Prioritize generic-number-only People of Israel and Jerusalem.",
+      "status": "open"
     },
     {
       "id": "modern-whole-episodes",
@@ -4046,7 +5514,9 @@
         "shalom-modern-11",
         "shalom-modern-12"
       ],
-      "task": "Find full modern editions for all 12 canonical programs. Existing studio scenes and trailers do not satisfy this."
+      "task": "Find full modern editions for all 12 canonical programs. Existing studio scenes and trailers do not satisfy this.",
+      "status": "partly-resolved",
+      "resolution": "All 12 have licensed whole-programme listings; Missing Menorah also has a community DVD rip, and Welcome to Israel and Missing Menorah have complete-looking two-part sets. 11 have no free whole upload."
     },
     {
       "id": "welcome-missing-part",
@@ -4057,7 +5527,9 @@
         1
       ],
       "expectedPartCount": 2,
-      "task": "Find or replace Welcome to Israel part 1 of 2."
+      "task": "Find or replace Welcome to Israel part 1 of 2.",
+      "status": "resolved",
+      "resolution": "Part 1 found: yt-ncg_vcMXQBY (900 s). Content-claim block reported from a non-Israeli connection."
     },
     {
       "id": "classic-aleph-missing-part",
@@ -4068,14 +5540,17 @@
         1
       ],
       "expectedPartCount": 3,
-      "task": "Find or replace classic Aleph-Bet Telethon part 1 of 3."
+      "task": "Find or replace classic Aleph-Bet Telethon part 1 of 3.",
+      "status": "resolved",
+      "resolution": "Part 1 found: yt-nZAFB1zzstg (900 s). Content-claim block reported from a non-Israeli connection."
     },
     {
       "id": "missing-menorah-boundaries",
       "canonicalEpisodeIds": [
         "shalom-modern-02"
       ],
-      "task": "Review both linked parts for continuity and ending; labeled coverage is not a completeness verification."
+      "task": "Review both linked parts for continuity and ending; labeled coverage is not a completeness verification.",
+      "status": "open"
     },
     {
       "id": "primary-year-corroboration",
@@ -4097,8 +5572,67 @@
         "shalom-modern-11",
         "shalom-modern-12"
       ],
-      "task": "Corroborate provisional production/release years with original distributor records, title cards or library MARC records."
+      "task": "Corroborate provisional production/release years with original distributor records, title cards or library MARC records.",
+      "status": "open"
+    },
+    {
+      "id": "content-claim-blocks",
+      "status": "open",
+      "canonicalEpisodeIds": [
+        "shalom-modern-01",
+        "shalom-classic-09"
+      ],
+      "task": "Check where the content-claim blocks on yt-ncg_vcMXQBY (Sesame Workshop) and yt-nZAFB1zzstg (Global Media Egypt) apply; record the result per URL without changing VPN routing."
+    },
+    {
+      "id": "part-set-continuity",
+      "status": "open",
+      "canonicalEpisodeIds": [
+        "shalom-modern-01",
+        "shalom-modern-02"
+      ],
+      "task": "Check both two-part sets for gaps, overlaps and an ending against the licensed runtime."
+    },
+    {
+      "id": "licensed-review",
+      "status": "open",
+      "canonicalEpisodeIds": [
+        "shalom-modern-01",
+        "shalom-modern-02",
+        "shalom-modern-03",
+        "shalom-modern-04",
+        "shalom-modern-05",
+        "shalom-modern-06",
+        "shalom-modern-07",
+        "shalom-modern-08",
+        "shalom-modern-09",
+        "shalom-modern-10",
+        "shalom-modern-11",
+        "shalom-modern-12"
+      ],
+      "task": "If the user has hoopla, Apple TV or Prime Video access, review licensed editions; note that the user decides whether to use an account."
     }
   ],
-  "sourceCommit": "011a072"
+  "sourceCommit": "011a072",
+  "revisionHistory": [
+    {
+      "schemaVersion": 1,
+      "date": "2026-10-17",
+      "summary": "Audit of the 310 Shalom links in data/sesame-records.json at commit 011a072."
+    },
+    {
+      "schemaVersion": 2,
+      "date": "2026-10-18",
+      "summary": "Modern series: official numbering #1-#12 confirmed from the archived Sesame Street store; licensed whole-programme routes on hoopla (all 12), Apple TV (9) and Prime Video (8, one title twice) recorded; a community DVD rip of Missing Menorah; part 1 of Welcome to Israel found, completing a two-part set. Classic series: unchanged coverage; part 1 of the Aleph-Bet Telethon set found; new whole candidates and alternate editions linked."
+    },
+    {
+      "schemaVersion": 2,
+      "date": "2026-10-18",
+      "summary": "Review corrections: dayingale's English-with-Hebrew-subtitle copies of classic programmes 1-3 moved from wholeUploadCandidates to alternateEditionUploads, as in the guide; the JCC Association Facebook post for 2010 programme 7 is a possible copy, not an excerpt; KET's page for programme 2 is a free stream limited to its broadcast area (regionLimitedRoutes), not a licensed route; link counts recomputed from the guide."
+    }
+  ],
+  "relatedFiles": {
+    "guide": "data/episode-guide.json",
+    "records": "data/sesame-records.json, data/youtube-records.json, data/archive-org-records.json, data/other-host-records.json"
+  }
 }

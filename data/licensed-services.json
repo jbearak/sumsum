@@ -1,0 +1,374 @@
+{
+  "format": "sumsum-licensed-services-v1",
+  "checkedAt": "2026-10-18",
+  "about": "How each licensed service in the library is reached. A record with access \"licensed\" is matched to a service by the hostname of its link. A licensed listing is not a free public upload and not playback evidence. Every step and library entry names its sources by id; each source records the page, the date it was read and what it said. Library rules, fees and borrowing limits change, so the dates matter. Pages read with WebFetch or curl, without signing in.",
+  "services": [
+    {
+      "id": "hoopla",
+      "name": "hoopla",
+      "hosts": [
+        "hoopladigital.com"
+      ],
+      "model": "library-card",
+      "summary": {
+        "en": "Free with a card from a participating public library: you sign in to hoopla with the card. Anyone who lives, works, studies or owns property in New York State can get a free Queens Public Library eCard online.",
+        "he": "חינם עם כרטיס של ספרייה ציבורית משתתפת: מתחברים ל־hoopla עם הכרטיס. כל מי שגר, עובד, לומד או מחזיק נכס במדינת ניו יורק יכול לקבל באינטרנט כרטיס דיגיטלי (eCard) חינמי של הספרייה הציבורית של קווינס."
+      },
+      "howTo": {
+        "headline": {
+          "en": "Free in New York State with a Queens Public Library eCard: anyone who lives, works, studies or owns property in the state can apply online (age 12 or older), then sign in to hoopla with the card. If hoopla does not accept the eCard, get a regular Queens card at any branch (free in the state, with photo ID and proof of address).",
+          "he": "חינם במדינת ניו יורק עם כרטיס דיגיטלי (eCard) של הספרייה הציבורית של קווינס: כל מי שגר, עובד, לומד או מחזיק נכס במדינה יכול להגיש בקשה באינטרנט (מגיל 12), ואז להתחבר ל־hoopla עם הכרטיס. אם hoopla לא מקבל את הכרטיס הדיגיטלי, אפשר להוציא כרטיס רגיל של קווינס בכל סניף (חינם במדינה, עם תעודה מזהה עם תמונה והוכחת כתובת).",
+          "libraries": [
+            "queens"
+          ],
+          "participates": true,
+          "link": {
+            "url": "https://www.queenslibrary.org/get-a-card/eUser",
+            "label": {
+              "en": "Apply for a Queens eCard",
+              "he": "בקשה לכרטיס דיגיטלי של קווינס"
+            }
+          },
+          "sources": [
+            "qpl-card-faq",
+            "qpl-euser",
+            "qpl-ecard-vs-regular",
+            "qpl-chat-login",
+            "qpl-chat-emedia",
+            "ps229q",
+            "wtrn-blog",
+            "user-2026-10-18"
+          ]
+        },
+        "steps": [
+          {
+            "en": "In Westchester County, use your local library's card (for example Ardsley Public Library). In hoopla, choose \"Westchester Library System\", not your library's own name.",
+            "he": "במחוז וסטצ'סטר משתמשים בכרטיס של הספרייה המקומית (למשל הספרייה הציבורית של ארדסלי). ב־hoopla בוחרים ב־\"Westchester Library System\", ולא בשם הספרייה המקומית.",
+            "libraries": [
+              "westchester"
+            ],
+            "participates": true,
+            "sources": [
+              "wls-card",
+              "wls-listen-read",
+              "ardsley-digital",
+              "larchmont-home",
+              "yonkers-hoopla",
+              "user-2026-10-18"
+            ]
+          },
+          {
+            "en": "New York Public Library and Brooklyn Public Library cards do not work with hoopla.",
+            "he": "כרטיסים של הספרייה הציבורית של ניו יורק ושל הספרייה הציבורית של ברוקלין אינם עובדים ב־hoopla.",
+            "libraries": [
+              "nypl",
+              "brooklyn"
+            ],
+            "participates": false,
+            "sources": [
+              "user-2026-10-18",
+              "ps229q"
+            ]
+          },
+          {
+            "en": "Outside New York State, buy a Queens card ($50 a year) or a Westchester Library System card ($75 a year, or $35 at 65 or older or with a disability), or look up your own library in hoopla.",
+            "he": "מחוץ למדינת ניו יורק אפשר לקנות כרטיס של קווינס (50 דולר לשנה) או של מערכת הספריות של וסטצ'סטר (75 דולר לשנה, או 35 דולר מגיל 65 ולאנשים עם מוגבלות), או לחפש ב־hoopla את הספרייה שלכם.",
+            "link": {
+              "url": "https://www.hoopladigital.com/register",
+              "label": {
+                "en": "Find your library in hoopla",
+                "he": "חיפוש הספרייה שלכם ב־hoopla"
+              }
+            },
+            "sources": [
+              "qpl-euser",
+              "qpl-chat-nonresident",
+              "wls-card",
+              "hoopla-signup"
+            ]
+          },
+          {
+            "en": "Each library sets a small monthly limit, so choose which programmes to borrow and check your library's terms (Queens: 5 or 10 hoopla titles, its pages disagree; Yonkers: 3; Eastchester: 6).",
+            "he": "כל ספרייה קובעת מגבלה חודשית קטנה, לכן כדאי לבחור אילו תכניות לשאול ולבדוק את התנאים של הספרייה שלכם (קווינס: 5 או 10 כותרים ב־hoopla, לפי דפים שונים שלה; יונקרס: 3; איסטצ'סטר: 6).",
+            "sources": [
+              "qpl-card-faq",
+              "qpl-chat-emedia",
+              "yonkers-hoopla",
+              "eastchester-borrow"
+            ]
+          }
+        ]
+      },
+      "lookupUrl": "https://www.hoopladigital.com/register",
+      "libraries": [
+        {
+          "id": "queens",
+          "name": {
+            "en": "Queens Public Library",
+            "he": "הספרייה הציבורית של קווינס"
+          },
+          "participates": true,
+          "note": "Free for anyone who lives, works, goes to school or owns property in New York State; online sign-up from age 12. The eCard is issued by email without ID and covers e-materials only. QPL's eCard pages do not name hoopla; QPL lists hoopla among its digital media services, a New York City public school library page tells families to link a Queens card to hoopla, and a 2026 guide reports that QPL's paid eCard account includes hoopla. If hoopla refused an eCard, a regular QPL card (free in New York State, issued at a branch with photo ID and proof of address) can check out all materials. QPL's pages disagree on the hoopla limit: its card FAQ says 10 titles a month, a ChatQPL answer updated on 2024-11-25 says 5.",
+          "sources": [
+            "qpl-card-faq",
+            "qpl-euser",
+            "qpl-ecard-vs-regular",
+            "qpl-chat-ecard",
+            "qpl-chat-login",
+            "qpl-chat-nonresident",
+            "qpl-chat-emedia",
+            "ps229q",
+            "wtrn-blog",
+            "user-2026-10-18"
+          ]
+        },
+        {
+          "id": "westchester",
+          "name": {
+            "en": "Westchester Library System",
+            "he": "מערכת הספריות של וסטצ'סטר"
+          },
+          "participates": true,
+          "hooplaChoice": "Westchester Library System",
+          "members": [
+            {
+              "en": "Ardsley Public Library",
+              "he": "הספרייה הציבורית של ארדסלי"
+            }
+          ],
+          "note": "Cards come from the local member library for anyone who lives, works, goes to school or owns property in Westchester County; WLS sells a card to others for $75 a year ($35 at 65 or older or with a disability). Member libraries are not listed in hoopla by their own names: Larchmont and Yonkers tell patrons to choose Westchester Library System. Monthly limits differ by member library (Yonkers 3 from February 1, Eastchester 6 for its own cardholders).",
+          "sources": [
+            "wls-card",
+            "wls-listen-read",
+            "ardsley-digital",
+            "larchmont-home",
+            "yonkers-hoopla",
+            "eastchester-borrow",
+            "user-2026-10-18"
+          ]
+        },
+        {
+          "id": "nypl",
+          "name": {
+            "en": "New York Public Library",
+            "he": "הספרייה הציבורית של ניו יורק"
+          },
+          "participates": false,
+          "note": "Reported by the user on 2026-10-18. No NYPL page offering hoopla was found (nypl.org answered scripted requests with a script challenge). The New York City public school library page recommends NYPL and Brooklyn cards for Sora and names only a Queens card for hoopla.",
+          "sources": [
+            "user-2026-10-18",
+            "ps229q"
+          ]
+        },
+        {
+          "id": "brooklyn",
+          "name": {
+            "en": "Brooklyn Public Library",
+            "he": "הספרייה הציבורית של ברוקלין"
+          },
+          "participates": false,
+          "note": "Reported by the user on 2026-10-18. No Brooklyn Public Library page offering hoopla was found; its Online Resources page, read with curl, does not mention hoopla. The New York City public school library page names only a Queens card for hoopla.",
+          "sources": [
+            "user-2026-10-18",
+            "ps229q"
+          ]
+        }
+      ],
+      "sources": [
+        {
+          "id": "user-2026-10-18",
+          "kind": "user-observation",
+          "title": "Observation by the user",
+          "checkedAt": "2026-10-18",
+          "finding": "The user reported that hoopla appears to accept Westchester Library System cards (for example Ardsley) and Queens Public Library cards, but not Brooklyn Public Library or New York Public Library cards, and that anyone in New York State can therefore get access through one of these libraries."
+        },
+        {
+          "id": "hoopla-signup",
+          "kind": "service-page",
+          "title": "hoopla sign-up and library finder",
+          "url": "https://www.hoopladigital.com/register",
+          "checkedAt": "2026-10-18",
+          "finding": "The site's sign-up text says \"Sign-up is quick and easy. Thanks to participating public libraries, access is FREE.\" and asks for \"Your valid library card number (and PIN if required)\". The library finder searches \"by name, city, state or zip\" and says \"Don't see your library? This may be because they do not offer hoopla yet.\" Read with curl from the page's application text."
+        },
+        {
+          "id": "qpl-card-faq",
+          "kind": "library-page",
+          "title": "Queens Public Library: Library Card FAQ",
+          "url": "https://www.queenslibrary.org/help/faq?id=76",
+          "checkedAt": "2026-10-18",
+          "finding": "\"You may obtain a free library card if you live, work, go to school, or own property in New York State.\" \"If you are at least 12 years old, you can sign up for a library card online.\" \"You can check out up to 10 titles per month through Hoopla\"; a title expires after 21 days. Read with WebFetch (curl receives a bot challenge)."
+        },
+        {
+          "id": "qpl-euser",
+          "kind": "library-page",
+          "title": "Queens Public Library: eCard application",
+          "url": "https://www.queenslibrary.org/get-a-card/eUser",
+          "checkedAt": "2026-10-18",
+          "finding": "Step 1 asks \"Do you live, work, go to school, or own property in New York State?\". \"For an annual fee of $50 all Non NYS Residents can purchase a Queens Library account.\" The account gives \"Digital media and downloads including eBooks, audiobooks, eMagazines, videos and music\". The page does not name hoopla or state an age. Read with WebFetch."
+        },
+        {
+          "id": "qpl-ecard-vs-regular",
+          "kind": "library-page",
+          "title": "Queens Public Library: eCard vs. Regular Card",
+          "url": "https://www.queenslibrary.org/get-a-card/regular-card-ecard-info",
+          "checkedAt": "2026-10-18",
+          "finding": "eCard: a virtual card with email verification, \"Identification not required\", \"Issued through e-mail, no need to come into the library\", \"Can check out e-materials only\". Regular card: in person with picture ID and proof of name and address; \"Must live, work, go to school or own property in NY to receive free card. Out of state incurs $50.00 fee\"; \"Can check out all materials\". Read with WebFetch."
+        },
+        {
+          "id": "qpl-chat-ecard",
+          "kind": "library-page",
+          "title": "ChatQPL: Applying for an E-Card",
+          "url": "https://qpl.libanswers.com/faq/417816",
+          "checkedAt": "2026-10-18",
+          "finding": "\"Both New York State and out of state residents can apply for an E-Card\"; \"For both out of state and international users there is an annual fee of $50.\" Last updated Oct 24, 2025."
+        },
+        {
+          "id": "qpl-chat-login",
+          "kind": "library-page",
+          "title": "ChatQPL: How do I login to my account?",
+          "url": "https://qpl.libanswers.com/faq/304989",
+          "checkedAt": "2026-10-18",
+          "finding": "\"eCard: Card number received via email and starts with 5555\"; the PIN is a four-digit number chosen by the cardholder. Last updated May 01, 2024."
+        },
+        {
+          "id": "qpl-chat-nonresident",
+          "kind": "library-page",
+          "title": "ChatQPL: Do you offer a non-resident card?",
+          "url": "https://qpl.libanswers.com/faq/375079",
+          "checkedAt": "2026-10-18",
+          "finding": "\"For an annual fee of $50 all Non-NYS Residents (including International users) can purchase a Queens Public Library account.\" Applicants answer \"No\" to the New York State question, pay online and receive the account number and PIN by email. Last updated Jul 12, 2024."
+        },
+        {
+          "id": "qpl-chat-emedia",
+          "kind": "library-page",
+          "title": "ChatQPL: How do I find eBooks and other digital media?",
+          "url": "https://qpl.libanswers.com/faq/297327",
+          "checkedAt": "2026-10-18",
+          "finding": "Names hoopla among QPL's digital media vendors and says \"Hoopla counts each eMovie and eTelevision show towards your monthly limit of 5 titles\". Last updated Nov 25, 2024; QPL's card FAQ gives 10."
+        },
+        {
+          "id": "ps229q",
+          "kind": "secondary",
+          "title": "P.S. 229Q Library Resource Center (New York City public school library)",
+          "url": "https://sites.google.com/schools.nyc.gov/229library",
+          "checkedAt": "2026-10-18",
+          "finding": "\"After obtaining a Queens Public Library card, you can create an account on hoopla by linking your QPL card.\" \"The Queens Public Library allows a standard account to borrow 10 items a month.\" Links free Queens, NYPL and Brooklyn eCard applications, recommends NYPL and Brooklyn cards for Sora, and names only the Queens card for hoopla. Undated."
+        },
+        {
+          "id": "wtrn-blog",
+          "kind": "secondary",
+          "title": "What to Read Next: Best Non-Resident Library Cards That Still Work in 2026",
+          "url": "https://whattoreadnextblog.com/out-of-state-library-qmjrl/",
+          "checkedAt": "2026-10-18",
+          "finding": "Lists Queens Public Library at \"$50 a year\" with \"Hoopla: 10 Hoopla Borrows\", linking QPL's /get-a-card/eUser application. Posted August 31, 2025; \"updated July 24 2026\"."
+        },
+        {
+          "id": "wls-card",
+          "kind": "library-page",
+          "title": "Westchester Library System: Get a Library Card",
+          "url": "https://www.westchesterlibraries.org/get-a-library-card/",
+          "checkedAt": "2026-10-18",
+          "finding": "\"If you live, work, go to school or own property in Westchester County please check this map to find your local library.\" Others \"may purchase a card from the Westchester Library System at an annual fee of $75. Individuals 65 years of age or older or with a disability are eligible for a reduced rate of $35.\" The card \"is honored at all Westchester public libraries\". Read with curl."
+        },
+        {
+          "id": "wls-listen-read",
+          "kind": "library-page",
+          "title": "Westchester Library System: Listen, Read & Watch",
+          "url": "https://www.westchesterlibraries.org/listen-read/",
+          "checkedAt": "2026-10-18",
+          "finding": "Lists hoopla among the system's e-resources (\"Requires a library card\") and lists the member libraries, Ardsley Public Library first. It gives no hoopla limit. Read with curl."
+        },
+        {
+          "id": "ardsley-digital",
+          "kind": "library-page",
+          "title": "Ardsley Public Library: Digital Content",
+          "url": "https://www.ardsleypubliclibrary.org/digital-content.html",
+          "checkedAt": "2026-10-18",
+          "finding": "Lists hoopla among the free digital resources \"available to APL card holders\": \"All you need is your library card number and your PIN (most often last 4 digits of your registered phone number)\". It does not say which library to choose in hoopla. Read with curl."
+        },
+        {
+          "id": "larchmont-home",
+          "kind": "library-page",
+          "title": "Larchmont Public Library (home page)",
+          "url": "https://larchmontlibrary.org/",
+          "checkedAt": "2026-10-18",
+          "finding": "\"Note: when signing up for the first time, scroll down to “Westchester Library System” instead of looking for “Larchmont Public Library.”\" Read with curl."
+        },
+        {
+          "id": "yonkers-hoopla",
+          "kind": "library-page",
+          "title": "Yonkers Public Library: Hoopla",
+          "url": "https://www.ypl.org/resources/hoopla",
+          "checkedAt": "2026-10-18",
+          "finding": "\"Tap “Sign Up” and then select Westchester Library System, enter your library card number\"; \"UPDATE: Effective February 1st, each patron will have 3 borrows from Hoopla per month.\" \"5 items can be checked out at a time.\" Read with curl."
+        },
+        {
+          "id": "eastchester-borrow",
+          "kind": "library-page",
+          "title": "Eastchester Public Library: Borrowing Policies",
+          "url": "https://eastchesterlibrary.org/card/borrow",
+          "checkedAt": "2026-10-18",
+          "finding": "\"For Eastchester cardholders (21008 barcodes), there is currently a limit of 6 borrows per month through Hoopla. Cardholders from other Westchester libraries should check with those libraries about their Hoopla borrowing limits.\" Read with curl."
+        }
+      ],
+      "leads": [
+        {
+          "url": "https://lewisborolibrary.org/2026/06/25/hoopla-news/",
+          "checkedAt": "2026-10-18",
+          "status": "not confirmed",
+          "note": "A web-search summary attributes to this Lewisboro Library post (June 25, 2026) a Westchester Library System change from July 1, 2026: 2 instant hoopla borrows a month per patron, plus Bonus Borrows in the last seven days of each month. The page returned HTTP 404 to curl and WebFetch on 2026-10-18, so the figure is not used."
+        },
+        {
+          "url": "https://opac.westchesterlibraries.org/Frequently_Asked_Questions",
+          "checkedAt": "2026-10-18",
+          "status": "not confirmed",
+          "note": "A web-search summary quotes this WLS catalogue FAQ as setting 3 hoopla checkouts a month from February 1, 2026. The page returned HTTP 403 (Cloudflare) to curl and WebFetch on 2026-10-18; Yonkers' page states the same limit."
+        }
+      ]
+    },
+    {
+      "id": "apple-tv",
+      "name": "Apple TV",
+      "hosts": [
+        "tv.apple.com"
+      ],
+      "model": "purchase-or-rent",
+      "summary": {
+        "en": "Buy or rent each programme on the US Apple TV store, with an Apple Account.",
+        "he": "קונים או שוכרים כל תכנית בחנות Apple TV האמריקנית, עם חשבון Apple."
+      },
+      "sources": [
+        {
+          "id": "apple-listings",
+          "kind": "service-page",
+          "title": "Apple TV: Shalom Sesame - Welcome to Israel",
+          "url": "https://tv.apple.com/us/movie/shalom-sesame---welcome-to-israel/umc.cmc.2mg7y4zqbxrjsi0gjab3ocffq",
+          "checkedAt": "2026-10-17",
+          "finding": "The nine public Apple TV listings in the library, read with curl on 2026-10-17 (HTTP 200), are rent-or-buy pages on the US store (studio Sesame Workshop). Each record's availabilityCheck holds its own result."
+        }
+      ]
+    },
+    {
+      "id": "prime-video",
+      "name": "Prime Video",
+      "hosts": [
+        "primevideo.com"
+      ],
+      "model": "purchase-or-rent",
+      "summary": {
+        "en": "Buy or rent each programme with an Amazon account.",
+        "he": "קונים או שוכרים כל תכנית עם חשבון Amazon."
+      },
+      "sources": [
+        {
+          "id": "prime-listings",
+          "kind": "service-page",
+          "title": "Prime Video: Shalom Sesame - Welcome to Israel",
+          "url": "https://www.primevideo.com/detail/Shalom-Sesame---Welcome-to-Israel/0HOJE0VM8TD71OMAZE4ZT476IN",
+          "checkedAt": "2026-10-17",
+          "finding": "The ten public Prime Video listings in the library, read with curl on 2026-10-17 (HTTP 200), offer the programmes to rent or buy; the Sesame Street From Around the World season page shows purchase options for single episodes and the season. Each record's availabilityCheck holds its own result."
+        }
+      ]
+    }
+  ]
+}

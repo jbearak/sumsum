@@ -20,7 +20,7 @@
       "ofnik"
     ],
     "language": "he",
-    "notes": "Official Hop channel or playlist metadata checked on 2026-10-17. English titles are editorial translations or transliterations. The official talk show playlist lists this installment, but the title does not explicitly establish complete program status. The official title omits the guest name. It has not been inferred from the playlist order. A YouTube player metadata request from the current non-Israeli connection returned a country restriction.",
+    "notes": "Official Hop channel or playlist metadata checked on 2026-10-17. English titles are editorial translations or transliterations. The official talk show playlist lists this installment, but the title does not explicitly establish complete program status. The official title omits the guest name. It has not been inferred from the playlist order. A YouTube player metadata request from the current non-Israeli connection returned a country restriction. Verification round (2026-10-18): identified as the Guri Alfi installment (guide episode elmo-guri-alfi): its hqdefault thumbnail is byte-identical (SHA-1 6e6cfba40ae3f6660133c7095a21f1bf8425ddf3) to that of the named ערוץ הופ! copy yt-ouabFPFJD3c, both run 509 s, Hop!'s page asset runs 505 s (the 4 s offset seen for other guests), and Guri Alfi is the only guest without a named copy on this channel. An identity claim from metadata, not a viewing.",
     "verification": "Official YouTube listing and duration verified; country restriction confirmed on 2026-10-17.",
     "verifiedDate": "2026-10-17",
     "access": "vpn-required",
@@ -38,7 +38,9 @@
     "availabilityCheck": "country-restricted",
     "availabilityError": "ERROR: [youtube] -ajWXnyBJ5I: The uploader has not made this video available in your country",
     "sourceType": "official",
-    "uploader": "רחוב סומסום"
+    "uploader": "רחוב סומסום",
+    "production": "elmo",
+    "guideEpisodeId": "elmo-guri-alfi"
   },
   {
     "id": "hop-yt-4hUqQ22yrck",
@@ -79,7 +81,9 @@
     "availabilityCheck": "country-restricted",
     "availabilityError": "ERROR: [youtube] 4hUqQ22yrck: The uploader has not made this video available in your country",
     "sourceType": "official",
-    "uploader": "רחוב סומסום"
+    "uploader": "רחוב סומסום",
+    "production": "elmo",
+    "guideEpisodeId": "elmo-amalia-douek"
   },
   {
     "id": "hop-yt-2V_GS4SaSL4",
@@ -120,7 +124,9 @@
     "availabilityCheck": "country-restricted",
     "availabilityError": "ERROR: [youtube] 2V_GS4SaSL4: The uploader has not made this video available in your country",
     "sourceType": "official",
-    "uploader": "רחוב סומסום"
+    "uploader": "רחוב סומסום",
+    "production": "elmo",
+    "guideEpisodeId": "elmo-amir-shurush"
   },
   {
     "id": "hop-yt-riiXudhGPIk",
@@ -163,7 +169,9 @@
     "availabilityCheck": "country-restricted",
     "availabilityError": "ERROR: [youtube] riiXudhGPIk: The uploader has not made this video available in your country",
     "sourceType": "official",
-    "uploader": "רחוב סומסום"
+    "uploader": "רחוב סומסום",
+    "production": "elmo",
+    "guideEpisodeId": "elmo-idan-raichel"
   },
   {
     "id": "hop-yt-qouou0oGnhI",
@@ -206,7 +214,9 @@
     "availabilityCheck": "country-restricted",
     "availabilityError": "ERROR: [youtube] qouou0oGnhI: The uploader has not made this video available in your country",
     "sourceType": "official",
-    "uploader": "רחוב סומסום"
+    "uploader": "רחוב סומסום",
+    "production": "elmo",
+    "guideEpisodeId": "elmo-israel-aharoni"
   },
   {
     "id": "hop-yt-J-Xq2si7cGw",
@@ -247,7 +257,9 @@
     "availabilityCheck": "country-restricted",
     "availabilityError": "ERROR: [youtube] J-Xq2si7cGw: The uploader has not made this video available in your country",
     "sourceType": "official",
-    "uploader": "רחוב סומסום"
+    "uploader": "רחוב סומסום",
+    "production": "elmo",
+    "guideEpisodeId": "elmo-kobi-oz"
   },
   {
     "id": "hop-yt-YpTJMUjIji4",
@@ -290,7 +302,9 @@
     "availabilityCheck": "country-restricted",
     "availabilityError": "ERROR: [youtube] YpTJMUjIji4: The uploader has not made this video available in your country",
     "sourceType": "official",
-    "uploader": "רחוב סומסום"
+    "uploader": "רחוב סומסום",
+    "production": "elmo",
+    "guideEpisodeId": "elmo-linoy-ashram"
   },
   {
     "id": "hop-yt-TEjo5PhXsCg",
@@ -331,7 +345,9 @@
     "availabilityCheck": "country-restricted",
     "availabilityError": "ERROR: [youtube] TEjo5PhXsCg: The uploader has not made this video available in your country",
     "sourceType": "official",
-    "uploader": "רחוב סומסום"
+    "uploader": "רחוב סומסום",
+    "production": "elmo",
+    "guideEpisodeId": "elmo-lucy-ayoub"
   },
   {
     "id": "hop-yt-KxZansFtqLI",
@@ -372,7 +388,9 @@
     "availabilityCheck": "country-restricted",
     "availabilityError": "ERROR: [youtube] KxZansFtqLI: The uploader has not made this video available in your country",
     "sourceType": "official",
-    "uploader": "רחוב סומסום"
+    "uploader": "רחוב סומסום",
+    "production": "elmo",
+    "guideEpisodeId": "elmo-melech-zilberschlag"
   },
   {
     "id": "hop-yt-R04aPppy6RE",
@@ -413,7 +431,9 @@
     "availabilityCheck": "country-restricted",
     "availabilityError": "ERROR: [youtube] R04aPppy6RE: The uploader has not made this video available in your country",
     "sourceType": "official",
-    "uploader": "רחוב סומסום"
+    "uploader": "רחוב סומסום",
+    "production": "elmo",
+    "guideEpisodeId": "elmo-nelly-tagar"
   },
   {
     "id": "hop-yt--xXBptbIrzQ",
@@ -454,7 +474,9 @@
     "availabilityCheck": "country-restricted",
     "availabilityError": "ERROR: [youtube] -xXBptbIrzQ: The uploader has not made this video available in your country",
     "sourceType": "official",
-    "uploader": "רחוב סומסום"
+    "uploader": "רחוב סומסום",
+    "production": "elmo",
+    "guideEpisodeId": "elmo-noa-koler"
   },
   {
     "id": "hop-yt-pNb0lA-LpO4",
@@ -497,7 +519,9 @@
     "availabilityCheck": "country-restricted",
     "availabilityError": "ERROR: [youtube] pNb0lA-LpO4: The uploader has not made this video available in your country",
     "sourceType": "official",
-    "uploader": "רחוב סומסום"
+    "uploader": "רחוב סומסום",
+    "production": "elmo",
+    "guideEpisodeId": "elmo-nof-atamna"
   },
   {
     "id": "hop-yt-WBOjvSGV0Ds",
@@ -540,7 +564,9 @@
     "availabilityCheck": "country-restricted",
     "availabilityError": "ERROR: [youtube] WBOjvSGV0Ds: The uploader has not made this video available in your country",
     "sourceType": "official",
-    "uploader": "רחוב סומסום"
+    "uploader": "רחוב סומסום",
+    "production": "elmo",
+    "guideEpisodeId": "elmo-sagi-muki"
   },
   {
     "id": "hop-yt-a-erMbnXRB8",
@@ -583,7 +609,9 @@
     "availabilityCheck": "country-restricted",
     "availabilityError": "ERROR: [youtube] a-erMbnXRB8: The uploader has not made this video available in your country",
     "sourceType": "official",
-    "uploader": "רחוב סומסום"
+    "uploader": "רחוב סומסום",
+    "production": "elmo",
+    "guideEpisodeId": "elmo-shiri-maimon"
   },
   {
     "id": "hop-yt-hylc7Xa4ItQ",
@@ -623,7 +651,8 @@
     "availabilityCheck": "unavailable",
     "availabilityError": "ERROR: [youtube] hylc7Xa4ItQ: This video is not available",
     "sourceType": "official",
-    "uploader": "רחוב סומסום"
+    "uploader": "רחוב סומסום",
+    "production": "modern-other"
   },
   {
     "id": "hop-yt-bqT3b75j0mU",
@@ -664,7 +693,8 @@
     "availabilityCheck": "unavailable",
     "availabilityError": "ERROR: [youtube] bqT3b75j0mU: This video is not available",
     "sourceType": "official",
-    "uploader": "רחוב סומסום"
+    "uploader": "רחוב סומסום",
+    "production": "modern-other"
   },
   {
     "id": "hop-yt-0iGICL-Dz0c",
@@ -704,7 +734,8 @@
     "availabilityCheck": "unavailable",
     "availabilityError": "ERROR: [youtube] 0iGICL-Dz0c: This video is not available",
     "sourceType": "official",
-    "uploader": "רחוב סומסום"
+    "uploader": "רחוב סומסום",
+    "production": "modern-other"
   },
   {
     "id": "hop-yt-cD-FkqlSuQg",
@@ -747,7 +778,8 @@
     "availabilityCheck": "unavailable",
     "availabilityError": "ERROR: [youtube] cD-FkqlSuQg: This video is not available",
     "sourceType": "official",
-    "uploader": "רחוב סומסום"
+    "uploader": "רחוב סומסום",
+    "production": "modern-other"
   },
   {
     "id": "hop-yt-Hcyw-3uaEos",
@@ -790,7 +822,8 @@
     "availabilityCheck": "country-restricted",
     "availabilityError": "ERROR: [youtube] Hcyw-3uaEos: The uploader has not made this video available in your country",
     "sourceType": "official",
-    "uploader": "רחוב סומסום"
+    "uploader": "רחוב סומסום",
+    "production": "modern-other"
   },
   {
     "id": "hop-yt-SqQZmN2g6PE",
@@ -833,7 +866,8 @@
     "availabilityCheck": "unavailable",
     "availabilityError": "ERROR: [youtube] SqQZmN2g6PE: This video is not available",
     "sourceType": "official",
-    "uploader": "רחוב סומסום"
+    "uploader": "רחוב סומסום",
+    "production": "modern-other"
   },
   {
     "id": "hop-yt-JIZKytYP6L0",
@@ -871,7 +905,8 @@
     "availabilityCheck": "unavailable",
     "availabilityError": "ERROR: [youtube] JIZKytYP6L0: This video is not available",
     "sourceType": "official",
-    "uploader": "רחוב סומסום"
+    "uploader": "רחוב סומסום",
+    "production": "modern-other"
   },
   {
     "id": "hop-yt-2-J8pvV-pac",
@@ -911,7 +946,8 @@
     "availabilityCheck": "country-restricted",
     "availabilityError": "ERROR: [youtube] 2-J8pvV-pac: The uploader has not made this video available in your country",
     "sourceType": "official",
-    "uploader": "ערוץ הופ!"
+    "uploader": "ערוץ הופ!",
+    "production": "modern-other"
   },
   {
     "id": "hop-yt-vel2-CpW4wE",
@@ -952,7 +988,8 @@
     "availabilityCheck": "unavailable",
     "availabilityError": "ERROR: [youtube] vel2-CpW4wE: This video is not available",
     "sourceType": "official",
-    "uploader": "רחוב סומסום"
+    "uploader": "רחוב סומסום",
+    "production": "modern-other"
   },
   {
     "id": "hop-yt-1az7YvfLxZQ",
@@ -992,7 +1029,8 @@
     "availabilityCheck": "unavailable",
     "availabilityError": "ERROR: [youtube] 1az7YvfLxZQ: This video is not available",
     "sourceType": "official",
-    "uploader": "רחוב סומסום"
+    "uploader": "רחוב סומסום",
+    "production": "modern-other"
   },
   {
     "id": "hop-yt-PY_b2abAvpM",
@@ -1033,7 +1071,8 @@
     "availabilityCheck": "unavailable",
     "availabilityError": "ERROR: [youtube] PY_b2abAvpM: This video is not available",
     "sourceType": "official",
-    "uploader": "רחוב סומסום"
+    "uploader": "רחוב סומסום",
+    "production": "modern-other"
   },
   {
     "id": "hop-yt-Vhq2OimPiac",
@@ -1074,7 +1113,8 @@
     "availabilityCheck": "country-restricted",
     "availabilityError": "ERROR: [youtube] Vhq2OimPiac: The uploader has not made this video available in your country",
     "sourceType": "official",
-    "uploader": "רחוב סומסום"
+    "uploader": "רחוב סומסום",
+    "production": "modern-other"
   },
   {
     "id": "hop-yt-CLIi7yf4XZM",
@@ -1114,7 +1154,8 @@
     "availabilityCheck": "unavailable",
     "availabilityError": "ERROR: [youtube] CLIi7yf4XZM: This video is not available",
     "sourceType": "official",
-    "uploader": "רחוב סומסום"
+    "uploader": "רחוב סומסום",
+    "production": "modern-other"
   },
   {
     "id": "hop-yt-6fwhaGPued4",
@@ -1155,7 +1196,8 @@
     "availabilityCheck": "unavailable",
     "availabilityError": "ERROR: [youtube] 6fwhaGPued4: This video is not available",
     "sourceType": "official",
-    "uploader": "רחוב סומסום"
+    "uploader": "רחוב סומסום",
+    "production": "modern-other"
   },
   {
     "id": "hop-yt-jplkBCiGhoI",
@@ -1195,7 +1237,8 @@
     "availabilityCheck": "unavailable",
     "availabilityError": "ERROR: [youtube] jplkBCiGhoI: This video is not available",
     "sourceType": "official",
-    "uploader": "רחוב סומסום"
+    "uploader": "רחוב סומסום",
+    "production": "modern-other"
   },
   {
     "id": "hop-yt-DKw2Rft_6wE",
@@ -1239,7 +1282,8 @@
     "availabilityCheck": "unavailable",
     "availabilityError": "ERROR: [youtube] DKw2Rft_6wE: This video is not available",
     "sourceType": "official",
-    "uploader": "רחוב סומסום"
+    "uploader": "רחוב סומסום",
+    "production": "modern-other"
   },
   {
     "id": "hop-yt-ToRMGFHrVkY",
@@ -1275,7 +1319,8 @@
     "availabilityCheck": "unavailable",
     "availabilityError": "ERROR: [youtube] ToRMGFHrVkY: This video is not available",
     "sourceType": "official",
-    "uploader": "רחוב סומסום"
+    "uploader": "רחוב סומסום",
+    "production": "modern-other"
   },
   {
     "id": "hop-yt-XWPAAZz8oLY",
@@ -1311,7 +1356,8 @@
     "availabilityCheck": "unavailable",
     "availabilityError": "ERROR: [youtube] XWPAAZz8oLY: This video is not available",
     "sourceType": "official",
-    "uploader": "רחוב סומסום"
+    "uploader": "רחוב סומסום",
+    "production": "modern-other"
   },
   {
     "id": "hop-yt-2U59XDNfJuk",
@@ -1355,7 +1401,8 @@
     "availabilityCheck": "unavailable",
     "availabilityError": "ERROR: [youtube] 2U59XDNfJuk: This video is not available",
     "sourceType": "official",
-    "uploader": "רחוב סומסום"
+    "uploader": "רחוב סומסום",
+    "production": "modern-other"
   },
   {
     "id": "hop-yt-dTds-RVD2iU",
@@ -1395,7 +1442,8 @@
     "availabilityCheck": "unavailable",
     "availabilityError": "ERROR: [youtube] dTds-RVD2iU: This video is not available",
     "sourceType": "official",
-    "uploader": "ערוץ הופ!"
+    "uploader": "ערוץ הופ!",
+    "production": "modern-other"
   },
   {
     "id": "hop-yt-p2y748yaxyM",
@@ -1436,7 +1484,8 @@
     "availabilityCheck": "unavailable",
     "availabilityError": "ERROR: [youtube] p2y748yaxyM: This video is not available",
     "sourceType": "official",
-    "uploader": "רחוב סומסום"
+    "uploader": "רחוב סומסום",
+    "production": "modern-other"
   },
   {
     "id": "hop-yt-mIWqQONSMlQ",
@@ -1481,7 +1530,8 @@
     "availabilityCheck": "unavailable",
     "availabilityError": "ERROR: [youtube] mIWqQONSMlQ: This video is not available",
     "sourceType": "official",
-    "uploader": "רחוב סומסום"
+    "uploader": "רחוב סומסום",
+    "production": "modern-other"
   },
   {
     "id": "hop-yt-6VaxXA1HJrY",
@@ -1521,7 +1571,8 @@
     "availabilityCheck": "unavailable",
     "availabilityError": "ERROR: [youtube] 6VaxXA1HJrY: This video is not available",
     "sourceType": "official",
-    "uploader": "רחוב סומסום"
+    "uploader": "רחוב סומסום",
+    "production": "modern-other"
   },
   {
     "id": "hop-yt-k2pub2XBUL0",
@@ -1561,7 +1612,8 @@
     "availabilityCheck": "unavailable",
     "availabilityError": "ERROR: [youtube] k2pub2XBUL0: This video is not available",
     "sourceType": "official",
-    "uploader": "רחוב סומסום"
+    "uploader": "רחוב סומסום",
+    "production": "modern-other"
   },
   {
     "id": "hop-yt-JiR9KNVL6ZQ",
@@ -1605,7 +1657,8 @@
     "availabilityCheck": "unavailable",
     "availabilityError": "ERROR: [youtube] JiR9KNVL6ZQ: This video is not available",
     "sourceType": "official",
-    "uploader": "רחוב סומסום"
+    "uploader": "רחוב סומסום",
+    "production": "modern-other"
   },
   {
     "id": "hop-yt-dFqRZsc3Jbc",
@@ -1651,7 +1704,8 @@
     "availabilityCheck": "unavailable",
     "availabilityError": "ERROR: [youtube] dFqRZsc3Jbc: This video is not available",
     "sourceType": "official",
-    "uploader": "רחוב סומסום"
+    "uploader": "רחוב סומסום",
+    "production": "modern-other"
   },
   {
     "id": "hop-yt-8D6FXIGTE_4",
@@ -1693,7 +1747,8 @@
     "availabilityCheck": "country-restricted",
     "availabilityError": "ERROR: [youtube] 8D6FXIGTE_4: The uploader has not made this video available in your country",
     "sourceType": "official",
-    "uploader": "רחוב סומסום"
+    "uploader": "רחוב סומסום",
+    "production": "modern-other"
   },
   {
     "id": "hop-yt-o5-KgM5_QfY",
@@ -1735,7 +1790,8 @@
     "availabilityCheck": "country-restricted",
     "availabilityError": "ERROR: [youtube] o5-KgM5_QfY: The uploader has not made this video available in your country",
     "sourceType": "official",
-    "uploader": "רחוב סומסום"
+    "uploader": "רחוב סומסום",
+    "production": "modern-other"
   },
   {
     "id": "hop-yt-mj0zPcxJagw",
@@ -1777,7 +1833,8 @@
     "availabilityCheck": "country-restricted",
     "availabilityError": "ERROR: [youtube] mj0zPcxJagw: The uploader has not made this video available in your country",
     "sourceType": "official",
-    "uploader": "רחוב סומסום"
+    "uploader": "רחוב סומסום",
+    "production": "modern-other"
   },
   {
     "id": "hop-yt-17GXHUTNMw4",
@@ -1815,7 +1872,8 @@
     "availabilityCheck": "country-restricted",
     "availabilityError": "ERROR: [youtube] 17GXHUTNMw4: The uploader has not made this video available in your country",
     "sourceType": "official",
-    "uploader": "רחוב סומסום"
+    "uploader": "רחוב סומסום",
+    "production": "modern-other"
   },
   {
     "id": "hop-yt-E-EXh9Xnw2M",
@@ -1856,7 +1914,9 @@
     "availabilityError": "ERROR: [youtube] E-EXh9Xnw2M: The uploader has not made this video available in your country",
     "sourceType": "official",
     "uploader": "רחוב סומסום",
-    "programFormat": "short-form"
+    "programFormat": "short-form",
+    "production": "word-of-day-2023",
+    "guideEpisodeId": "word-of-day-2023-ep-01"
   },
   {
     "id": "hop-yt-jricljQkc3o",
@@ -1897,7 +1957,9 @@
     "availabilityError": "ERROR: [youtube] jricljQkc3o: The uploader has not made this video available in your country",
     "sourceType": "official",
     "uploader": "רחוב סומסום",
-    "programFormat": "short-form"
+    "programFormat": "short-form",
+    "production": "word-of-day-2023",
+    "guideEpisodeId": "word-of-day-2023-ep-02"
   },
   {
     "id": "hop-yt-ZGhnAMf9T1s",
@@ -1938,7 +2000,9 @@
     "availabilityError": "ERROR: [youtube] ZGhnAMf9T1s: The uploader has not made this video available in your country",
     "sourceType": "official",
     "uploader": "רחוב סומסום",
-    "programFormat": "short-form"
+    "programFormat": "short-form",
+    "production": "word-of-day-2023",
+    "guideEpisodeId": "word-of-day-2023-ep-03"
   },
   {
     "id": "hop-yt-CWV5gx43KOI",
@@ -1979,7 +2043,9 @@
     "availabilityError": "ERROR: [youtube] CWV5gx43KOI: The uploader has not made this video available in your country",
     "sourceType": "official",
     "uploader": "רחוב סומסום",
-    "programFormat": "short-form"
+    "programFormat": "short-form",
+    "production": "word-of-day-2023",
+    "guideEpisodeId": "word-of-day-2023-ep-04"
   },
   {
     "id": "hop-yt-4bzoqefd8QM",
@@ -2020,7 +2086,9 @@
     "availabilityError": "ERROR: [youtube] 4bzoqefd8QM: The uploader has not made this video available in your country",
     "sourceType": "official",
     "uploader": "רחוב סומסום",
-    "programFormat": "short-form"
+    "programFormat": "short-form",
+    "production": "word-of-day-2023",
+    "guideEpisodeId": "word-of-day-2023-ep-05"
   },
   {
     "id": "hop-yt-cbBpJNGer50",
@@ -2061,7 +2129,9 @@
     "availabilityError": "ERROR: [youtube] cbBpJNGer50: The uploader has not made this video available in your country",
     "sourceType": "official",
     "uploader": "רחוב סומסום",
-    "programFormat": "short-form"
+    "programFormat": "short-form",
+    "production": "word-of-day-2023",
+    "guideEpisodeId": "word-of-day-2023-ep-06"
   },
   {
     "id": "hop-yt-U6l7_1OUsTg",
@@ -2102,7 +2172,9 @@
     "availabilityError": "ERROR: [youtube] U6l7_1OUsTg: The uploader has not made this video available in your country",
     "sourceType": "official",
     "uploader": "רחוב סומסום",
-    "programFormat": "short-form"
+    "programFormat": "short-form",
+    "production": "word-of-day-2023",
+    "guideEpisodeId": "word-of-day-2023-ep-07"
   },
   {
     "id": "hop-yt-fqEOjxQP7No",
@@ -2143,6 +2215,8 @@
     "availabilityError": "ERROR: [youtube] fqEOjxQP7No: The uploader has not made this video available in your country",
     "sourceType": "official",
     "uploader": "רחוב סומסום",
-    "programFormat": "short-form"
+    "programFormat": "short-form",
+    "production": "word-of-day-2023",
+    "guideEpisodeId": "word-of-day-2023-ep-08"
   }
 ]
