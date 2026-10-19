@@ -6389,8 +6389,8 @@ function renderSurprise() {
  } else {
   const ul = el('ul', 'pick'); ul.append(homeCard(r, 'sp-')); body.append(ul);
   const act = el('div', 'pop-act');
-  if (surprise.pos > 0) act.append(btn('btn ghost', t('previous'), () => { surprise.pos--; renderSurprise(); restoreFocus('sp-prev', 'sp-another'); }, 'sp-prev'));
-  if (surprise.pool.length > 1 || (surprise.pool.length === 1 && surprise.pool[0] !== r)) act.append(btn('btn', t('another'), () => { rollSurprise(); renderSurprise(); restoreFocus('sp-another'); }, 'sp-another'));
+  if (surprise.pos > 0) act.append(btn('btn ghost', t('previous'), () => { surprise.pos--; renderSurprise(); restoreFocus('sp-prev', 'sp-another', 'surprise-h'); }, 'sp-prev'));
+  if (surprise.pool.length > 1 || (surprise.pool.length === 1 && surprise.pool[0] !== r)) act.append(btn('btn', t('another'), () => { rollSurprise(); renderSurprise(); restoreFocus('sp-another', 'sp-prev', 'surprise-h'); }, 'sp-another'));
   body.append(act);
  }
  pop.replaceChildren(head, body); pop.setAttribute('aria-labelledby', 'surprise-h');

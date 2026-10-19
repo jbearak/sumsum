@@ -3852,7 +3852,8 @@ async function checkHome(htmlPath, M) {
     const pick4 = () => { const a = H4.find(n => (n.getAttribute?.('data-fk') || '').startsWith('sp-card-'), pop4)[0]; return a && a.getAttribute('data-fk').slice(8); };
     const p1 = pick4(); assert([c1.id, c3.id].includes(p1), 'Surprise on Starred picks a starred video');
     await H4.fk('sp-star-' + p1).dispatch('click'); H4.flushTimers();
-    await H4.fk('sp-another').dispatch('click');
+    H4.fk('sp-another').focus(); await H4.fk('sp-another').dispatch('click');
+    assert(H4.document.activeElement.isConnected && pop4.contains(H4.document.activeElement), 'Focus stays in Surprise when Another goes');
     const p2 = pick4(); assert(p2 && p2 !== p1 && [c1.id, c3.id].includes(p2), 'After unstarring, Another picks only what is still starred');
     await H4.fk('sp-star-' + p2).dispatch('click'); H4.flushTimers();
     assert(!H4.has('sp-another'), 'Nothing left to pick: no Another');
