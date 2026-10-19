@@ -46,6 +46,8 @@ The Research to-do page (`#/todo`, formerly To find) is linked from Missing epis
 
 The guide's coverage panel for core Rechov Sumsum sits at the end of the guide overview.
 
+A production with no documented episode and no queued upload, known only by its total (the 1998 Arabic-dominant version), gets no door on Home and no rail entry or section in the guide. The coverage summary still names it, and its own route still opens.
+
 ## Evidence display
 
 Evidence is said in words, never with a graphic. The levels are "Details checked, not test-played" (metadata checked, which every linked episode has), "Seen to play" (playback started), "Checked in full" and "Compared with a reference", and "Nothing to check yet" without an upload. Guide tiles, and List rows on phones (where the Evidence column is hidden), show a text badge only above the first level. The List's Evidence column and the episode page's tag name every level; the episode page keeps its ladder, with "Now" at the level. Production pages summarise the levels with counts, and the legend explains each in one line. Evidence wording never says "watched": it is about what the project checked, not about the user's own Watched marks.

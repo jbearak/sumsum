@@ -3858,6 +3858,26 @@ async function checkHome(htmlPath, M) {
     await H4.fk('sp-star-' + p2).dispatch('click'); H4.flushTimers();
     assert(!H4.has('sp-another'), 'Nothing left to pick: no Another');
   }
+  // A production with no documented episode and no queued upload (known only by its total) is not offered where you browse:
+  // no door on Home, no rail entry or section in the guide. Its route still opens, and the coverage summary still names it.
+  {
+    const qOf = p => ((M.guide.unidentified || {})[p.id] || []).filter(id => records.some(r => r.id === id)).length;
+    const empty = M.prods.filter(p => !(M.epsOf.get(p.id) || []).length && !qOf(p));
+    await H.navigate('home');
+    for (const p of M.prods) {
+      if (p.format === 'queue') continue;
+      assert.equal(H.has('door-' + p.id), !empty.includes(p), 'Home door for ' + p.id + (empty.includes(p) ? ' is hidden' : ''));
+    }
+    await H.navigate('guide');
+    for (const p of empty) {
+      assert(!H.has('rail-' + p.id), 'No guide rail entry for ' + p.id);
+      assert(!H.find(n => n.tagName === 'h2' && n.textContent.includes(M.prodById.get(p.id).nameEn || p.id), H.byClass('sections')[0]).length,
+        'No guide section for ' + p.id);
+      assert(H.byClass('goal')[0].textContent.includes(M.prodById.get(p.id).nameEn || p.id), 'The coverage summary still names ' + p.id);
+      await H.navigate('guide/' + encodeURIComponent(p.id)); assert(H.has('rail-' + p.id), 'Its own route still opens and is marked');
+      await H.navigate('guide');
+    }
+  }
   // A stored queue key that matches no record stays stored and unseen, and moving a row swaps it with the next row shown.
   {
     const [kA, kB] = [c1, c3].map(keyOf), st = new Map([['sumsum-sitting', JSON.stringify([kA, 'zz-no-such-record', kB])]]);
