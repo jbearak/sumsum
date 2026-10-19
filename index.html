@@ -6404,8 +6404,10 @@ function closePop(returnFocus) {
 document.addEventListener('keydown', ev => { if (ev.key === 'Escape' && pops.open) { if (ev.preventDefault) ev.preventDefault(); closePop(true); } });
 document.addEventListener('click', ev => {
  if (!pops.open) return;
- const pop = $(pops.open + '-pop'), o = pops.opener;
- if (pop.contains(ev.target) || (o && o.contains(ev.target))) return;
+ const pop = $(pops.open + '-pop'), o = pops.opener, path = typeof ev.composedPath === 'function' ? ev.composedPath() : [];
+ // A control inside the popover may be drawn again during its own click ("Another", the star), leaving the target detached:
+ // the event's path still says where the click was.
+ if (path.includes(pop) || pop.contains(ev.target) || ev.target.isConnected === false || (o && o.contains(ev.target))) return;
  // A click on another control keeps its focus; a click on nothing in particular returns focus to the opener, so it is not
  // left on the popover's removed content.
  const a = document.activeElement, lost = !a || a === document.body || pop.contains(a);
@@ -6446,7 +6448,9 @@ function dieFace() { const d = el('span', 'die die-static', 'א'); d.setAttribut
 function rebindOpener() {
  const o = pops.opener;
  if (pops.open && o && o.isConnected === false) {
-  const n = focusables.get(o.getAttribute('data-fk') || ''); if (n) { pops.opener = n; n.setAttribute('aria-expanded', 'true'); }
+  // The same control drawn again, else (the queue bar gone with the last video) the masthead's own button.
+  const n = focusables.get(o.getAttribute('data-fk') || '') || (pops.open === 'queue' ? $('queue-btn') : focusables.get('tab-surprise'));
+  if (n) { pops.opener = n; n.setAttribute('aria-expanded', 'true'); }
  }
 }
 sessionHooks.add(() => { const after = focusAfter; focusAfter = []; redraw(activeKey(), after, false); });

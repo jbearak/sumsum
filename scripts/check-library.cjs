@@ -3718,10 +3718,11 @@ async function checkHome(htmlPath, M) {
   const seenPicks = [];
   for (let k = 0; k < 25; k++) {
     const r = picked(); assert(r && pickable(r), 'Surprise picks an offered video within the preferences: ' + (r && r.id)); seenPicks.push(r);
-    if (k < 24) await H.fk('sp-another').click();
+    // A bubbling click, as in a browser: Another redraws the card during its own click and must not count as an outside click.
+    if (k < 24) { await H.fk('sp-another').dispatch('click'); assert(!pop.hidden, 'Another keeps Surprise open'); }
   }
   assert(new Set(seenPicks).size > 1, 'Another picks again');
-  await H.fk('sp-prev').click(); assert.equal(picked(), seenPicks.at(-2), 'Previous goes back');
+  await H.fk('sp-prev').dispatch('click'); assert(!pop.hidden && picked() === seenPicks.at(-2), 'Previous goes back, and Surprise stays open');
   await H.document.activeElement.dispatch('keydown', {key: 'Escape'});
   assert(pop.hidden && sb.getAttribute('aria-expanded') === 'false' && H.document.activeElement === sb, 'Escape closes it and focus returns');
   await sb.click(); await H.$('view').dispatch('click');
@@ -3731,14 +3732,14 @@ async function checkHome(htmlPath, M) {
   await sb.click(); await H.navigate('browse'); assert(pop.hidden, 'A route change closes it');
   // The star inside the Surprise card: the popover stays open with focus on the star.
   await H.navigate('home'); await sb.click();
-  { const r = picked(), st = () => H.fk('sp-star-' + r.id); st().focus(); await st().click(); H.flushTimers();
+  { const r = picked(), st = () => H.fk('sp-star-' + r.id); st().focus(); await st().dispatch('click'); H.flushTimers();
     assert(!pop.hidden && picked() === r && st().getAttribute('aria-pressed') === 'true' && H.document.activeElement === st(),
       'Starring a Surprise pick keeps it open, pressed and focused');
     await st().click(); await H.fk('surprise-close').click(); }
   // "+" inside the Surprise card queues the pick in place: the popover stays open and the button shows it.
   await H.navigate('home'); await sb.click();
   const pr = picked(), qb = () => H.fk('sp-q-' + pr.id), wasQ = JSON.parse(H.storage.get('sumsum-sitting') || '[]').includes(keyOf(pr));
-  await qb().click(); H.flushTimers();
+  await qb().dispatch('click'); H.flushTimers();
   assert(!pop.hidden && picked() === pr && qb().getAttribute('aria-pressed') === String(!wasQ), 'Queueing from Surprise keeps it open and updates its +');
   await qb().click(); H.flushTimers(); await H.fk('surprise-close').click();
   // A shuffled shelf keeps its order when Home is drawn again (a star or the queue), until the next shuffle.
@@ -3795,6 +3796,16 @@ async function checkHome(htmlPath, M) {
   await H.document.activeElement.dispatch('keydown', {key: 'Escape'});
   assert(pop.hidden && H.document.activeElement === H.fk('tab-surprise'), 'Escape returns focus to the redrawn phone button');
   await H.fk('home-rm-' + p2.id).click(); H.flushTimers();
+  // The queue opened from the phone bar: when the last video goes, the bar goes, and focus returns to the masthead's Queue button.
+  if (!H.has('qbar-more')) { await H.fk('smusic-q-' + shelfCards('music').map(a => cardRec(a, 'smusic-card-'))[0].id).click(); H.flushTimers(); }
+  await H.fk('qbar-more').click();
+  assert(!H.$('queue-pop').hidden, 'The phone bar opens the queue');
+  await H.fk('qp-clear').dispatch('click'); H.flushTimers();
+  assert(!H.$('queue-pop').hidden && H.$('queue-btn').getAttribute('aria-expanded') === 'true', 'The popover stays open, now bound to the Queue button');
+  await H.document.activeElement.dispatch('keydown', {key: 'Escape'});
+  assert(H.$('queue-pop').hidden && H.document.activeElement === H.$('queue-btn'), 'Escape returns focus to the Queue button');
+  await H.$('queue-btn').click(); await H.fk('qp-undo').dispatch('click'); H.flushTimers();
+  await H.document.activeElement.dispatch('keydown', {key: 'Escape'});
   // The queue popover from the masthead holds the same queue.
   await H.$('queue-btn').click();
   assert(!H.$('queue-pop').hidden && H.has('qp-open') && H.fk('qp-open').href === expectDest(d1), 'The queue popover offers the next video');

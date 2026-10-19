@@ -94,7 +94,9 @@ function boot(htmlPath, options = {}) {
     // A bubbling event: the target's listeners, then each ancestor's, with event.target kept on the original element.
     async dispatch(name, extra = {}) {
       let prevented = false;
-      for (let n = this; n; n = n.parentElement) {
+      // Like a browser, the path is fixed when the event is dispatched: a listener that replaces the target does not stop it.
+      const path = []; for (let n = this; n; n = n.parentElement) path.push(n);
+      for (const n of path) {
         for (const callback of n.listeners[name] || []) {
           await callback({target: this, currentTarget: n, preventDefault() { prevented = true; }, ...extra});
         }
