@@ -6269,7 +6269,8 @@ VIEWS.home = function mountHome(v) {
  const s1 = shelf('starred', t('navStarred'), starredRecs, ['starred', starredRecs.length]); if (s1) v.append(s1);
  const music = records.filter(r => (r.themes || []).some(x => tagKey(x) === MUSIC));
  const musicOk = music.filter(pickable);
- const s2 = shelf('music', t('shelfMusic'), musicOk, [prefQuery(['theme=' + MUSIC]), music.filter(prefOk).length]); if (s2) v.append(s2);
+ const s2 = shelf('music', t('shelfMusic'), musicOk, [prefQuery(['theme=' + encodeURIComponent(MUSIC)]), music.filter(prefOk).length]);
+ if (s2) v.append(s2);
  v.append(prodDoors());
 };
 

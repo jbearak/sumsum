@@ -1457,7 +1457,7 @@ async function checkHebrew(H, M) {
 
 // ---------------------------------------------------------------- crash sweep
 async function sweep(H, M) {
-  const routes = ['guide', 'todo', 'browse', 'browse/identified', 'browse/unidentified', 'browse/missing', 'starred'];
+  const routes = ['home', 'guide', 'todo', 'browse', 'browse/identified', 'browse/unidentified', 'browse/missing', 'starred'];
   for (const p of M.prods) {
     routes.push('guide/' + encodeURIComponent(p.id));
     for (const g of M.prodModel(p).groups) for (const n of g.slotNs) routes.push('slot/' + encodeURIComponent(p.id) + '/' + (g.season ?? '-') + '/' + n);
@@ -3590,6 +3590,153 @@ function menuModel(M) {
     counts: {identified: M.records.length - waiting.length, unidentified: waiting.length,
       missing: M.eps.filter(e => M.cov(e) !== 'whole-candidate').length}};
 }
+// ---------------------------------------------------------------- Home, the queue and Surprise
+// The recorded spoken language and length, as the app reads them (Browse's facets and Home's preferences).
+const spokenOfM = r => {
+  const parts = String(r.language ?? '').toLowerCase().split(/[^a-z]+/).filter(x => x && x !== 'und');
+  return parts.length ? [...new Set(parts.map(x => (x === 'he' || x === 'en' ? x : 'other')))] : ['none'];
+};
+const lenOkM = (r, n) => !n || (Number(r.durationSeconds) > 0 && Number(r.durationSeconds) <= Number(n) * 60);
+const tagKeyM = v => normalizeQ((NAMES[String(v).toLowerCase()] || NAMES[normalizeQ(v)] || [v])[0]);
+async function checkHome(htmlPath, M) {
+  const H = harness(boot(htmlPath, {htmlAttrs: {'data-start-seed': '11'}})), {records} = M, keyOf = r => r.id || r.url;
+  const byId = new Map(records.map(r => [r.id, r]));
+  assert.equal(H.location.hash, '#/home', 'Home is the start view');
+  const prefs = () => ({spoken: JSON.parse(H.storage.get('sumsum-spoken') || '"all"'), len: JSON.parse(H.storage.get('sumsum-length') || '""')});
+  const prefOk = r => { const p = prefs(); return (p.spoken === 'all' || spokenOfM(r).includes(p.spoken)) && lenOkM(r, p.len); };
+  const pickable = r => offerable(r) && prefOk(r);
+  const cardRec = (n, prefix) => byId.get(n.getAttribute('data-fk').slice(prefix.length));
+  const shelfCards = id => H.find(n => (n.getAttribute?.('data-fk') || '').startsWith('s' + id + '-card-'));
+  // Preferences: stored, pressed, applied to Home; a Browse hash never changes them.
+  assert.equal(H.fk('pref-spoken-all').getAttribute('aria-pressed'), 'true'); assert.equal(H.fk('pref-len-any').getAttribute('aria-pressed'), 'true');
+  await H.fk('pref-len-5').click();
+  assert.equal(H.storage.get('sumsum-length'), '"5"', 'Length is stored');
+  assert.equal(H.fk('pref-len-5').getAttribute('aria-pressed'), 'true');
+  const music = shelfCards('music');
+  assert(music.length && music.every(a => pickable(cardRec(a, 'smusic-card-')) && (cardRec(a, 'smusic-card-').themes || []).some(t => tagKeyM(t) === tagKeyM('music'))),
+    'The music shelf holds offered music videos within the preferences');
+  const musicAll = records.filter(r => (r.themes || []).some(t => tagKeyM(t) === tagKeyM('music')));
+  assert.equal(H.fk('see-music').href, '#/browse?theme=' + encodeURIComponent(tagKeyM('music')) + '&len=5', 'See all opens the same query in Browse');
+  assert.equal(H.number(H.fk('see-music').textContent), musicAll.filter(prefOk).length, 'See all counts what Browse will show');
+  await H.navigate('browse?len=10'); assert.equal(H.storage.get('sumsum-length'), '"5"', 'A Browse hash does not change the Home preference');
+  await H.navigate('home');
+  await H.fk('pref-spoken-en').click(); assert.equal(H.storage.get('sumsum-spoken'), '"en"');
+  const hero = H.fk('next-watch'), heroRec = records.find(r => expectDest(r) === hero.href && pickable(r));
+  assert(heroRec, 'Up next offers an offered video within the preferences: ' + hero.href);
+  await H.fk('pref-spoken-all').click(); await H.fk('pref-len-any').click();
+  assert.deepEqual(prefs(), {spoken: 'all', len: ''});
+  // The characters: the most-tagged twelve, each opening Browse filtered by that character, with its count.
+  const tokens = H.find(n => (n.getAttribute?.('data-fk') || '').startsWith('tok-'));
+  const charN = new Map();
+  for (const r of records) for (const k of new Set((r.characters || []).map(tagKeyM))) charN.set(k, (charN.get(k) || 0) + 1);
+  const top = [...charN].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).slice(0, 12);
+  assert.equal(tokens.length, top.length, 'Twelve characters (or all there are)');
+  for (const a of tokens) {
+    const k = a.getAttribute('data-fk').slice(4);
+    assert.equal(a.href, '#/browse?character=' + encodeURIComponent(k), 'A character opens Browse filtered by it: ' + k);
+    assert.equal(H.number(H.byClass('tok-n', a)[0].textContent), charN.get(k), 'Character count: ' + k);
+  }
+  await tokens[0].click(); assert.equal(H.count(), charN.get(tokens[0].getAttribute('data-fk').slice(4)), 'Browse shows the character\'s videos');
+  await H.navigate('home');
+  // The queue: "+" adds, the masthead counts, rows move and go, Clear can be undone, Open next opens the first and removes it.
+  const [c1, c2, c3] = shelfCards('music').slice(0, 3).map(a => cardRec(a, 'smusic-card-'));
+  for (const r of [c1, c2, c3]) { await H.fk('smusic-q-' + r.id).click(); H.flushTimers(); }
+  assert.deepEqual(JSON.parse(H.storage.get('sumsum-sitting')), [c1, c2, c3].map(keyOf), 'Queued in order');
+  assert.equal(H.$('queue-btn').getAttribute('aria-label'), tr('en', 'queueN', {n: '3'}), 'The masthead counts the queue');
+  assert.equal(H.fk('smusic-q-' + c1.id).getAttribute('aria-pressed'), 'true', 'A queued card\'s + is pressed');
+  await H.fk('home-down-' + c1.id).click(); H.flushTimers();
+  assert.deepEqual(JSON.parse(H.storage.get('sumsum-sitting')), [c2, c1, c3].map(keyOf), 'Move down');
+  assert.equal(H.document.activeElement.getAttribute('data-fk'), 'home-down-' + c1.id, 'Focus stays on the moved row\'s control');
+  await H.fk('home-up-' + c1.id).click(); H.flushTimers();
+  assert.deepEqual(JSON.parse(H.storage.get('sumsum-sitting')), [c1, c2, c3].map(keyOf), 'Move up');
+  await H.fk('home-rm-' + c3.id).click(); H.flushTimers();
+  assert.deepEqual(JSON.parse(H.storage.get('sumsum-sitting')), [c1, c2].map(keyOf), 'Remove');
+  await H.fk('home-clear').click(); H.flushTimers();
+  assert.deepEqual(JSON.parse(H.storage.get('sumsum-sitting')), [], 'Clear');
+  await H.fk('home-undo').click(); H.flushTimers();
+  assert.deepEqual(JSON.parse(H.storage.get('sumsum-sitting')), [c1, c2].map(keyOf), 'Undo brings the queue back');
+  const open = H.fk('home-open');
+  assert.equal(open.href, expectDest(c1), 'Open next links the first video');
+  assert(open.target === '_blank' && /noopener/.test(open.rel), 'in a new tab');
+  await open.click(); assert(open.isConnected, 'The Open next link is still in the page after its click');
+  H.flushTimers();
+  assert.deepEqual(JSON.parse(H.storage.get('sumsum-sitting')), [keyOf(c2)], 'Open next takes the first video off the queue');
+  assert.equal(JSON.parse(H.storage.get('sumsum-opened'))[keyOf(c1)].n, 1, 'and counts an open');
+  // Again: the opened video, with its count; the hero offers it again when Up next is something else.
+  assert(H.has('ag-w-' + c1.id) && H.fk('ag-w-' + c1.id).href === expectDest(c1), 'Again lists the opened video');
+  assert(H.byClass('again')[0].textContent.includes('×1'), 'with how often it was opened');
+  if (H.fk('next-watch').href !== expectDest(c1)) assert.equal(H.fk('again-hero').href, expectDest(c1), 'The hero offers the last video again');
+  await H.fk('ag-w-' + c1.id).click(); H.flushTimers();
+  assert.equal(JSON.parse(H.storage.get('sumsum-opened'))[keyOf(c1)].n, 2, 'Again counts another open');
+  // Stickers: ×N for opens; ✓ only on a video that is the one whole or alternate copy of a watched episode.
+  const soloRec = records.find(r => (M.recLinks.get(r.id) || []).length === 1 && M.recLinks.get(r.id)[0].role === 'whole-candidate');
+  const solo = soloRec && M.recLinks.get(soloRec.id)[0].e;
+  // A part of a watched episode never shows it.
+  const partRec = records.find(r => (M.recLinks.get(r.id) || []).length === 1 && M.recLinks.get(r.id)[0].role === 'part');
+  if (solo) {
+    const r = soloRec;
+    await H.navigate('record/' + encodeURIComponent(r.id)); await H.fk('rec-star').click();
+    await H.navigate('episode/' + encodeURIComponent(solo.id)); await H.fk('watch-toggle').click();
+    await H.navigate('home');
+    const cardOf = id => H.fk('sstarred-card-' + id).parentElement.parentElement.parentElement;
+    assert.equal(H.byClass('s-seen', cardOf(r.id)).length, 1, 'The ✓ sticker shows on the watched episode\'s only whole copy');
+    if (partRec) {
+      const pe = M.recLinks.get(partRec.id)[0].e;
+      await H.navigate('record/' + encodeURIComponent(partRec.id)); await H.fk('rec-star').click();
+      if (pe.id !== solo.id) { await H.navigate('episode/' + encodeURIComponent(pe.id)); await H.fk('watch-toggle').click(); }
+      await H.navigate('home');
+      assert.equal(H.byClass('s-seen', cardOf(partRec.id)).length, 0, 'A part of a watched episode has no ✓ sticker');
+      if (pe.id !== solo.id) { await H.navigate('episode/' + encodeURIComponent(pe.id)); await H.fk('watch-toggle').click(); }
+      await H.navigate('record/' + encodeURIComponent(partRec.id)); await H.fk('rec-star').click();
+    }
+    await H.navigate('episode/' + encodeURIComponent(solo.id)); await H.fk('watch-toggle').click();
+    await H.navigate('record/' + encodeURIComponent(r.id)); await H.fk('rec-star').click();
+  }
+  // Surprise: a popover named and focused, holding an offered video; Another, Previous; Escape, outside clicks and route
+  // changes close it and focus returns to its button.
+  await H.navigate('home');
+  const sb = H.$('surprise-btn'), pop = H.$('surprise-pop');
+  await sb.click();
+  assert(!pop.hidden && sb.getAttribute('aria-expanded') === 'true' && pop.getAttribute('role') === 'dialog' &&
+    pop.getAttribute('aria-labelledby') === 'surprise-h' && H.document.activeElement === H.$('surprise-h'), 'Surprise opens, named and focused');
+  const picked = () => { const a = H.find(n => (n.getAttribute?.('data-fk') || '').startsWith('sp-card-'), pop)[0]; return a && cardRec(a, 'sp-card-'); };
+  const seenPicks = [];
+  for (let k = 0; k < 25; k++) {
+    const r = picked(); assert(r && pickable(r), 'Surprise picks an offered video within the preferences: ' + (r && r.id)); seenPicks.push(r);
+    if (k < 24) await H.fk('sp-another').click();
+  }
+  assert(new Set(seenPicks).size > 1, 'Another picks again');
+  await H.fk('sp-prev').click(); assert.equal(picked(), seenPicks.at(-2), 'Previous goes back');
+  await H.document.activeElement.dispatch('keydown', {key: 'Escape'});
+  assert(pop.hidden && sb.getAttribute('aria-expanded') === 'false' && H.document.activeElement === sb, 'Escape closes it and focus returns');
+  await sb.click(); await H.$('view').dispatch('click'); assert(pop.hidden, 'An outside click closes it');
+  await sb.click(); await H.navigate('browse'); assert(pop.hidden, 'A route change closes it');
+  // On Browse it picks from the list on screen.
+  const cls = 'classic';
+  await H.navigate('browse?series=' + cls);
+  await sb.click();
+  for (let k = 0; k < 10; k++) {
+    const r = picked(); assert(r && r.series === cls && offerable(r), 'On Browse, Surprise picks from the filtered list'); await H.fk('sp-another').click();
+  }
+  await H.fk('surprise-close').click(); assert(pop.hidden && H.document.activeElement === sb, 'The close button closes it');
+  const kippi = top.find(([k]) => /kippi/.test(k));
+  if (kippi) {
+    await H.navigate('browse?character=' + encodeURIComponent(kippi[0])); await sb.click();
+    assert(H.$('surprise-h').textContent.endsWith(tr('en', 'charPicks', {name: ''}).trim()) || H.$('surprise-h').textContent.includes('Kippi'),
+      'With a character chosen, the character picks');
+    await H.fk('surprise-close').click();
+  }
+  // The queue popover from the masthead holds the same queue.
+  await H.$('queue-btn').click();
+  assert(!H.$('queue-pop').hidden && H.has('qp-open') && H.fk('qp-open').href === expectDest(c2), 'The queue popover offers the next video');
+  await H.document.activeElement.dispatch('keydown', {key: 'Escape'}); assert(H.$('queue-pop').hidden);
+  ok('Home: stored Spoken and Length that Browse hashes never change; offered videos only in Up next, the music shelf and ' +
+    'Surprise; See all opens the same query with its count; twelve characters opening Browse with their counts; the queue (add, ' +
+    'move, remove, clear and undo, Open next taking the first and counting an open, its link still in the page); Again with counts; ' +
+    'the ✓ sticker rule; Surprise and the queue popover (named, focused, Escape, outside click, route change, focus return; picks ' +
+    'from the Browse list; a character\'s pick)');
+}
+
 // What the nav marks on a route: the tab of the page (aria-current="page"), the tab a page sits under ("true"; the pages under
 // Browse are Missing episodes, Videos to identify, Identified videos and record pages), and the footer's Not found link.
 function expectNav(route) {
@@ -4670,7 +4817,7 @@ async function run() {
   await checkLangBoot(htmlPath);
   await checkThemePicker(htmlPath);
   await checkLicensed(htmlPath, H, M);
-  if (M.hasGuide) { await checkNav(H, M); await checkBrowsePages(H, M); }
+  if (M.hasGuide) { await checkNav(H, M); await checkBrowsePages(H, M); await checkHome(htmlPath, M); }
   await sweep(H, M);
   await checkWithoutGuide(htmlPath);
   await checkEdgeCases(htmlPath);
