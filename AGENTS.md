@@ -14,7 +14,7 @@ This file records the project's rules and the user's working preferences. Record
 
 Detail lives in these docs. Read each one before the work it covers:
 
-- [docs/files-and-build.md](docs/files-and-build.md), before changing data files, scripts or the build: what each file holds, what the builder refuses and warns about, what the checks cover, and Vimeo metadata enrichment.
+- [docs/files-and-build.md](docs/files-and-build.md), before changing data files, scripts or the build: what each file holds, what the builder refuses and warns about, what the checks cover, adding a series, and Vimeo metadata enrichment.
 - [docs/episode-guide.md](docs/episode-guide.md), before editing the episode guide, a record's guide link or `data/licensed-services.json`: the guide rules and field shapes, licensed listings and availability checks.
 - [docs/library-ui.md](docs/library-ui.md), before UI work: views, routes, browser storage, and the theme picker and its palettes.
 - [docs/zen-and-hop.md](docs/zen-and-hop.md), before browser, VPN or Hop work: the Proton extension's state and server history, Hop discovery, the link collector, and driving Zen from the shell through the accessibility API.
