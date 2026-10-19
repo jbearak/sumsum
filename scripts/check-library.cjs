@@ -96,6 +96,25 @@ function expectAccess(r, local = '') {
   return ['youtube', 'archive', 'dailymotion'].includes(k) ? 'public' : 'web';
 }
 const expectDest = (r, local = '') => local || safe(r.directUrl) || safe(r.url) || safe(r.sourceUrl);
+// Videos the library offers unasked (Up next, Home's generated shelves, Surprise): not marked as needing a VPN, a card or a
+// purchase, and not failed or region-limited in a check.
+const OFFER_RANK = {played: 0, local: 1, vimeo: 2, public: 3};
+const offerable = (r, local = '') => !!expectDest(r, local) && expectAccess(r, local) in OFFER_RANK && checkOf(r) !== 'region-limited';
+// Up next's copy of an episode: its best offered whole or alternate copy (best access, then whole before alternate).
+function nextCopyM(M, e, local = () => '') {
+  let best = null, score = Infinity;
+  for (const u of M.ups.get(e.id) || []) {
+    if (!['whole-candidate', 'alternate-edition'].includes(u.role) || !offerable(u.r, local(u.r))) continue;
+    const sc = OFFER_RANK[expectAccess(u.r, local(u.r))] * 10 + (u.role === 'alternate-edition' ? 1 : 0);
+    if (sc < score) { score = sc; best = u; }
+  }
+  return best;
+}
+// A record's pasted Vimeo link in the test storage, if any.
+const localIn = H => r => {
+  const m = JSON.parse(H.storage.get('sumsum-vimeo-mappings') || '{}')[r.id];
+  return m ? safe(typeof m === 'string' ? m : m && m.url) || '' : '';
+};
 // The service of a licensed record's link (its name labels the host), and of a listing whose access is licensed.
 const expectRecSvc = (r, local = '') => (r.access === 'licensed' ? svcOfUrl(expectDest(r, local)) : null);
 const expectSvc = (r, local = '') => (expectAccess(r, local) === 'licensed' ? expectRecSvc(r, local) : null);
@@ -1038,18 +1057,23 @@ async function checkGuide(H, M) {
   await H.fk('layout-album').click();
   ok('album, numbers and list layouts; stored layout');
 
-  // Up next.
-  const cands = prods.filter(M.isCoreRechov).flatMap(p => M.epsOf.get(p.id)).filter(e => {
-    const b = cov(e) === 'whole-candidate' && M.best(e); return b && b.role !== 'part' && b.role !== 'excerpt' && RANK[b.acc] <= RANK.public;
-  });
-  assert.equal(H.has('next-watch', H.view()), cands.length > 0, 'Up next appears only with a candidate');
+  // Up next, on Home: the next core episode not marked watched, with its best offered whole or alternate copy, so a copy that
+  // is not offered (a Hop page, a licensed listing, a blocked or region-limited upload) never hides one that is.
+  await H.navigate('home');
+  const local = localIn(H), seen = new Set(JSON.parse(H.storage.get('sumsum-watched') || '[]'));
+  const cands = prods.filter(M.isCoreRechov).flatMap(p => M.epsOf.get(p.id))
+    .filter(e => cov(e) === 'whole-candidate' && !seen.has(e.id) && nextCopyM(M, e, local));
+  assert(cands.length && H.has('next-watch', H.view()), 'Up next has candidates');
   if (cands.length) {
-    assert.equal(H.fk('next-watch').href, expectDest(M.best(cands[0]).r));
-    assert(H.fk('next-watch').textContent.startsWith(L.en['watchOn_' + hostKind(expectDest(M.best(cands[0]).r))]));
-    // "Another one" cycles through exactly the candidates: never a Hop page, a licensed listing or a blocked upload.
+    const c0 = nextCopyM(M, cands[0], local).r;
+    assert.equal(H.fk('next-watch').href, expectDest(c0, local(c0)));
+    assert(H.fk('next-watch').textContent.startsWith(L.en['watchOn_' + hostKind(expectDest(c0, local(c0)))]));
+    // "Another one" cycles through exactly the candidates, each with its chosen copy.
     const shown = new Set();
     for (let k = 0; k < cands.length; k++) {
       shown.add(H.fk('next-ep').href);
+      const ec = eps.find(e => '#/episode/' + encodeURIComponent(e.id) === H.fk('next-ep').href), cc = ec && nextCopyM(M, ec, local);
+      assert(cc && H.fk('next-watch').href === expectDest(cc.r, local(cc.r)), 'Up next links the chosen copy of ' + (ec && ec.id));
       // The candidate's code: the production's number label where it has one ("IETV no. 1"), never S·E codes for it.
       const ce = eps.find(e => '#/episode/' + encodeURIComponent(e.id) === H.fk('next-ep').href), cp = M.prodById.get(ce.production);
       assert.equal(H.byClass('note', H.byClass('next')[0])[0].textContent, [name(cp), M.code(ce)].filter(Boolean).join(' · '),
@@ -1714,7 +1738,7 @@ function checkStrings() {
     assert(/licensed/i.test(L.en[k]) && /רישיון/.test(L.he[k]), 'Generic licensed labels say "licensed": ' + k);
   }
   // Queues hold whole episodes, parts and segments (Hop! 2009 story files run 3-6 minutes): no "long uploads" wording.
-  for (const k of ['queueLink', 'queueTitle', 'queueHelp', 'slotQueue', 'tdQueueHelp', 'unidentifiedLede', 'navUnidentified', 'descUnidentified']) {
+  for (const k of ['queueLink', 'queueTitle', 'queueHelp', 'slotQueue', 'tdQueueHelp', 'unidentifiedLede', 'navUnidentified']) {
     assert(!/\blong\b/i.test(L.en[k]) && !/ארוכ/.test(L.he[k]), 'Queue wording makes no length claim: ' + k);
   }
   // "Not matched to an episode", not "to one episode" (the user's wording, October 18), in both languages.
@@ -1724,14 +1748,10 @@ function checkStrings() {
   // The two Browse pages are described from the guide data (AGENTS.md): Identified videos are matched or catalogued outside the
   // guide; Videos to identify are queued or possible-only. "Not matched to an episode" would also describe 1,585 identified
   // uploads that are not in the guide (review round 1).
-  assert.equal(L.en.descUnidentified, 'In an identification queue, or only a possible copy of an episode', 'Videos to identify: menu description');
-  assert.equal(L.he.descUnidentified, 'בתור לזיהוי, או רק עותק אפשרי של פרק', 'Videos to identify: menu description (Hebrew)');
-  assert.equal(L.en.descIdentified, 'Matched to an episode, or catalogued outside the episode guide', 'Identified videos: menu description');
-  assert.equal(L.he.descIdentified, 'מותאמים לפרק, או מקוטלגים מחוץ למדריך הפרקים', 'Identified videos: menu description (Hebrew)');
   assert(L.en.unidentifiedLede.startsWith("Uploads in a production's identification queue, and uploads linked only as a possible copy") &&
     L.he.unidentifiedLede.startsWith('העלאות שבתור הזיהוי של הפקה, והעלאות שקושרו רק כעותק אפשרי'),
     'Videos to identify: the lede gives the definition in both languages');
-  for (const k of ['descIdentified', 'descUnidentified', 'identifiedNote', 'unidentifiedLede']) {
+  for (const k of ['identifiedNote', 'unidentifiedLede']) {
     assert(!/not matched to an episode/i.test(L.en[k]) && !/לא הותאמו לפרק/.test(L.he[k]), 'Defined from the guide data, not "not matched": ' + k);
   }
   // One term, one count: the facet chip names the queue (44 in the data), "awaiting identification" is queue plus possible-only.
@@ -1772,10 +1792,11 @@ function checkStrings() {
   assert(/\{f\} starred/.test(L.en.imported) && /\{f\} מסומנים בכוכב/.test(L.he.imported), 'The import summary counts stars');
   assert(/stars/i.test(L.en.about5) && /stored in this browser only/.test(L.en.about5) && /כוכבים/.test(L.he.about5), 'About names stars');
   for (const k of ['navSaved', 'savedTitle', 'savedOnly', 'saveAria', 'savedToast', 'langSwitch', 'brandCaption', 'navUploads', 'navUploadsShort',
-    'navTodo', 'navTodoShort', 'uploadsTitle', 'uploadsLede', 'tdQueue', 'tdMissing', 'tdSlots', 'tdPartsHelp', 'tdExcerptHelp']) {
+    'navTodo', 'navTodoShort', 'uploadsTitle', 'uploadsLede', 'tdQueue', 'tdMissing', 'tdSlots', 'tdPartsHelp', 'tdExcerptHelp',
+    'browseMenu', 'descIdentified', 'descUnidentified', 'descMissing']) {
     assert(!(k in L.en) && !(k in L.he), 'Retired string key ' + k);
   }
-  // Browse and its menu; the research to-do list. "All uploads" and "To find" are gone from both languages.
+  // Browse and the pages under it; the research to-do list. "All uploads" and "To find" are gone from both languages.
   for (const [k, en, he] of [['navBrowse', 'Browse', 'עיון'], ['navBrowseShort', 'Browse', 'עיון'], ['navIdentified', 'Identified videos', 'סרטונים מזוהים'],
     ['navUnidentified', 'Videos to identify', 'סרטונים לזיהוי'], ['navMissing', 'Missing episodes', 'פרקים חסרים'],
     ['identifiedTitle', 'Identified videos', 'סרטונים מזוהים'], ['unidentifiedTitle', 'Videos to identify', 'סרטונים לזיהוי'],
@@ -1786,7 +1807,7 @@ function checkStrings() {
   for (const k of ek) {
     assert(!/All uploads|To find/.test(L.en[k]), 'No "All uploads" or "To find" wording: ' + k);
     // In Hebrew both phrases are also ordinary prose ("כל ההעלאות עדיין מופיעות", "מה חסר"), so only names of views and links are checked.
-    if (/^nav|Title$|^todoLink$|^browseMenu$/.test(k)) assert(!/כל ההעלאות|מה חסר/.test(L.he[k]), 'No "כל ההעלאות" or "מה חסר" view name: ' + k);
+    if (/^nav|Title$|^todoLink$|^notFound$/.test(k)) assert(!/כל ההעלאות|מה חסר/.test(L.he[k]), 'No "כל ההעלאות" or "מה חסר" view name: ' + k);
   }
   ok(ek.length + ' EN/HE string pairs with matching placeholders; stars, not "saved", in both languages');
 }
@@ -2482,8 +2503,8 @@ async function checkContractEdges(H, M) {
   assert(H.fk('rec-watch').textContent.startsWith(tr('en', 'watchLicensed', {host: 'vudu.com'})), 'Generic licensed Watch label');
   assert.equal(H.fk('rec-access').textContent, tr('en', 'acc_licensed', {host: 'vudu.com'}));
   assert(H.text().includes(L.en.licensedNote) && !H.has('howto', H.view()), 'Generic note, no how-to box');
-  // The guide's Up next never offers a licensed listing.
-  await H.navigate('guide');
+  // Up next never offers a licensed listing.
+  await H.navigate('home');
   if (H.has('next-watch', H.view())) assert(!/hoopladigital|tv\.apple/.test(H.fk('next-watch').href));
   ok('licensed listings: rank between Hop pages and blocked uploads, licensed Watch label, access line, note and group');
 
@@ -2912,8 +2933,8 @@ async function checkEditorialTitles(H, M) {
   await H.fk('rec-star').click(); await H.navigate('starred');
   assert.equal(H.fk('card-' + rec.id).textContent, rec.titleHeEditorial, 'Hebrew Starred cards');
   await H.navigate('record/' + enc(rec.id)); await H.fk('rec-star').click();
-  // Up next offers core episodes with a public whole link; the edited episode is one of them.
-  await H.navigate('guide');
+  // Up next offers core episodes with an offered whole copy; the edited episode is one of them.
+  await H.navigate('home');
   const nextIs = () => H.has('next-ep', H.view()) && H.fk('next-ep').href === '#/episode/' + enc(e1.id);
   for (let k = 0; k < 2000 && H.has('next-skip', H.view()) && !nextIs(); k++) await H.fk('next-skip').click();
   rtlTitle(H.fk('next-ep'), e1.titleHeEditorial, 'Hebrew Up next');
@@ -3274,8 +3295,9 @@ async function checkMasthead(H) {
   const header = H.find(n => n.tagName === 'header', H.tree)[0], mast = header.children.find(c => H.cls(c).includes('mast'));
   assert.deepEqual(mast.children.filter(c => c.tagName !== '#text').map(c => c.id), ['tabs', 'mast-tools'],
     'The masthead holds the views nav, then the control group');
-  assert.deepEqual(H.$('mast-tools').children.filter(c => c.tagName !== '#text').map(c => c.id), ['theme-picker', 'lang', 'lang-boot'],
-    'The control group holds the theme picker, then the language toggle (at the right edge), then the toggle\'s inline script');
+  assert.deepEqual(H.$('mast-tools').children.filter(c => c.tagName !== '#text').map(c => c.id),
+    ['surprise-btn', 'queue-btn', 'theme-picker', 'lang', 'lang-boot'],
+    'The control group holds Surprise, the queue, the theme picker, then the language toggle (at the right edge), then the toggle\'s inline script');
   assert.equal(H.$('lang-boot').tagName, 'script', 'The language toggle is followed by its inline script');
   assert.equal(H.find(n => n.tagName === 'a' && n.href === '#/guide', header).length, 1, 'One link to the guide in the masthead: its tab');
   const opts = () => H.$('lang').children.filter(c => c.getAttribute && c.getAttribute('role') === 'radio');
@@ -3559,8 +3581,6 @@ async function checkThemePicker(htmlPath) {
 
 // ---------------------------------------------------------------- Browse menu and its pages
 const MENU = ['identified', 'unidentified', 'missing'];
-const MENU_KEY = {identified: ['navIdentified', 'descIdentified', 'identifiedTitle'], unidentified: ['navUnidentified', 'descUnidentified',
-  'unidentifiedTitle'], missing: ['navMissing', 'descMissing', 'missingTitle']};
 // The independent model's counts: identified uploads are neither queued nor linked only as a possible copy; the uploads to
 // identify are the rest; missing episodes are the documented episodes without a whole copy.
 function menuModel(M) {
@@ -3570,120 +3590,72 @@ function menuModel(M) {
     counts: {identified: M.records.length - waiting.length, unidentified: waiting.length,
       missing: M.eps.filter(e => M.cov(e) !== 'whole-candidate').length}};
 }
-// What the nav marks on a route: the tab of the page (aria-current="page"), the tab a page sits under ("true"), the Browse menu's
-// current page, and the footer's research to-do link.
+// What the nav marks on a route: the tab of the page (aria-current="page"), the tab a page sits under ("true"; the pages under
+// Browse are Missing episodes, Videos to identify, Identified videos and record pages), and the footer's Not found link.
 function expectNav(route) {
   const path = route.split('?')[0], [k, sub] = path.split('/');
   const page = k === 'browse' && MENU.includes(sub) ? sub : k;
-  return {guide: page === 'guide' ? 'page' : ['episode', 'slot'].includes(page) ? 'true' : undefined,
+  return {home: page === 'home' ? 'page' : undefined, guide: page === 'guide' ? 'page' : ['episode', 'slot'].includes(page) ? 'true' : undefined,
     browse: page === 'browse' ? 'page' : MENU.includes(page) || page === 'record' ? 'true' : undefined,
-    starred: page === 'starred' ? 'page' : undefined, menu: MENU.includes(page) ? page : null, todo: page === 'todo'};
+    starred: page === 'starred' ? 'page' : undefined, missing: page === 'missing'};
 }
 function assertNav(H, route, where) {
   const want = expectNav(route);
-  for (const tab of ['guide', 'browse', 'starred']) {
+  for (const tab of ['home', 'guide', 'browse', 'starred']) {
+    if (tab === 'home' && !H.has('tab-home')) continue;
     assert.equal(H.fk('tab-' + tab).getAttribute('aria-current'), want[tab], `${where}: the ${tab} tab's aria-current`);
   }
-  // The Browse label and its arrow are marked together.
-  assert.equal(H.cls(H.fk('tab-browse').parentElement).includes('cur'), !!want.browse, where + ': the Browse group is marked with its label');
-  if (H.has('browse-more')) {
-    for (const v of MENU) assert.equal(H.fk('bm-' + v).getAttribute('aria-current'), want.menu === v ? 'page' : undefined, `${where}: menu item ${v}`);
-    assert.equal(H.$('browse-more').getAttribute('aria-expanded'), 'false', where + ': the menu is closed after a route change');
-    assert.equal(H.$('browse-menu').hidden, true, where + ': and hidden');
+  assert(!H.find(n => n.id === 'browse-more' || n.id === 'browse-menu', H.tree).length, where + ': no Browse menu');
+  if (H.has('foot-missing')) {
+    assert.equal(H.fk('foot-missing').getAttribute('aria-current'), want.missing ? 'page' : undefined, where + ': the footer Not found link');
+    assert.equal(H.fk('foot-missing').href, '#/browse/missing', where + ': the footer links Missing episodes');
   }
-  assert.equal(H.fk('foot-todo').getAttribute('aria-current'), want.todo ? 'page' : undefined, where + ': the footer research to-do link');
-  assert.equal(H.fk('foot-todo').href, '#/todo', where + ': the footer links the research to-do list');
+  for (const id of ['surprise-pop', 'queue-pop']) assert.equal(H.$(id).hidden, true, where + ': ' + id + ' is closed after a route change');
 }
 
-async function checkBrowseMenu(H, M) {
+// The views nav: Home, Episode guide, Surprise (phones show it in the bottom bar), Browse and Starred. The pages that used to
+// sit in Browse's menu are quiet: one footer link to Missing episodes, which links on to the other research pages.
+async function checkNav(H, M) {
   const {counts} = menuModel(M), N = M.records.length;
   assert.equal(counts.identified + counts.unidentified, N, 'Identified and to-identify uploads make up every upload');
-  const btn = () => H.$('browse-more'), list = () => H.$('browse-menu'), item = v => H.fk('bm-' + v);
-  const isOpen = () => btn().getAttribute('aria-expanded') === 'true' && list().hidden === false;
-  const isClosed = () => btn().getAttribute('aria-expanded') === 'false' && list().hidden === true;
-  const key = (n, k) => n.dispatch('keydown', {key: k});
   const active = () => H.document.activeElement;
   for (const ui of ['en', 'he']) {
     if (H.document.documentElement.lang !== ui) await H.flipLang();
-    await H.navigate('guide');
-    // Episode guide | Browse (label, arrow, menu) | Starred. The research to-do list has no tab.
+    await H.navigate('home');
     const lis = H.$('tabs').children.find(c => c.tagName === 'ul').children;
-    assert.deepEqual(lis.map(li => li.children[0].getAttribute('data-fk')), ['tab-guide', 'tab-browse', 'tab-starred'], ui + ': three nav items');
-    assert.deepEqual(lis[1].children.map(c => c.getAttribute('data-fk') || c.id), ['tab-browse', 'browse-more', 'browse-menu'],
-      ui + ': the Browse group holds its label, its arrow and its menu');
-    assert.equal(H.fk('tab-browse').href, '#/browse', ui + ': the Browse label opens #/browse');
-    assert(H.byClass('long', H.fk('tab-browse'))[0].textContent === L[ui].navBrowse && H.byClass('short', H.fk('tab-browse'))[0].textContent ===
-      L[ui].navBrowseShort, ui + ': the label says Browse');
-    assert(!H.find(n => n.tagName === 'a' && /^#\/(?:todo|uploads)/.test(n.href || ''), H.$('tabs')).length, ui + ': no To find or All uploads tab');
-    // The arrow: a disclosure button naming the list it controls, with a hidden icon.
-    const b = btn();
-    assert(b.tagName === 'button' && b.type === 'button' && b.getAttribute('aria-controls') === 'browse-menu', ui + ': the arrow is a button controlling the menu');
-    assert.equal(H.$(b.getAttribute('aria-controls')), list(), ui + ': aria-controls names the menu list');
-    assert.equal(b.getAttribute('aria-label'), L[ui].browseMenu, ui + ': the arrow is named "' + L[ui].browseMenu + '"');
-    assert(/^<svg[^>]*aria-hidden="true"/.test(b.innerHTML), ui + ': its icon is hidden from assistive technology');
-    assert(isClosed(), ui + ': the menu starts closed');
-    assert.equal(list().tagName, 'ul'); assert.equal(list().children.length, 3, ui + ': exactly three destinations');
-    for (const v of MENU) {
-      const a = item(v), [nk, dk] = MENU_KEY[v], countText = H.byClass('bm-count', a)[0].textContent;
-      assert.equal(a.href, '#/browse/' + v, ui + ': menu link ' + v);
-      assert.equal(H.byClass('bm-label', a)[0].textContent, L[ui][nk], ui + ': menu label ' + v);
-      assert.equal(H.number(countText), counts[v], `${ui}: menu count ${v} (${counts[v]})`);
-      assert.equal(accName(a), L[ui][nk] + ' ' + countText, ui + ': the link is named by its label and count');
-      const d = H.$(a.getAttribute('aria-describedby'));
-      assert(d && d.textContent === L[ui][dk] && d.getAttribute('aria-hidden') === 'true', ui + ': the description describes the link: ' + v);
+    assert.deepEqual(lis.map(li => li.children[0].getAttribute('data-fk')), ['tab-home', 'tab-guide', 'tab-surprise', 'tab-browse', 'tab-starred'],
+      ui + ': Home, Guide, Surprise, Browse, Starred');
+    for (const [v, key] of [['home', 'navHome'], ['guide', 'navGuide'], ['browse', 'navBrowse'], ['starred', 'navStarred']]) {
+      const a = H.fk('tab-' + v);
+      assert.equal(a.href, '#/' + v, ui + ': the ' + v + ' tab opens #/' + v);
+      assert(H.byClass('long', a)[0].textContent === L[ui][key] && H.byClass('short', a)[0].textContent === L[ui][key + 'Short'], ui + ': ' + v + ' labels');
     }
-    // Opening and closing with the arrow; a click on the arrow is not an outside click.
-    await b.click(); assert(isOpen(), ui + ': the arrow opens the menu');
-    await b.click(); assert(isClosed(), ui + ': and closes it');
-    await b.dispatch('click'); assert(isOpen(), ui + ': a click on the arrow reaches the document without closing the menu');
-    await list().dispatch('click'); assert(isOpen(), ui + ': a click inside the menu keeps it open');
-    // Arrow keys: Down from the button enters the menu; Down and Up move and wrap; Home and End; Escape returns to the button.
-    b.focus();
-    assert(await key(b, 'ArrowDown'), ui + ': ArrowDown is handled'); assert.equal(active(), item('identified'), ui + ': ArrowDown enters the menu');
-    await key(active(), 'ArrowDown'); assert.equal(active(), item('unidentified'));
-    await key(active(), 'ArrowDown'); assert.equal(active(), item('missing'));
-    await key(active(), 'ArrowDown'); assert.equal(active(), item('identified'), ui + ': Down wraps to the first item');
-    await key(active(), 'ArrowUp'); assert.equal(active(), item('missing'), ui + ': Up wraps to the last item');
-    await key(active(), 'Home'); assert.equal(active(), item('identified'), ui + ': Home');
-    await key(active(), 'End'); assert.equal(active(), item('missing'), ui + ': End');
-    assert(!(await key(active(), 'Tab')) && active() === item('missing') && isOpen(), ui + ': Tab is left to the browser');
-    assert(await key(active(), 'Escape'), ui + ': Escape is handled');
-    assert(isClosed() && active() === b, ui + ': Escape closes the menu and returns focus to the arrow');
-    await key(b, 'ArrowUp'); assert(isOpen() && active() === item('missing'), ui + ': ArrowUp on the closed arrow opens on the last item');
-    await key(active(), 'Escape'); await key(b, 'ArrowDown');
-    assert(isOpen() && active() === item('identified'), ui + ': ArrowDown on the closed arrow opens on the first item');
-    b.focus(); await key(b, 'Escape'); assert(isClosed() && active() === b, ui + ': Escape on the arrow closes the menu and keeps focus');
-    // Outside click, Escape elsewhere, focus leaving the group, and a route change close it.
-    await b.click(); await H.$('view').dispatch('click'); assert(isClosed(), ui + ': an outside click closes the menu');
-    await b.click(); await H.$('view').dispatch('keydown', {key: 'Escape'}); assert(isClosed(), ui + ': Escape anywhere closes the menu');
-    const group = b.parentElement;
-    await b.click(); await group.fire('focusout', {relatedTarget: item('missing')}); assert(isOpen(), ui + ': focus moving inside keeps it open');
-    await group.fire('focusout', {relatedTarget: null}); assert(isOpen(), ui + ': a click that moves no focus does not close it early');
-    await group.fire('focusout', {relatedTarget: H.$('main')}); assert(isClosed(), ui + ': focus leaving the group closes the menu');
-    await b.click(); await H.navigate('starred'); assert(isClosed(), ui + ': a route change closes the menu');
-    // Each destination: opens its page with the menu closed, focus on the heading, and the nav marks it.
-    for (const v of MENU) {
-      await btn().click(); await item(v).click();
-      const route = 'browse/' + v;
-      assert.equal(H.location.hash.split('?')[0], '#/' + route, ui + ': the menu link opens ' + route);
-      assert.equal(H.h1().textContent, L[ui][MENU_KEY[v][2]], ui + ': heading of ' + route);
-      assert.equal(H.document.title, L[ui][MENU_KEY[v][2]] + ' · ' + L[ui].appName, ui + ': document.title of ' + route);
-      assert.equal(active(), H.h1(), ui + ': focus moves to the page heading');
-      assertNav(H, route, ui + ' ' + route);
+    const sp = H.fk('tab-surprise');
+    assert(sp.tagName === 'button' && sp.getAttribute('aria-controls') === 'surprise-pop' && sp.getAttribute('aria-expanded') === 'false',
+      ui + ': Surprise in the nav is a button controlling the Surprise popover');
+    assert.equal(H.cls(lis[2]).includes('tab-pick'), true, ui + ': its item is marked for phones only (CSS)');
+    assert(!H.find(n => n.tagName === 'a' && /^#\/(?:todo|uploads|browse\/)/.test(n.href || ''), H.$('tabs')).length, ui + ': no research pages in the nav');
+    assertNav(H, 'home', ui + ' #/home');
+    // The footer's one quiet link: what is not found, counted.
+    const f = H.fk('foot-missing');
+    assert.equal(f.textContent, tr(ui, 'notFound', {n: counts.missing.toLocaleString('en-US')}), ui + ': the footer link counts the missing episodes');
+    assert(!/מה חסר/.test(f.textContent), ui + ': plain wording');
+    await f.click();
+    assert(H.location.hash === '#/browse/missing' && H.h1().textContent === L[ui].missingTitle && active() === H.h1(), ui + ': it opens Missing episodes');
+    assertNav(H, 'browse/missing', ui + ' #/browse/missing');
+    // Missing episodes links on, quietly, to the other research pages.
+    for (const [k, route, title] of [['ms-unidentified', 'browse/unidentified', 'unidentifiedTitle'], ['ms-identified', 'browse/identified', 'identifiedTitle'],
+      ['todo-link', 'todo', 'todoTitle']]) {
+      await H.navigate('browse/missing'); await H.fk(k).click();
+      assert(H.location.hash.split('?')[0] === '#/' + route && H.h1().textContent === L[ui][title], ui + ': Missing episodes links ' + route);
+      assertNav(H, route, ui + ' #/' + route);
     }
-    await H.fk('tab-browse').click();
-    assert(H.location.hash === '#/browse' && H.h1().textContent === L[ui].browseTitle, ui + ': the Browse label opens Browse');
-    assertNav(H, 'browse', ui + ' #/browse');
-    await H.fk('foot-todo').click();
-    assert(H.location.hash === '#/todo' && H.h1().textContent === L[ui].todoTitle, ui + ': the footer opens the research to-do list');
-    assert.equal(H.fk('foot-todo').textContent, L[ui].todoTitle);
-    assertNav(H, 'todo', ui + ' #/todo');
+    for (const route of ['guide', 'browse', 'starred']) { await H.fk('tab-' + route).click(); assertNav(H, route, ui + ' #/' + route); }
   }
   if (H.document.documentElement.lang !== 'en') await H.flipLang();
-  ok(`Browse menu (EN, HE): label opens #/browse; the arrow is a disclosure (aria-expanded, aria-controls, name, hidden icon) for ` +
-    `three links named with their counts (${counts.identified} identified + ${counts.unidentified} to identify = ${N} uploads; ` +
-    `${counts.missing} missing episodes) and described; click, arrow keys with wrap, Home, End, Escape with focus return, outside ` +
-    'click, focus leaving and route change; destinations, headings, titles and aria-current; footer research to-do link');
+  ok(`nav (EN, HE): Home, Guide, Surprise (a popover button), Browse, Starred; no Browse menu; the footer's Not found link ` +
+    `(${counts.missing} missing episodes) opens Missing episodes, which links Videos to identify, Identified videos and the research ` +
+    'to-do list; aria-current on every route; popovers closed after route changes');
 }
 
 async function checkBrowsePages(H, M) {
@@ -4013,8 +3985,8 @@ const CONTRAST_PAIRS = [
   ['the open theme button\'s icon', 'mast-current-ink', 'mast-current', 3],
   ['focus ring on the page', 'focus', 'bg', 3], ['focus ring on cards and the popovers', 'focus', 'surface', 3], ['focus ring on raised rows', 'focus', 'surface-2', 3],
   ['masthead focus ring', 'mast-focus', 'brand', 3], ['toggle and theme button outline', 'mast-ctl-line@brand', 'brand', 3],
-  ['the toggle thumb on its track', 'mast-current', 'mast-ctl@brand', 3], ['the current Browse divider', 'mast-current-divider@mast-current', 'mast-current', 3],
-  ['the current menu bar', 'primary', 'surface-2', 3], ['buttons on cards', 'primary', 'surface', 3],
+  ['the toggle thumb on its track', 'mast-current', 'mast-ctl@brand', 3], ['Surprise and queue labels', 'mast-ink', 'mast-ctl@brand', 4.5],
+  ['buttons on panels', 'primary', 'surface-2', 3], ['buttons on cards', 'primary', 'surface', 3],
   ...['whole', 'parts', 'excerpt', 'missing', 'unknown'].flatMap(c => [[`${c} marks on cards`, c, 'surface', 3], [`${c} marks on the ${c} tint`, c, c + '-bg', 3]]),
   ...['ok', 'public', 'vpn', 'lic', 'bad'].map(c => [`access mark: ${c}`, 'acc-' + c, 'surface', 3]), ['the star', 'star-ink', 'surface', 3]
 ];
@@ -4222,68 +4194,27 @@ function checkCss(html) {
     'Forced colors keep the thumb as a system highlight under the checked option');
   const phone760 = css.match(/@media \(max-width:760px\)\{([\s\S]*?)\n\}/)[1];
   const p760 = sel => [...phone760.matchAll(/([^{}]+)\{([^{}]*)\}/g)].filter(m => m[1].trim() === sel).map(m => m[2]).join(';');
-  // One row on phones: the three tabs share the width equally and the Browse arrow adds its own 44 px beside its label.
-  const navRow = p760('.tabs') + p760('.mast') + p760('.tabs>ul') + p760('.tabs>ul>li') + p760('.tab-split');
-  assert(!/flex-basis:100%|order:|flex-wrap:wrap|display:grid|display:block/.test(navRow) && /display:flex/.test(body('.tabs>ul')) &&
-    !/flex-wrap/.test(body('.tabs>ul')) && /flex:1 1 0/.test(p760('.tabs>ul>li')) && /flex-basis:44px/.test(p760('.tabs>ul>li.tab-split')) &&
-    /width:44px/.test(p760('.tab-more')), 'Phones keep the tabs, the 44 px Browse arrow and the controls on one row');
-  // The Browse menu: tab rules stop at the nav's own list; the menu drops from the Browse group on wide screens and spans the
-  // (positioned) masthead on phones, so it stays on screen in both directions; 44 px items; a focus ring that shows on its light
-  // surface; above the sticky toolbar.
-  assert(!rules.some(r => /\.tabs ul\b/.test(r.sel)), 'Tab list rules do not reach the menu list');
-  assert(/position:relative/.test(body('.masthead')) && /position:relative/.test(body('.tab-split')), 'The masthead and the Browse group are positioned');
-  const bm = body('.bmenu'), z = Number((bm.match(/z-index:(\d+)/) || [])[1]);
-  assert(/position:absolute/.test(bm) && z > 4 && /inset-inline-start:0/.test(bm) && !/(?:^|;)(?:left|right):/.test(bm),
-    'The menu is placed by logical properties, above the sticky toolbar');
-  assert(/position:static/.test(p760('.tab-split')) && /inset-inline:8px/.test(p760('.bmenu')) && /min-width:0/.test(p760('.bmenu')) &&
-    /max-width:none/.test(p760('.bmenu')), 'On phones the menu spans the masthead');
-  assert(/min-height:44px/.test(body('.bm-item')), 'Menu items are 44 px targets');
-  assert(css.includes('@media (pointer:coarse) and (min-width:761px){.tab{min-height:44px}.tab-more{min-width:44px}}'),
-    'On wide touch screens the tabs and the arrow are 44 px targets');
-  assert(/outline-color:var\(--focus\)/.test(body('.masthead .bmenu :focus-visible')), 'The menu uses the page focus ring, not the masthead one');
-  assert(/border-inline-start-color:var\(--primary\)/.test(body('.bm-item[aria-current]')), 'The current menu page has a start bar');
-  assert(/transform:rotate\(180deg\)/.test(body('.tab-more[aria-expanded=true] svg')), 'The open arrow points up');
-  assert(/\.tab-more svg\{transition:transform/.test(motion) && rules.filter(r => r.sel === '.tab-more svg' && /transition/.test(r.body)).length === 1,
-    'The arrow turns only when reduced motion is not requested');
-  assert(forcedRules.some(r => r.sels.includes('.tab-more[aria-expanded=true]') && /outline:\d/.test(r.body)) &&
-    forcedRules.some(r => r.sels.includes('.bm-item[aria-current] .bm-label') && /underline/.test(r.body)),
-    'Forced colors mark the open arrow and the current menu page');
-  for (const r of rules.filter(x => /\.(?:bmenu|bm-[\w-]+|foot-links)\b/.test(x.sel))) assert(!/#[0-9a-f]{3,8}\b/i.test(r.body), 'Menu colours are custom properties: ' + r.sel);
-  // The Browse menu (October 18): one column, wide enough on wide screens (at least 400 px; the 340 px cap is gone) that each
-  // title fits on one line with its count beside it, and the description below; on phones it spans the masthead and a title may
-  // wrap between words. No rule lets a word split.
-  const menuW = Number((bm.match(/(?:^|;)width:min\((\d+)px,calc\(100vw - \d+px\)\)/) || [])[1]), menuMax = (bm.match(/max-width:(\d+)px/) || [])[1];
-  assert(menuW >= 400 && (!menuMax || Number(menuMax) >= 400) && !/width:max-content/.test(bm),
-    `The Browse menu is at least 400 px wide on wide screens and never wider than the viewport (width ${menuW}, max ${menuMax})`);
-  assert(/display:grid/.test(body('.bm-item')) && /grid-template-columns:auto minmax\(0,1fr\)/.test(body('.bm-item')) &&
-    /white-space:nowrap/.test(body('.bm-label')) && /white-space:nowrap/.test(body('.bm-count')) && /justify-self:start/.test(body('.bm-count')) &&
-    /grid-column:1\/-1/.test(body('.bm-desc')), 'Menu items: the title (one line) with its count beside it, the description below');
-  assert(/white-space:normal/.test(p760('.bm-label')), 'On phones a long menu title wraps between words');
-  assert(css.includes('@media (min-width:761px) and (max-width:959px){.tabs{position:relative}.tab-split{position:static}}'),
-    'Just above phone width the menu drops from the start of the nav, so it stays on screen');
-  for (const r of rules.filter(x => /\.(?:bmenu|bm-[\w-]+)\b/.test(x.sel))) {
-    assert(!/overflow-wrap:(?:anywhere|break-word)|word-break:(?:break-all|break-word)|hyphens:auto/.test(r.body), 'No word splits in the menu: ' + r.sel);
-  }
-  assert(/overflow-wrap:normal/.test(bm) && /word-break:normal/.test(bm), 'The menu resets word breaking');
-  // The Browse split (October 18): at rest no divider is drawn between the label and the arrow (no border on the arrow, the
-  // separator hidden); hovering or focusing the group shows a short separator; the current pill keeps a short one in its own
-  // colour; forced colours always draw one in a system colour.
-  const moreR = rules.filter(r => r.sel.split(',').map(x => x.trim()).some(x => /^(?:\.tab-split(?:\.cur)?>)?\.tab-more(?:\[[^\]]*\])?$/.test(x)));
-  assert(/(?:^|;)border:0(?:;|$)/.test(body('.tab-more')) && moreR.every(r => !/border(?:-inline-start|-left|-right)?(?:-width|-style|-color)?:(?!0(?:;|$))/.test(r.body.replace(/border:0/, '')) ||
-    forcedRules.some(f => f.body === r.body)), 'At rest the Browse arrow has no border (no always-on divider)');
-  const sep = body('.tab-more::before'), pct = k => Number((sep.match(new RegExp('(?:^|;)' + k + ':(\\d+)%')) || [])[1]);
-  assert(/opacity:0(?:;|$)/.test(sep) && pct('top') >= 25 && pct('bottom') >= 25 && /width:1px/.test(sep) && /background:var\(--mast-divider\)/.test(sep),
-    'The separator is short, one pixel and hidden at rest');
-  assert(/opacity:1/.test(body('.tab-split:hover>.tab-more::before,.tab-split:focus-within>.tab-more::before')),
-    'Hovering or focusing the group shows the separator');
-  assert(/opacity:1/.test(body('.tab-split.cur>.tab-more::before')) && /background:var\(--mast-current-divider\)/.test(body('.tab-split.cur>.tab-more::before')),
-    'The current pill keeps a short separator in its own colour');
-  assert(rules.filter(r => /\.tab-more::before/.test(r.sel) && /opacity:1/.test(r.body)).every(r => /:hover|:focus-within|\.cur/.test(r.sel) ||
-    forcedRules.some(f => f.body === r.body)), 'Nothing else shows the separator outside forced colours');
-  assert(forcedRules.some(r => r.sels.includes('.tab-more::before') && /opacity:1/.test(r.body) && /background:CanvasText/.test(r.body)),
-    'Forced colours draw the separator in a system colour');
-  assert(/padding-inline-end:3px/.test(body('.tab-split>.tab-browse')) && /padding-inline:3px 10px/.test(body('.tab-more')),
-    'The arrow sits close to the label, so the pair reads as one tab');
+  // Phones: the views nav is a bar fixed to the bottom, five tabs sharing the width, Surprise among them (the masthead's
+  // Surprise pill is hidden); the page keeps room for the bar so the footer and focused controls stay in view.
+  assert(/position:fixed/.test(p760('.tabs')) && /bottom:0/.test(p760('.tabs')) && /inset-inline:0/.test(p760('.tabs')) &&
+    /safe-area-inset-bottom/.test(p760('.tabs')), 'Phones fix the views nav to the bottom, inside the safe area');
+  assert(/display:flex/.test(body('.tabs>ul')) && !/flex-wrap/.test(body('.tabs>ul')) && /flex:1 1 0/.test(p760('.tabs>ul>li')),
+    'The bottom bar\'s tabs share its width on one row');
+  assert(/display:none/.test(body('.tab-pick')) && /display:block/.test(p760('.tab-pick')) && /display:none/.test(p760('.surprise-btn')),
+    'Surprise is in the bottom bar on phones and in the masthead on wider screens, never both');
+  assert(/padding-bottom:calc\(\d+px/.test(p760('body')) && /scroll-padding-bottom/.test(p760('html')) &&
+    /bottom:calc\(\d+px/.test(p760('.toast')), 'The bar never covers the footer, a focused control or a toast');
+  assert(/grid-column:2/.test(p760('.mast-tools')), 'The controls keep the masthead\'s right edge');
+  assert(!rules.some(r => /\.(?:tab-split|tab-more|bmenu|bm-[\w-]+)\b/.test(r.sel)), 'No Browse menu rules');
+  // Popovers (Surprise, the queue): placed by logical properties, above the sticky toolbar and the bottom bar; a sheet above the
+  // bar on phones. Their controls and the queue's are 44 px targets.
+  const pop = body('.pop'), pz = Number((pop.match(/z-index:(\d+)/) || [])[1]), barZ = Number((p760('.tabs').match(/z-index:(\d+)/) || [])[1]);
+  assert(/position:fixed/.test(pop) && /inset-inline-end:16px/.test(pop) && !/(?:^|;)(?:left|right):/.test(pop) && pz > barZ && barZ > 4,
+    'Popovers are placed logically, above the toolbar and the bottom bar');
+  assert(/inset-inline:8px/.test(p760('.pop')) && /bottom:calc/.test(p760('.pop')), 'On phones a popover is a sheet above the bottom bar');
+  for (const sel of ['.qadd', '.qbtn', '.pop-x']) assert(/width:44px/.test(body(sel)) && /height:44px/.test(body(sel)), sel + ' is a 44 px target');
+  assert(css.includes('@media (pointer:coarse) and (min-width:761px){.tab{min-height:44px}}'), 'On wide touch screens the tabs are 44 px targets');
+  for (const r of rules.filter(x => /\.(?:mbtn|qcount|pop|qbar|foot-links)\b/.test(x.sel))) assert(!/#[0-9a-f]{3,8}\b/i.test(r.body), 'Colours are custom properties: ' + r.sel);
   const blend = (fg, bg) => blendOver(hex6(fg), hex6(bg).slice(0, 7));
   const six = hex6;
   for (const [name, t] of schemes) {
@@ -4291,16 +4222,11 @@ function checkCss(html) {
     for (const [what, fg, bg, min] of [['tab labels', T('mast-ink-soft'), T('brand'), 4.5],
       ['the unchecked language', T('mast-ink-soft'), track, 4.5], ['the checked language and the current tab', T('mast-current-ink'), T('mast-current'), 4.5],
       ['the toggle outline', blend(t['mast-ctl-line'], T('brand')), T('brand'), 3], ['the thumb', T('mast-current'), track, 3],
-      ['the focus ring', T('mast-focus'), T('brand'), 3],
-      ['the current Browse divider', blend(t['mast-current-divider'], T('mast-current')), T('mast-current'), 3],
-      ['the menu focus ring', T('focus'), T('surface'), 3], ['the current menu bar', T('primary'), T('surface-2'), 3]]) {
+      ['the focus ring', T('mast-focus'), T('brand'), 3], ['the Surprise and queue labels', T('mast-ink'), track, 4.5],
+      ['an open Surprise or queue button', T('mast-current-ink'), T('mast-current'), 4.5],
+      ['the popover focus ring', T('focus'), T('surface'), 3]]) {
       assert(ratio(fg, bg) >= min, `${name}: ${what} reach ${min}:1 on the masthead (${ratio(fg, bg).toFixed(2)})`);
     }
-    // The hover separator is decorative (each half has its own hover background and focus ring), and faint: lighter than the
-    // former always-on rule (#ffffff80).
-    const alpha = h => (six(h).length === 9 ? parseInt(six(h).slice(7), 16) : 255);
-    assert(alpha(t['mast-divider']) < 0x80 && ratio(blend(t['mast-divider'], T('brand')), T('brand')) > 1.5,
-      `${name}: the hover separator is faint but visible`);
   }
   // The theme picker: a fixed-size round button (no text, so the same box in both languages), a popover pinned to the control
   // group's right edge (the group is pinned right in both directions) below the band, above the sticky toolbar, with the
@@ -4363,12 +4289,6 @@ function checkCss(html) {
     /display:inline/.test(p760('.tab-count .cnt-short')) && /clip:rect\(0,0,0,0\)/.test(p760('.tab-count .cnt-full')) &&
     !/display:none/.test(p760('.tab-count .cnt-full')), 'Phones show a capped Starred badge on the icon, with the full count still read');
   assert(/scrollbar-gutter:stable/.test(body('html')), 'The scrollbar gutter is kept on short pages, so the masthead does not move between routes');
-  // Forced colours: the separator shows in a system colour on the current Browse pill too, and the current mark stays inside
-  // the label's 3 px end padding.
-  assert(forcedRules.some(r => r.sels.includes('.tab-split.cur>.tab-more::before') && /background:CanvasText/.test(r.body)),
-    'Forced colours draw the current pill\'s separator in CanvasText');
-  const curOff = forcedRules.filter(r => r.sels.includes('.tab-split>.tab-browse[aria-current]')).map(r => Number((r.body.match(/outline-offset:(-?\d+)px/) || [])[1]));
-  assert(curOff.length && curOff.every(o => o <= 0 && -o <= 3 - 1), 'The forced current mark on Browse stays inside its 3 px end padding');
   // Evidence in words (request 06): no bar glyph rules; the badge is a chip in the chip colours; compact List rows show it only
   // where the Evidence column is hidden.
   assert(!ctxRules.some(r => /\.pips?(?![\w-])/.test(r.sel)), 'No evidence bar glyph rules');
@@ -4379,11 +4299,10 @@ function checkCss(html) {
   ok('CSS: positioned scroll containers, alt-free generated glyphs, wrapping kicker labels, strip contrast, toolbar room, unclipped ' +
     'focus rings, forced-colors state marks, wrapping tile labels, search box padding, phone-width Watch labels, notes and host chips, ' +
     'wrapping guide tags on upload cards, breaking List titles, wrapping uploader names, failed Watch links, unbroken number ranges; ' +
-    'masthead without brand rules, a physical one-row layout, a thumb that follows aria-checked, token colours with masthead contrast, ' +
-    'motion only without reduced motion, forced-colors thumb; Browse arrow and menu placement, 44 px targets, focus ring, dividers and ' +
-    'forced-colors marks; a menu at least 400 px wide with one-line titles, counts beside them and no split words; no Browse divider at ' +
-    'rest, a short separator on hover, focus and the current pill, and in forced colours (the current pill too, its mark inside the ' +
-    'label padding); no direction- or language-scoped masthead control rules, option states that keep their box, phone-only short ' +
+    'masthead without brand rules, a physical layout, a thumb that follows aria-checked, token colours with masthead contrast, ' +
+    'motion only without reduced motion, forced-colors thumb; on phones a bottom views bar with Surprise in it, room kept for it, the ' +
+    'controls on the right; no Browse menu rules; popovers placed logically above the bar, a sheet on phones, 44 px controls; ' +
+    'no direction- or language-scoped masthead control rules, option states that keep their box, phone-only short ' +
     'labels, a close phone focus ring, a band-placed phone popover, a stable scrollbar gutter, a capped phone Starred badge; ' +
     'evidence badges as text, no bar glyph rules');
 }
@@ -4740,7 +4659,8 @@ async function run() {
   checkStrings();
   checkData(M, app.payload);
   assert.equal(H.document.documentElement.dir, 'ltr', 'English is the default');
-  assert.equal(H.h1().textContent, M.hasGuide ? L.en.guideTitle : L.en.browseTitle, 'Start view');
+  assert.equal(H.h1().textContent, M.hasGuide ? L.en.homeTitle : L.en.browseTitle, 'Start view');
+  assert.equal(H.location.hash, M.hasGuide ? '#/home' : '#/browse', 'Start route');
   const starred = await checkUploads(H, M);
   await checkVimeoAndBackups(H, M, starred);
   if (M.hasGuide) await checkGuide(H, M);
@@ -4750,7 +4670,7 @@ async function run() {
   await checkLangBoot(htmlPath);
   await checkThemePicker(htmlPath);
   await checkLicensed(htmlPath, H, M);
-  if (M.hasGuide) { await checkBrowseMenu(H, M); await checkBrowsePages(H, M); }
+  if (M.hasGuide) { await checkNav(H, M); await checkBrowsePages(H, M); }
   await sweep(H, M);
   await checkWithoutGuide(htmlPath);
   await checkEdgeCases(htmlPath);

@@ -62,6 +62,7 @@ function boot(htmlPath, options = {}) {
         if (this.tagName === 'select' && node?.tagName === 'option' && this.children.length === 1) this.value = node.value;
       }
     }
+    prepend(...nodes) { const rest = this.children; this.children = []; this.append(...nodes); this.children.push(...rest); }
     replaceChildren(...nodes) {
       for (const child of this.children) if (child && typeof child === 'object') child.parentElement = null;
       this.children = []; this._text = ''; this.append(...nodes);
