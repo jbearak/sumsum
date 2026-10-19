@@ -6012,7 +6012,11 @@ const recByKey = new Map(records.map(r => [mapKey(r), r]));
 const rand = (() => {
  let s = Number(root.dataset.startSeed);
  if (!Number.isSafeInteger(s)) return Math.random;
- return () => { s = (s * 1103515245 + 12345) % 2147483648; return s / 2147483648; };
+ // mulberry32
+ return () => {
+  s = (s + 0x6D2B79F5) | 0; let x = Math.imul(s ^ (s >>> 15), 1 | s);
+  x = (x + Math.imul(x ^ (x >>> 7), 61 | x)) ^ x; return ((x ^ (x >>> 14)) >>> 0) / 4294967296;
+ };
 })();
 const watchedRec = r => {
  // A record shows its episode's Watched mark only when it is that one episode's whole or alternate copy.
@@ -6120,9 +6124,15 @@ function homeCard(r, prefix) {
  act.append(queueBtn(r, prefix + 'q-' + r.id), starBtn(r, prefix + 'star-' + r.id));
  card.append(art, body, act); li.append(card); return li;
 }
-function shuffled(list, seed) {
- if (!seed) return list;
- const a = [...list]; for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rand() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+// A shelf keeps the order its shuffle button gave it until the next press, so re-rendering (a star, the queue) never moves
+// the card under a finger.
+function shuffled(list, order) {
+ if (!order) return list;
+ const at = new Map(order.map((id, i) => [id, i])), end = order.length;
+ return [...list].sort((a, b) => (at.has(a.id) ? at.get(a.id) : end) - (at.has(b.id) ? at.get(b.id) : end));
+}
+function shuffleIds(list) {
+ const a = list.map(r => r.id); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rand() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
  return a;
 }
 function shelf(id, title, items, see, max = 12) {
@@ -6130,7 +6140,7 @@ function shelf(id, title, items, see, max = 12) {
  const sec = el('section', 'shelf'); sec.setAttribute('aria-labelledby', 'sh-' + id);
  const head = el('div', 'shelf-head'); const h = el('h2', '', title); h.setAttribute('id', 'sh-' + id); head.append(h);
  if (items.length > 1) {
-  const sb = btn('btn ghost shuf', '', () => { state.shuffle.set(id, (state.shuffle.get(id) || 0) + 1); mount(false); restoreFocus('shuf-' + id); },
+  const sb = btn('btn ghost shuf', '', () => { state.shuffle.set(id, shuffleIds(items)); mount(false); restoreFocus('shuf-' + id); },
    'shuf-' + id);
   sb.setAttribute('aria-label', t('shuffleShelf', {name: title})); sb.append(icon('shuffle')); head.append(sb);
  }
@@ -6407,13 +6417,16 @@ function dieFace() { const d = el('span', 'die die-static', 'א'); d.setAttribut
 // Opens and queue changes: Home re-renders (it shows both); elsewhere the queue buttons, the masthead count, the bar and an
 // open queue popover update in place. Always after the activating link has navigated (sessionChanged defers).
 sessionHooks.add(() => {
- renderQueueUi();
- if (pops.open === 'queue') { const k = activeKey(); renderQueuePop(); restoreFocus(k, 'qp-open', 'qp-h'); }
- if (state.view === 'home') { const k = activeKey(); mount(false, true); restoreFocus(k); return; }
+ const k = activeKey(), inPop = pops.open && $(pops.open + '-pop').contains(document.activeElement);
+ if (state.view === 'home') mount(false, true); else renderQueueUi();
+ // mount() forgets the popover's controls, so an open popover is drawn again after it.
+ if (pops.open === 'queue') renderQueuePop();
+ if (pops.open === 'surprise') renderSurprise();
  for (const n of focusables.values()) {
   if (!n._rec || n.isConnected === false) continue;
   const on = inSitting(n._rec); n.setAttribute('aria-pressed', String(on)); n._mark.textContent = on ? '✓' : '+';
  }
+ restoreFocus(k, ...(inPop ? (pops.open === 'queue' ? ['qp-open', 'qp-h'] : ['surprise-h']) : []));
 });
 
 /* ================= start ================= */

@@ -3711,6 +3711,18 @@ async function checkHome(htmlPath, M) {
   assert(pop.hidden && sb.getAttribute('aria-expanded') === 'false' && H.document.activeElement === sb, 'Escape closes it and focus returns');
   await sb.click(); await H.$('view').dispatch('click'); assert(pop.hidden, 'An outside click closes it');
   await sb.click(); await H.navigate('browse'); assert(pop.hidden, 'A route change closes it');
+  // "+" inside the Surprise card queues the pick in place: the popover stays open and the button shows it.
+  await H.navigate('home'); await sb.click();
+  const pr = picked(), qb = () => H.fk('sp-q-' + pr.id), wasQ = JSON.parse(H.storage.get('sumsum-sitting') || '[]').includes(keyOf(pr));
+  await qb().click(); H.flushTimers();
+  assert(!pop.hidden && picked() === pr && qb().getAttribute('aria-pressed') === String(!wasQ), 'Queueing from Surprise keeps it open and updates its +');
+  await qb().click(); H.flushTimers(); await H.fk('surprise-close').click();
+  // A shuffled shelf keeps its order when Home is drawn again (a star or the queue), until the next shuffle.
+  const order = () => shelfCards('music').map(a => a.getAttribute('data-fk'));
+  await H.fk('shuf-music').click(); const shuffledOrder = order();
+  await H.fk('smusic-q-' + cardRec(shelfCards('music')[0], 'smusic-card-').id).click(); H.flushTimers();
+  assert.deepEqual(order(), shuffledOrder, 'A queue change does not reshuffle the shelf');
+  await H.fk('smusic-q-' + cardRec(shelfCards('music')[0], 'smusic-card-').id).click(); H.flushTimers();
   // On Browse it picks from the list on screen.
   const cls = 'classic';
   await H.navigate('browse?series=' + cls);
