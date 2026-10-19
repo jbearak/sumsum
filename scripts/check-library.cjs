@@ -4742,9 +4742,17 @@ function builderChecks(builder, dir) {
   for (const [label, tags, pattern] of [['capital key', {'Big Bird': ['Big Bird', 'ציפורת']}, /tag 'Big Bird': keys are non-empty lowercase/],
     ['one name', {'elmo': ['Elmo']}, /tag 'elmo': expected \[English, Hebrew\] names/],
     ['Hebrew name in Latin letters', {'elmo': ['Elmo', 'Elmo']}, /the Hebrew name has no Hebrew letters/],
-    ['reserved key', {'constructor': ['Constructor', 'בנאי']}, /keys are non-empty lowercase tags \(not a reserved name\)/],
+    ['reserved key', {'constructor': ['Constructor', 'בנאי']}, /tag 'constructor': keys are non-empty lowercase tags.*\(not a reserved name\)/],
+    ['padded key', {' elmo': ['Elmo', 'אלמו']}, /without outer spaces/],
     ['empty table', {}, /non-empty tags object/]]) {
     fails(run([rec('fx-v', 'https://www.youtube.com/watch?v=AAAAAAAAAA1')], {vocabulary: vocab(tags)}), pattern, 'vocabulary: ' + label);
+  }
+  fails(run([rec('fx-v', 'https://www.youtube.com/watch?v=AAAAAAAAAA1')],
+    {vocabulary: write('vocabulary.json', '{"tags": {"bert": ["Bert", "בנץ"], "bert": ["Bert", "ברט"]}}')}),
+  /vocabulary\.json: key 'bert' appears twice in one object/, 'vocabulary: a repeated key');
+  for (const [flag, name] of [['series', 'missing-series.json'], ['vocabulary', 'missing-vocabulary.json']]) {
+    fails(run([rec('fx-v', 'https://www.youtube.com/watch?v=AAAAAAAAAA1')], {[flag]: path.join(dir, name)}),
+      new RegExp(name.replace('.', '\\.') + ': not found'), `a missing ${flag} file`);
   }
   fails(run([rec('fx-us', 'https://www.youtube.com/watch?v=AAAAAAAAAA1', {series: 'us-street'})]), /unknown series 'us-street'.*series\.json/,
     'a series missing from the registry');
@@ -4757,6 +4765,7 @@ function builderChecks(builder, dir) {
     ['goal across families', reg => { addUs(reg); reg.goal.push({series: 'us-street', en: 'US', he: 'אמריקאי'}); }, /goal series must belong to one family/],
     ['goal series listed twice', reg => reg.goal.push({...reg.goal[0]}), /goal row 3: series 'classic' is listed twice/],
     ['goal row without labels', reg => reg.goal.push({series: 'elmo'}), /goal row 3 must be \{en, he\}/],
+    ['all-digit id', reg => reg.series.push({...usSeries, id: '1969', family: 'rechov'}), /series '1969': an id needs a letter/],
     ['empty families', reg => { reg.families = []; }, /families must be a non-empty array/]]) {
     fails(run([rec('fx-r', 'https://www.youtube.com/watch?v=AAAAAAAAAA1')], {series: withSeries(edit)}), pattern, 'series registry: ' + label);
   }

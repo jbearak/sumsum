@@ -821,8 +821,25 @@ def load_guide(path, records, explicit, series):
 SERIES_FIELDS = ("id", "en", "he", "family", "searchPrefix", "searchLanguage")
 
 
-def load_series(path):
+def load_table(path):
+    """load_json for a required, hand-edited table: a missing file or a key repeated within one object (json.loads keeps
+    the later value silently) is refused with the file's name."""
+    if not path.is_file():
+        raise ValueError(f"{path.name}: not found ({path})")
     data = load_json(path)
+
+    def unique(pairs):
+        keys = [k for k, _ in pairs]
+        repeated = next((k for k in keys if keys.count(k) > 1), None)
+        if repeated is not None:
+            raise ValueError(f"{path.name}: key {repeated!r} appears twice in one object")
+        return dict(pairs)
+    json.loads(path.read_text(encoding="utf-8"), object_pairs_hook=unique)
+    return data
+
+
+def load_series(path):
+    data = load_table(path)
     name = path.name
     if not isinstance(data, dict):
         raise ValueError(f"{name}: expected an object with families, series and goal")
@@ -849,6 +866,9 @@ def load_series(path):
         where = f"{name}, series {s['id']!r}"
         if s["id"] in family_of or s["id"] in RESERVED_IDS:
             raise ValueError(f"{where}: duplicate or reserved series id")
+        # The app keys a table by series id; an all-digit key would sort before the others and break the listed order.
+        if s["id"].isdigit():
+            raise ValueError(f"{where}: an id needs a letter (an all-digit id would not keep its place in the order)")
         problem = _pair_problem(s, where)
         if problem:
             raise ValueError(problem)
@@ -881,14 +901,14 @@ def load_series(path):
 # Tag vocabulary (data/vocabulary.json): editorial English and Hebrew names for theme and character tags, keyed by the
 # lowercase tag. The app looks tags up by their lowercase or normalised form, so a key with capitals would never match.
 def load_vocabulary(path):
-    data = load_json(path)
+    data = load_table(path)
     tags = data.get("tags") if isinstance(data, dict) else None
     if not isinstance(tags, dict) or not tags:
         raise ValueError(f"{path.name}: expected an object with a non-empty tags object")
     for key, pair in tags.items():
         where = f"{path.name}, tag {key!r}"
-        if not key.strip() or key != key.lower() or key in RESERVED_IDS:
-            raise ValueError(f"{where}: keys are non-empty lowercase tags (not a reserved name)")
+        if not key.strip() or key != key.lower() or key != key.strip() or key in RESERVED_IDS:
+            raise ValueError(f"{where}: keys are non-empty lowercase tags without outer spaces (not a reserved name)")
         if not (isinstance(pair, list) and len(pair) == 2 and all(_nonempty(v) for v in pair)):
             raise ValueError(f"{where}: expected [English, Hebrew] names")
         if not HEBREW_RE.search(pair[1]):
