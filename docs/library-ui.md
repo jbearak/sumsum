@@ -4,19 +4,47 @@ Read this before changing `library.template.html`. What the UI must preserve is 
 
 ## Views and routes
 
-The views nav has three items: Episode guide, Browse and Starred.
+The library is used mostly by a parent playing videos for a baby, often one-handed, in short sittings with repeated favourites (AGENTS.md). Labels are plain; the research pages stay quiet.
 
-Browse (`#/browse`) lists every upload with the filters. The old All uploads route, `#/uploads`, still lands there with its filters. The arrow beside Browse opens a menu of three pages:
+The views nav has four items: Home, Episode guide, Browse and Starred. Phones also get Surprise in it: below 761 px the nav is a bar fixed to the bottom of the screen, and the masthead's Surprise button is hidden. The masthead's controls are Surprise, Queue, the theme button and the language toggle.
 
-- **Identified videos** (`#/browse/identified`): every upload that is not awaiting identification, with the same filters.
-- **Videos to identify** (`#/browse/unidentified`): uploads in a production's `unidentified` queue and uploads linked only as `possible` copies, by production. `?prod=` shows one production.
+**Home** (`#/home`) is the start view when the guide exists; without a guide the library starts on Browse. It holds:
+
+- Two stored preferences, Spoken (All languages, Hebrew, English) and Length (any, or up to 5, 10, 20 or 30 minutes). They are `sumsum-spoken` and `sumsum-length`. They shape what Home and Surprise offer, never the guide, and a Browse hash never changes them.
+- **Up next.** This is the next core Rechov Sumsum episode not marked watched, with its best *offered* whole or alternate copy.
+  - **Offered:** not marked as needing a VPN, a card or a purchase, not failed or region-limited in a check, and within the preferences.
+  - **Choosing the copy:** the copy is picked among the episode's offered copies, so a copy that isn't offered never hides one that is.
+  - **When no episode fits:** Up next offers any offered video.
+  - **Wording:** nothing says these videos play; most links are not test-played.
+  - **Again:** when the last opened video is something else, the hero offers it again.
+- **The queue and Again.** The queue card and the masthead's Queue popover show the queue. Again lists opened videos, last first, with their counts.
+- **The characters.** The twelve most-tagged characters each open Browse filtered by that character (with the preferences).
+- **The shelves.** Starred shows every starred video with its real Watch shape. Songs and music shows offered videos only. "See all" opens the same Browse query and counts what it shows.
+- **The production doors.**
+
+**Surprise** picks a random offered video. On Browse and Starred it picks from the list on screen; elsewhere it uses the Home preferences. When a character filter is on, the heading names the character. The popover and the queue popover close on Escape, an outside click or a route change, and focus returns to their button. `data-start-seed` on `<html>` makes the picks repeatable for the checks.
+
+**The queue** (`sumsum-sitting`) is a list for one sitting. Each video opens in its own tab: "Open next" is a real link to the first video, and after its click that video leaves the queue. Phones show a bar above the bottom nav with the next video.
+
+**Browse** (`#/browse`) lists every upload with the filters. The old All uploads route, `#/uploads`, still lands there with its filters.
+
+- **Spoken** reads the language recorded for each video: Hebrew, English, Other languages, Not recorded. A record with two recorded languages counts under each, and the facet says it uses the recorded language, which is often unchecked against the audio.
+- **Length** is one choice at a time: up to 5, 10, 20 or 30 minutes. A video without a known duration shows only under Any length.
+- **An empty result** shows Oofnik's bin, drawn in CSS, with one button per active filter group. Each button gives the count that clearing that group alone would show.
+
+**What is not found** is one quiet footer link, "Not found · N", to Missing episodes. That page links on to the other research pages:
+
 - **Missing episodes** (`#/browse/missing`): documented episodes without a whole copy (missing, then parts or excerpts only), then expected places not identified yet.
+- **Videos to identify** (`#/browse/unidentified`): uploads in a production's `unidentified` queue and uploads linked only as `possible` copies, by production. `?prod=` shows one production.
+- **Identified videos** (`#/browse/identified`): every upload that is not awaiting identification, with the same filters.
 
 Identified videos and Videos to identify together hold every upload. Both are defined from the guide data, never from durations.
 
-The Research to-do page (`#/todo`, formerly To find) is linked from the footer and from the Videos to identify and Missing episodes pages. It holds the whole links to check by playback and the JSON export, whose file name and format still say `sumsum-to-find`. The export's `unidentified` list is the Videos to identify list; an upload linked only as a possible copy names its candidate episodes in `possibleCopyOf`.
+The Research to-do page (`#/todo`, formerly To find) is linked from Missing episodes and Videos to identify. It holds the whole links to check by playback and the JSON export, whose file name and format still say `sumsum-to-find`. The export's `unidentified` list is the Videos to identify list; an upload linked only as a possible copy names its candidate episodes in `possibleCopyOf`.
 
 "Awaiting identification" always means both kinds, queued and possible-only; the Browse facet chip for the queue alone is "In an identification queue". A link to Videos to identify counts what the page it opens lists.
+
+The guide's coverage panel for core Rechov Sumsum sits at the end of the guide overview.
 
 ## Evidence display
 
@@ -26,7 +54,17 @@ Evidence is said in words, never with a graphic. The levels are "Details checked
 
 The file works without a server and opens playback on the original host. Stars, pasted Vimeo links and watched marks live in local storage; [AGENTS.md](../AGENTS.md#files-and-build) says how to keep them. The JSON backup controls are in the library's "About, evidence levels and backup" section.
 
-The UI preferences live in local storage too, as `sumsum-language`, `sumsum-theme`, `sumsum-appearance` and `sumsum-guide-layout` (the guide's Album, Numbers or List layout; `data-start-layout` overrides it). The backup leaves them out, because it holds what the user collected (pasted links, stars and watched marks), not how the page looks.
+Two more personal stores sit beside them:
+
+- `sumsum-opened` holds how often each video was opened and when last, keyed like stars: `{key: {n, last}}`.
+  - **What counts:** a primary or middle click on a Watch link on a viewing surface (Home, Browse and Starred cards, guide tiles and List rows, the episode page). Research lists and record pages don't count.
+  - **What it isn't:** opening is not watching. Watched marks stay manual and per episode, and evidence never reads opens.
+  - **Re-rendering:** a view that shows opens re-renders after a deferred timer, so the clicked link is still in the page when the browser follows it.
+- `sumsum-sitting` holds the queue for a sitting: an ordered list of record keys.
+
+The backup (`sumsum-direct-links-v1`) carries both, as `opened` and `sitting`. An import validates each entry and merges, keeping the higher count and the later date and appending queued items without repeats, so importing the same backup twice changes nothing.
+
+The UI preferences live in local storage too, as `sumsum-language`, `sumsum-theme`, `sumsum-appearance`, `sumsum-guide-layout` (the guide's Album, Numbers or List layout; `data-start-layout` overrides it), `sumsum-spoken` and `sumsum-length` (Home's preferences). The backup leaves them out, because it holds what the user collected (pasted links, stars, watched marks, opens and the queue), not how the page looks.
 
 ## Themes and appearance
 

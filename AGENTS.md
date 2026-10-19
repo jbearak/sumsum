@@ -4,6 +4,8 @@ Maintain a local, interactive video-link library for classic and modern Rechov S
 
 The library is `index.html`, a self-contained file generated from `library.template.html` and `data/`. Preserve filtering by series, program type, theme and character, dynamic filter counts, longest-first duration sorting, and the UI preferences: language (English by default, with a Hebrew toggle and RTL layout), palette (Terracotta by default) and appearance (System by default). Full episodes and complete installments of short series are separate categories.
 
+The library is the user's own tool, not a product (the user, 2026-10-18). Use plain, functional labels, with no taglines, pitch sentences or filler such as "Find the episode you remember". Keep what could not be found documented, but as a small, quiet part of the UI, never a research desk or workbench. Playful, creative design is welcome within these rules. The main use is the user playing videos for their infant daughter (five months old on 2026-10-19): design for a parent operating it, often one-handed, in short sittings with repeated favourites.
+
 Before acquisition or coverage work, read [TODO.md](TODO.md): episode totals, coverage gaps and the acquisition checklist. Before changing a claim, read the [research/](research/) note that cites its evidence and limits.
 
 # Keeping this file current

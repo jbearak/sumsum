@@ -62,6 +62,7 @@ function boot(htmlPath, options = {}) {
         if (this.tagName === 'select' && node?.tagName === 'option' && this.children.length === 1) this.value = node.value;
       }
     }
+    prepend(...nodes) { const rest = this.children; this.children = []; this.append(...nodes); this.children.push(...rest); }
     replaceChildren(...nodes) {
       for (const child of this.children) if (child && typeof child === 'object') child.parentElement = null;
       this.children = []; this._text = ''; this.append(...nodes);
@@ -93,7 +94,9 @@ function boot(htmlPath, options = {}) {
     // A bubbling event: the target's listeners, then each ancestor's, with event.target kept on the original element.
     async dispatch(name, extra = {}) {
       let prevented = false;
-      for (let n = this; n; n = n.parentElement) {
+      // Like a browser, the path is fixed when the event is dispatched: a listener that replaces the target does not stop it.
+      const path = []; for (let n = this; n; n = n.parentElement) path.push(n);
+      for (const n of path) {
         for (const callback of n.listeners[name] || []) {
           await callback({target: this, currentTarget: n, preventDefault() { prevented = true; }, ...extra});
         }
