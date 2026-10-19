@@ -26,6 +26,16 @@ Evidence is said in words, never with a graphic. The levels are "Details checked
 
 The file works without a server and opens playback on the original host. Stars, pasted Vimeo links and watched marks live in local storage; [AGENTS.md](../AGENTS.md#files-and-build) says how to keep them. The JSON backup controls are in the library's "About, evidence levels and backup" section.
 
+Two more personal stores sit beside them:
+
+- `sumsum-opened` holds how often each video was opened and when last, keyed like stars: `{key: {n, last}}`.
+  - **What counts:** a primary or middle click on a Watch link on a viewing surface (Home, Browse and Starred cards, guide tiles and List rows, the episode page). Research lists and record pages don't count.
+  - **What it isn't:** opening is not watching. Watched marks stay manual and per episode, and evidence never reads opens.
+  - **Re-rendering:** a view that shows opens re-renders after a deferred timer, so the clicked link is still in the page when the browser follows it.
+- `sumsum-sitting` holds the queue for a sitting: an ordered list of record keys.
+
+The backup (`sumsum-direct-links-v1`) carries both, as `opened` and `sitting`. An import validates each entry and merges, keeping the higher count and the later date and appending queued items without repeats, so importing the same backup twice changes nothing.
+
 The UI preferences live in local storage too, as `sumsum-language`, `sumsum-theme`, `sumsum-appearance` and `sumsum-guide-layout` (the guide's Album, Numbers or List layout; `data-start-layout` overrides it). The backup leaves them out, because it holds what the user collected (pasted links, stars and watched marks), not how the page looks.
 
 ## Themes and appearance

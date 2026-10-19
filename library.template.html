@@ -1576,13 +1576,13 @@ en: {
  about4: 'Hop pages need an Israeli connection. Direct Vimeo links found on Hop pages open on Vimeo, outside the Hop-only VPN ' +
   'rule; their playback is recorded link by link. Some official YouTube uploads were blocked or unavailable in checks from ' +
   'outside Israel.',
- about5: 'Your stars, pasted Vimeo links and watched marks are stored in this browser only. Export a backup before moving this ' +
+ about5: 'Your stars, pasted Vimeo links, watched marks, opened videos and queue are stored in this browser only. Export a backup before moving this ' +
   'file or changing browsers.',
  exportBackup: 'Export backup',
  importBackup: 'Import backup or collector report',
  exportLibrary: 'Export library data',
  exported: 'File downloaded.',
- imported: 'Import complete: {n} links, {f} starred, {w} watched.',
+ imported: 'Import complete: {n} links, {f} starred, {w} watched, {o} opened, {s} queued.',
  invalidImport: 'That file is not a valid backup.',
  storageError: 'This browser could not store your changes. Export a backup before closing the page.',
  footer: 'A personal viewing index. Sesame Workshop, Hop! and the video hosts retain their rights.',
@@ -2155,12 +2155,12 @@ he: {
   'כל העלאה שומרת את הכותרת ואת שם המעלה כפי שפורסמו.',
  about4: 'עמודי הופ דורשים חיבור ישראלי. קישורי Vimeo ישירים שנמצאו בעמודי הופ נפתחים ב־Vimeo, מחוץ לכלל ה־VPN שחל על הופ ' +
   'בלבד; הניגון שלהם מתועד לכל קישור בנפרד. חלק מהעלאות YouTube הרשמיות נחסמו או לא היו זמינות בבדיקות מחוץ לישראל.',
- about5: 'הכוכבים, קישורי ה־Vimeo שהדבקתם וסימוני הצפייה מאוחסנים רק בדפדפן הזה. ייצאו גיבוי לפני העברת הקובץ או החלפת דפדפן.',
+ about5: 'הכוכבים, קישורי ה־Vimeo שהדבקתם, סימוני הצפייה, הסרטונים שפתחתם והתור מאוחסנים רק בדפדפן הזה. ייצאו גיבוי לפני העברת הקובץ או החלפת דפדפן.',
  exportBackup: 'ייצוא גיבוי',
  importBackup: 'ייבוא גיבוי או דוח איסוף',
  exportLibrary: 'ייצוא נתוני הספרייה',
  exported: 'הקובץ הורד.',
- imported: 'הייבוא הושלם: {n} קישורים, {f} מסומנים בכוכב, {w} נצפו.',
+ imported: 'הייבוא הושלם: {n} קישורים, {f} מסומנים בכוכב, {w} נצפו, {o} נפתחו, {s} בתור.',
  invalidImport: 'הקובץ אינו גיבוי תקין.',
  storageError: 'הדפדפן לא הצליח לאחסן את השינויים. ייצאו גיבוי לפני סגירת העמוד.',
  footer: 'אינדקס צפייה אישי. הזכויות שמורות ל־Sesame Workshop, להופ! ולאתרי הווידאו.',
@@ -2607,6 +2607,26 @@ const mappings = Object.create(null);
   for (const k of Object.keys(stored)) if (validVimeo(typeof stored[k] === 'string' ? stored[k] : stored[k]?.url)) mappings[k] = stored[k];
  }
 }
+// Keys that must never become object keys, from storage or a backup.
+const BAD_KEYS = ['__proto__', 'constructor', 'prototype'];
+const okKey = k => typeof k === 'string' && k.length > 0 && k.length < 2048 && !BAD_KEYS.includes(k);
+// Opens: how often a video was opened from a viewing surface (Home, cards, tiles, the episode page), and when last, keyed
+// like stars (mapKey). Opening is not watching: Watched marks stay manual and per episode, and evidence never reads these.
+// A null-prototype object; a malformed entry is dropped on its own.
+function cleanOpen(v) {
+ if (!v || typeof v !== 'object') return null;
+ const n = Number(v.n), last = typeof v.last === 'string' && v.last.length < 64 && Number.isFinite(Date.parse(v.last)) ? v.last : '';
+ return Number.isSafeInteger(n) && n >= 1 && last ? {n, last} : null;
+}
+const opened = Object.create(null);
+{
+ const stored = readStored('sumsum-opened', {});
+ if (stored && typeof stored === 'object' && !Array.isArray(stored)) {
+  for (const k of Object.keys(stored)) { const v = cleanOpen(stored[k]); if (v && okKey(k)) opened[k] = v; }
+ }
+}
+// The sitting: an ordered queue of record keys for this sitting, without repeats.
+const sitting = [...new Set(strList(readStored('sumsum-sitting', [])).filter(okKey))];
 function t(key, vars) {
  let s = L[lang][key] ?? L.en[key] ?? key;
  if (vars) s = s.replace(/\{(\w+)\}/g, (m, k) => (vars[k] ?? m));
@@ -2835,6 +2855,27 @@ function thumb(url, w, h) { const box = el('span', 'u-art'); const img = imgEl(u
 function toast(message) {
  const n = $('toast'); n.textContent = message; n.className = 'toast show';
  clearTimeout(toast.timer); toast.timer = setTimeout(() => { n.className = 'toast'; n.textContent = ''; }, 3800);
+}
+// Session marks. Views that show opens or the sitting re-render through sessionHooks, after the activating link has
+// navigated: a link removed during its own click does not navigate (Gecko), so the re-render is deferred.
+const sessionHooks = new Set();
+function sessionChanged() { setTimeout(() => { for (const f of [...sessionHooks]) f(); }, 0); }
+function noteOpen(r) {
+ const k = mapKey(r), cur = opened[k];
+ opened[k] = {n: (cur ? cur.n : 0) + 1, last: new Date().toISOString()};
+ persist('sumsum-opened', opened); sessionChanged();
+}
+// A Watch link on a viewing surface counts an open: a primary click (keyboard activation included) or a middle click.
+// Research lists and record pages are not viewing surfaces and do not count.
+function viewed(a, r) {
+ a.addEventListener('click', ev => { if (!ev || !(ev.button > 0)) noteOpen(r); });
+ a.addEventListener('auxclick', ev => { if (ev && ev.button === 1) noteOpen(r); });
+ return a;
+}
+const inSitting = r => sitting.includes(mapKey(r));
+function setSitting(keys) {
+ sitting.splice(0, sitting.length, ...new Set(keys.filter(okKey)));
+ persist('sumsum-sitting', sitting); sessionChanged();
 }
 // flush() runs only a pending call. A search box's change event (blur, Enter) flushes: re-rendering results that are
 // already shown would replace the control the user is pressing, and the click would be lost.
@@ -4270,7 +4311,7 @@ function upNext() {
  const tt = el('p', 'next-title'); const a = titleDir(go(epRoute(e.id), epTitle(e)), e); fk(a, 'next-ep');
  tt.append(a);
  body.append(h, tt, el('p', 'note', [prodName(p), epCode(e)].filter(Boolean).join(' · ')), accessLine(b.r));
- const actions = el('div', 'next-act'); actions.append(fk(watchLink(b, false, 'btn', epTitle(e)), 'next-watch'));
+ const actions = el('div', 'next-act'); actions.append(fk(viewed(watchLink(b, false, 'btn', epTitle(e)), b.r), 'next-watch'));
  if (cands.length > 1) {
   actions.append(btn('btn ghost', t('nextSkip'), () => {
    state.nextSkip++; G.next.replaceChildren(upNext()); restoreFocus('next-skip');
@@ -4555,7 +4596,7 @@ function tile(e, p) {
  if (alts) { const al = el('span', 'tile-alt'); al.append(altNodes(e, true)); al.setAttribute('aria-hidden', 'true'); body.append(al); }
  body.append(metaRow);
  const act = el('span', 'tile-act'); const b = bestLink(e);
- if (b) act.append(fk(watchLink(b, true, 'tbtn', epTitle(e)), 'w-' + e.id));
+ if (b) act.append(fk(viewed(watchLink(b, true, 'tbtn', epTitle(e)), b.r), 'w-' + e.id));
  else act.append(findLink(p, e, 'tbtn', t('twFind')));
  card.append(art, body, act); li.append(card); return li;
 }
@@ -4591,7 +4632,7 @@ function epRow(e, p) {
  tr.append(el('td', 'c-ev', evName(e)));
  tr.append(el('td', 'c-links note', linksSummary(e)));
  const act = el('td', 'c-act');
- act.append(b ? watchLink(b, false, 'btn ghost', epTitle(e), true) :
+ act.append(b ? viewed(watchLink(b, false, 'btn ghost', epTitle(e), true), b.r) :
   findLink(p, e, 'btn ghost', longShort(partLang(el('span', 'wl', t('searchYoutube'))), t('twFind'))));
  tr.append(act); return tr;
 }
@@ -4655,7 +4696,7 @@ VIEWS.episode = function mountEpisode(v) {
  if (watched.has(e.id)) tags.append(seenTag());
  info.append(tags);
  const prim = el('div', 'primary');
- if (b) prim.append(fk(watchLink(b, false, 'btn big', epTitle(e)), 'ep-watch'));
+ if (b) prim.append(fk(viewed(watchLink(b, false, 'btn big', epTitle(e)), b.r), 'ep-watch'));
  if (cov !== 'whole-candidate') prim.append(ext(ytSearchUrl(p, epSearchWords(e)), t('searchYoutube'), b ? 'btn ghost big' : 'btn big', 'search'));
  info.append(prim);
  if (b) {
@@ -4820,7 +4861,7 @@ function uploadRow(r, role, partNo, partCount, epCheck) {
  const act = el('div', 'urow-actions');
  // A possible copy's own link is secondary: its identity is unresolved.
  const wcls = role === 'possible' ? 'btn ghost' : 'btn';
- if (destination(r)) act.append(watchLink({r, role, acc: accessOf(r), i: partNo, n: partCount}, false, wcls, recTitle(r)));
+ if (destination(r)) act.append(viewed(watchLink({r, role, acc: accessOf(r), i: partNo, n: partCount}, false, wcls, recTitle(r)), r));
  act.append(starBtn(r, 'star-' + r.id)); li.append(art, body, act); return li;
 }
 function compareTable(ups) {
@@ -5378,7 +5419,7 @@ function uploadCard(r) {
   tags.append(tg);
  } else if (queueOf.has(r.id)) tags.append(el('span', 'tag t-queue', t('gsQueue')));
  body.append(tags, accessLine(r));
- const act = el('div', 'u-actions'); if (destination(r)) act.append(recWatch(r, 'btn')); act.append(starBtn(r, 'star-' + r.id));
+ const act = el('div', 'u-actions'); if (destination(r)) act.append(viewed(recWatch(r, 'btn'), r)); act.append(starBtn(r, 'star-' + r.id));
  card.append(art, body, act); li.append(card); return li;
 }
 
@@ -5628,7 +5669,6 @@ function download(name, value) {
  const a = el('a'); a.href = url; a.download = name; document.body.append(a); a.click(); a.remove();
  setTimeout(() => URL.revokeObjectURL && URL.revokeObjectURL(url), 1000); toast(t('exported'));
 }
-const BAD_KEYS = ['__proto__', 'constructor', 'prototype'];
 // Accepts a collector report (records[].directUrl keyed by id or url), a backup ({mappings, favorites, watched};
 // older backups have no watched list) or a bare mapping object. Only valid Vimeo URLs are kept.
 async function importFile(file) {
@@ -5639,7 +5679,7 @@ async function importFile(file) {
  const incoming = Array.isArray(value.records)
   ? Object.fromEntries(value.records.filter(row => row && row.directUrl && (row.id || row.url)).map(row => [row.id || row.url,
    {url: row.directUrl, sourceUrl: row.url || '', savedAt: row.collectedAt || value.completedAt || new Date().toISOString()}]))
-  : value.mappings || (value.favorites || value.watched || value.format ? {} : value);
+  : value.mappings || (value.favorites || value.watched || value.opened || value.sitting || value.format ? {} : value);
  if (!incoming || typeof incoming !== 'object' || Array.isArray(incoming)) throw Error('format');
  const approved = {}; let n = 0;
  for (const [k, entry] of Object.entries(incoming)) {
@@ -5647,7 +5687,13 @@ async function importFile(file) {
   if (validVimeo(url) && k.length < 2048 && !BAD_KEYS.includes(k)) { approved[k] = typeof entry === 'string' ? {url} : entry; n++; }
  }
  const fav = strList(value.favorites), wat = strList(value.watched);
- if (!n && !fav.length && !wat.length) throw Error('empty');
+ // Opens and the sitting (backups from 2026-10-18 on). Each entry is checked on its own, like stored values.
+ const ops = [];
+ if (value.opened && typeof value.opened === 'object' && !Array.isArray(value.opened)) {
+  for (const k of Object.keys(value.opened)) { const v = cleanOpen(value.opened[k]); if (v && okKey(k)) ops.push([k, v]); }
+ }
+ const sit = [...new Set(strList(value.sitting).filter(okKey))];
+ if (!n && !fav.length && !wat.length && !ops.length && !sit.length) throw Error('empty');
  for (const [k, entry] of Object.entries(approved)) mappings[k] = entry;
  clearLinkCaches();
  let ok = persist('sumsum-vimeo-mappings', mappings);
@@ -5655,7 +5701,14 @@ async function importFile(file) {
  for (const x of wat) watched.add(x);
  if (fav.length) ok = persist('sumsum-favorites', [...favorites]) && ok;
  if (wat.length) ok = persist('sumsum-watched', [...watched]) && ok;
- if (ok) toast(t('imported', {n: fmtN(n), f: fmtN(fav.length), w: fmtN(wat.length)}));
+ // A merge: the higher count and the later date, so importing the same backup twice changes nothing.
+ for (const [k, v] of ops) {
+  const cur = opened[k];
+  opened[k] = cur ? {n: Math.max(cur.n, v.n), last: Date.parse(v.last) > Date.parse(cur.last) ? v.last : cur.last} : v;
+ }
+ if (ops.length) ok = persist('sumsum-opened', opened) && ok;
+ if (sit.length) { sitting.splice(0, sitting.length, ...new Set([...sitting, ...sit])); ok = persist('sumsum-sitting', sitting) && ok; }
+ if (ok) toast(t('imported', {n: fmtN(n), f: fmtN(fav.length), w: fmtN(wat.length), o: fmtN(ops.length), s: fmtN(sit.length)}));
  evCache.clear(); modelCache.clear(); mount(false);
 }
 function renderAbout() {
@@ -5666,7 +5719,8 @@ function renderAbout() {
  b.append(el('p', '', t('about5')));
  const tools = el('div', 'tools');
  const exp = btn('btn ghost', t('exportBackup'), () => download('sumsum-direct-links.json', {format: 'sumsum-direct-links-v1',
-  exportedAt: new Date().toISOString(), mappings, favorites: [...favorites], watched: [...watched]}), 'export-mappings');
+  exportedAt: new Date().toISOString(), mappings, favorites: [...favorites], watched: [...watched], opened, sitting: [...sitting]}),
+  'export-mappings');
  exp.setAttribute('id', 'export-mappings');
  const fl = el('label', 'btn ghost file-btn', t('importBackup')); fl.setAttribute('for', 'import-mappings');
  const fi = el('input', 'sr-only'); fi.setAttribute('id', 'import-mappings'); fi.type = 'file'; fi.accept = 'application/json,.json';

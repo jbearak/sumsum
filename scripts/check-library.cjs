@@ -743,7 +743,7 @@ async function checkVimeoAndBackups(H, M, starredRecord) {
         completedAt: '2026-10-17'})}];
       await H.$('import-mappings').fire('change');
       assert.equal(JSON.parse(H.storage.get('sumsum-vimeo-mappings'))[r2.id].url, r2.directUrl, 'Collector report imports');
-      assert.equal(H.$('toast').textContent, tr('en', 'imported', {n: '1', f: '0', w: '0'}));
+      assert.equal(H.$('toast').textContent, tr('en', 'imported', {n: '1', f: '0', w: '0', o: '0', s: '0'}));
     }
   }
   const importJson = async (value, size = 1000) => {
@@ -762,7 +762,7 @@ async function checkVimeoAndBackups(H, M, starredRecord) {
   const newWatch = (M.eps.find(e => !watchedBefore.includes(e.id)) || {}).id;
   if (newStars.length === 2 && newWatch) {
     await importJson({format: 'sumsum-direct-links-v1', mappings: {}, favorites: newStars, watched: [newWatch]});
-    assert.equal(H.$('toast').textContent, tr('en', 'imported', {n: '0', f: '2', w: '1'}), 'A stars-only backup reports its stars and watched mark');
+    assert.equal(H.$('toast').textContent, tr('en', 'imported', {n: '0', f: '2', w: '1', o: '0', s: '0'}), 'A stars-only backup reports its stars and watched mark');
     const favsAfter = JSON.parse(H.storage.get('sumsum-favorites'));
     assert(newStars.every(id => favsAfter.includes(id)) && favsBefore.every(id => favsAfter.includes(id)), 'Imported stars join the stored ones');
     assert(JSON.parse(H.storage.get('sumsum-watched')).includes(newWatch), 'The imported watched mark is stored');
@@ -774,6 +774,53 @@ async function checkVimeoAndBackups(H, M, starredRecord) {
     await H.navigate('episode/' + encodeURIComponent(newWatch)); await H.fk('watch-toggle').click();
     assert.deepEqual(JSON.parse(H.storage.get('sumsum-favorites')), favsBefore, 'The imported stars are removed again');
     assert.deepEqual(JSON.parse(H.storage.get('sumsum-watched')), watchedBefore, 'and the watched mark');
+  }
+  // Opens and the queue (sumsum-opened, sumsum-sitting) import on their own; each entry is checked, a merge keeps the higher
+  // count and the later date, and importing the same backup twice changes nothing.
+  {
+    const [r1, r2, r3] = M.records, k1 = r1.id || r1.url, k2 = r2.id || r2.url, k3 = r3.id || r3.url;
+    const before = JSON.parse(H.storage.get('sumsum-opened') || '{}'), sitBefore = JSON.parse(H.storage.get('sumsum-sitting') || '[]');
+    const value = {format: 'sumsum-direct-links-v1', opened: {[k1]: {n: 3, last: '2026-10-01T10:00:00.000Z'},
+      [k2]: {n: 0, last: '2026-10-01'}, [k3]: {n: 2, last: 'not a date'}, constructor: {n: 4, last: '2026-10-01'}}, sitting: [k2, k1, k2, 7]};
+    await importJson(value);
+    assert.equal(H.$('toast').textContent, tr('en', 'imported', {n: '0', f: '0', w: '0', o: '1', s: '2'}),
+      'A backup holding only opens and a queue imports, and malformed entries are dropped one by one');
+    let opened = JSON.parse(H.storage.get('sumsum-opened'));
+    assert.deepEqual(opened[k1], before[k1] ? {n: Math.max(3, before[k1].n), last: before[k1].last > value.opened[k1].last ? before[k1].last : value.opened[k1].last} :
+      {n: 3, last: '2026-10-01T10:00:00.000Z'}, 'An imported open count is stored');
+    assert(!(k2 in opened && !(k2 in before)) && !(k3 in opened && !(k3 in before)) && !Object.hasOwn(opened, 'constructor'),
+      'A count under 1, a bad date and a prototype key are dropped');
+    const sit = JSON.parse(H.storage.get('sumsum-sitting'));
+    assert.deepEqual(sit, [...new Set([...sitBefore, k2, k1])], 'Queued items are appended in order, without repeats');
+    const snapshot = [H.storage.get('sumsum-opened'), H.storage.get('sumsum-sitting')];
+    await importJson(value);
+    assert.deepEqual([H.storage.get('sumsum-opened'), H.storage.get('sumsum-sitting')], snapshot, 'Importing the same backup twice changes nothing');
+    await importJson({format: 'sumsum-direct-links-v1', opened: {[k1]: {n: 1, last: '2027-01-01T00:00:00.000Z'}}});
+    opened = JSON.parse(H.storage.get('sumsum-opened'));
+    assert.deepEqual(opened[k1], {n: Math.max(3, before[k1] ? before[k1].n : 0), last: '2027-01-01T00:00:00.000Z'},
+      'A merge keeps the higher count and the later date');
+    await H.$('export-mappings').click();
+    const out = await H.blobJson();
+    assert.deepEqual(out.opened, opened, 'The backup carries the opens');
+    assert.deepEqual(out.sitting, sit, 'and the queue, in order');
+    await importJson({format: 'sumsum-direct-links-v1', opened: {[k1]: {n: 'x'}}, sitting: [7]});
+    assert.equal(H.$('toast').textContent, L.en.invalidImport, 'A backup with nothing valid is refused');
+    // A Watch link on a viewing surface (a Browse card) counts an open on a primary or middle click, never on another button,
+    // and stays in the page after its click (a link removed during its own click does not navigate). A record page's link is
+    // for checking and does not count.
+    await H.navigate('browse');
+    const card = H.byClass('ucard').find(c => H.byClass('u-actions', c)[0] && H.extLinks(H.byClass('u-actions', c)[0]).length);
+    const w = H.extLinks(H.byClass('u-actions', card)[0])[0];
+    const rid = H.find(n => n.getAttribute && (n.getAttribute('data-fk') || '').startsWith('card-'), card)[0].getAttribute('data-fk').slice(5);
+    const rec = M.records.find(x => x.id === rid), key = rec.id || rec.url, nOf = () => (JSON.parse(H.storage.get('sumsum-opened') || '{}')[key] || {n: 0}).n;
+    const n0 = nOf();
+    await w.click(); assert(w.isConnected, 'The clicked Watch link is still in the page'); H.flushTimers();
+    assert.equal(nOf(), n0 + 1, 'A click on a card\'s Watch link counts an open');
+    await w.fire('auxclick', {button: 1}); assert.equal(nOf(), n0 + 2, 'A middle click counts too');
+    await w.fire('auxclick', {button: 2}); await w.fire('click', {button: 2}); assert.equal(nOf(), n0 + 2, 'Another button does not');
+    await H.navigate('record/' + encodeURIComponent(rec.id));
+    if (H.has('rec-watch')) { await H.fk('rec-watch').click(); H.flushTimers(); assert.equal(nOf(), n0 + 2, 'A record page\'s Watch link does not count'); }
+    ok('opens and queue: backup export and import (only these fields, malformed entries, merge, idempotent); opens counted from viewing surfaces only');
   }
   await importJson('{"__proto__": "https://vimeo.com/33333333"}');
   assert.equal(H.$('toast').textContent, L.en.invalidImport, 'Prototype keys are refused');
