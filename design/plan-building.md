@@ -1,123 +1,115 @@
 # Plan: build "The building" into the library
 
-Status: draft for review, 2026-10-18.
+Status: revised after the Opus and Astra reviews, 2026-10-18. The user asked for the result to be merged to `main` and pushed after review.
 
 The user chose the Opus round-2 mockup `design/mockups/r2-a-building-opus.html`, with additions from the album (`r2-c-album-opus.html`) and Channel Sumsum (`r2-b-channel-opus.html`) mockups. The context is in [ui-brainstorm/brief-2.md](ui-brainstorm/brief-2.md) and in AGENTS.md (Project purpose):
 
-- The main use is a parent playing videos for a five-month-old, often one-handed, in short sittings, with repeated favourites.
-- No research desk. What couldn't be found stays documented but quiet.
-- No marketing copy. Plain labels.
-- Playful design is welcome.
+- A parent plays videos for a five-month-old, one-handed, in short sittings, with repeated favourites.
+- No research desk. What couldn't be found stays quiet.
+- No marketing copy. Playful design is welcome.
 
 ## Approach
 
-Evolve `library.template.html`; don't rewrite it. The current views (guide with Album/Numbers/List, Browse and its facets, Starred, episode, record and slot pages, the Missing, Videos to identify and Research to-do pages), routes, evidence wording, licensed-service handling, theme picker and language toggle all stay. They are covered by `scripts/check-library.cjs` (4,700 lines) and encode rules the mockups only sampled. The mockup is a visual and interaction reference, not code to paste. We add a Home view and personal-session features, restyle shared components, demote the research pages, and update the checks and docs to match.
+Evolve `library.template.html`; don't rewrite it. Every current view, route, evidence rule, licensed-service rule, the theme picker and the language toggle stay. The mockup is a visual reference, not code to paste. Never copy its copy: no brand, no "plays" claims.
 
-## What changes
+## Shared rules
 
-### 1. Personal session data (local storage, part of the backup)
+- **Eligibility for generated picks (`pickable(r)`).** Generated shelves, the Up next fallback and Surprise use only records that:
+  - have a destination;
+  - have an access of `played`, `local`, `vimeo` or `public`, so never `web`, `hop`, `licensed`, `restricted` or `unavailable`;
+  - are not `region-limited`;
+  - pass the Spoken and Length preferences.
 
-- **Recently opened.** `sumsum-opened`: record key → `{n, last}` (open count and ISO date). Every Watch link that opens a record (the `watchLink`/`recWatch` links, the queue's Open next, and Surprise picks) records an open on `click` and on middle-click (`auxclick`). Opening is not watching: the Watched mark stays a separate, manual, per-episode control, and evidence is untouched.
-- **Sitting queue.** `sumsum-sitting`: an ordered list of record keys. Add from any card or hero ("+"). Remove, reorder (up/down buttons) and clear it. "Open next" is a real `<a target=_blank>` to the first item's destination (so the new tab is a user gesture); on click it records the open and removes the item.
-- **Backup.** The export adds `opened` and `sitting` to the existing `sumsum-direct-links-v1` object; the format name stays. The import merges them: open counts take the maximum and the later date, and queue items are appended without duplicates. Older backups without these fields still import. UI preferences stay out of the backup.
-- **Keys.** These use the same record key as stars (`mapKey(r)`), so they survive the way stars do. Unknown keys stay stored, so backups round-trip, but are not shown.
+  The UI never says these "play". The cards keep their access line or mark. Starred and Again show everything the user chose, with each item's real Watch shape: VPN, library card, unavailable.
+- **Possible copies.** A record linked only as `possible` can appear as a video. Its card uses the existing possible-copy tag wording, never the candidate episode's title or number, and it never gets the ✓ sticker.
+- **The ✓ (Watched) sticker on a record card.** Only when the record is linked as `whole-candidate` or `alternate-edition` to exactly one episode, and that episode is marked watched. It looks like `seenTag()`, not like a coverage mark or an evidence badge.
+- **Opens.**
+  - **Counted from:** viewing surfaces only, which are Home (hero, cards, Again, sitting), Browse and Starred cards, the episode hero's Watch, the parts train and Surprise.
+  - **Not counted from:** research lists or record pages.
+  - **How:** one shared handler on `click` (primary button, including keyboard activation) and `auxclick` (middle button).
+  - **Timing:** storage writes happen at once, but any re-render is deferred (`setTimeout(0)`), so the activated link is never removed before it navigates (Gecko cancels navigation of a disconnected link).
+- **Titles.** Use `epTitle`, `epAlt`, `recTitle`, `titleDir` and the editorial-title rules everywhere. Nothing new composes titles.
 
-### 2. Two session preferences: Spoken and Length
+## 1. Session data (local storage, part of the backup)
 
-- **Spoken:** Hebrew / English / Both, from each record's `language`. `he`, `he-*` and `*-he` count as Hebrew; `en*` and `*-en` as English; a mixed `en-he` as both. Arabic, Russian and unknown languages show only under Both. Stored as `sumsum-spoken` (a UI preference, out of the backup), default Both.
-- **Length:** Any / ≤5 / ≤10 / ≤20 / ≤30 minutes, from `durationSeconds`. Unknown durations show only under Any. Stored as `sumsum-length`, default Any.
-- **Where they apply:** Home's shelves, Up next and Surprise me, and they become two new Browse facets ("Spoken", "Length") with dynamic counts, written to the hash like the other facets (`spoken=`, `len=`). In Browse they are ordinary filters; Home's controls set the stored defaults that Home and Surprise use. A Browse link from a Home shelf carries them explicitly.
-- **Not filtered:** neither applies to the episode guide, which documents every episode.
+- **`sumsum-opened`:** record key (`mapKey(r)`) → `{n, last}`, where `n` is a positive integer and `last` an ISO date.
+- **`sumsum-sitting`:** an ordered array of record keys with no duplicates.
+- **Unknown keys** are kept, but not shown.
+- **Malformed stored values** are dropped field by field.
+- **Backup.** The export adds `opened` and `sitting` to `sumsum-direct-links-v1`. The import:
+  - accepts a backup holding only these fields;
+  - validates them: a null-prototype object, keys under 2048 characters and not in `BAD_KEYS`, integer `n` ≥ 1, a parseable date;
+  - merges them: the maximum `n`, the later `last`, and queue items appended without duplicates;
+  - changes nothing when the same backup is imported twice.
 
-### 3. Home view (new default route)
+  The `imported` toast counts the new fields in both languages.
 
-`#/home` becomes the start view when the guide exists; with no guide, Browse stays the start view. `#/guide` and every existing route keep working. Layout at 1280 px:
+## 2. Preferences: Spoken and Length (UI preferences, out of the backup)
 
-- **Controls row:** the Spoken and Length segmented controls, with the kitchen-timer icon beside Length.
-- **Up next hero (left, large):** the existing `upNext()` rule (the next unwatched core Rechov Sumsum episode with a whole copy that plays without VPN or card), extended to respect Spoken and Length. If no episode passes, the hero falls back to a clip that passes. It shows the real thumbnail, title, production and format line, the ticket Watch button, "+" (sitting) and the star. "Another" (the die) and "Previous" step through the candidates.
-- **Right column:** a **Sitting** card (queue rows with up/down/remove and the total duration; Open next; Clear) and a **Recently opened** card (last 6, each with "×N" and a one-tap "Again ↻" Watch link).
-- **Character stoop:** the 10–12 characters with the most videos, from the existing character tags. Each is a round crop of a representative thumbnail, with its English and Hebrew names and a count under the current Spoken and Length. Kippi gets a CSS quill ring and Oofnik a CSS bin and lid. A tap opens Browse filtered by that character, plus Spoken and Length.
-- **Shelves:** horizontal rows of cards with scroll snap. Each title links to the equivalent Browse query ("See all N"), and each shelf has a shuffle button that reorders it.
-  - Starred.
-  - Play again: opened at least twice, starred items excluded, so it doesn't repeat Starred.
-  - Songs and music, from the music/songs themes.
-  - Under 5 minutes.
-  - Word of the Day (its production).
-  - Elmo's talk show.
-  - In English (Shalom Sesame).
-  - Holiday: only within about two weeks of a Jewish holiday, using `Intl.DateTimeFormat` with the `hebrew` calendar and the existing holiday theme tags; hidden if the calendar isn't supported.
-  - Productions, as doors to the guide.
-- **Shelf card:** the same component everywhere: thumbnail with duration, a "×N" sticker if opened before, and a ✓ sticker if its episode is marked watched; title (verbatim title rules as now); production and format line; ticket Watch button; "+". Uploads that would not get a Watch button are never on a shelf. Possible copies are uploads, so they may appear as videos; they never add to an episode's coverage. Videos that failed an availability check or need the VPN or a library card are left off Home shelves (they stay in Browse).
+- **Language groups for each record** (from `language`): Hebrew if any part is `he`; English if any part is `en`; Other if it has another code; Not recorded if the value is empty or `und`. Mixed values count in each group they contain.
+- **Browse Spoken facet:** multi-select chips (Hebrew / English / Other / Not recorded) with dynamic counts, hash `spoken=`. Help line: "From the recorded language".
+- **Browse Length facet:** single-select chips (Any / up to 5 / 10 / 20 / 30 minutes), hash `len=`. Unknown durations pass only under Any.
+- **Home controls:** Spoken is Hebrew / English / All languages, stored as `sumsum-spoken`; Length uses the same steps, stored as `sumsum-length`. Home's controls stay visible. When a filter empties something, a one-tap "Show all lengths" or "All languages" appears.
+- **Hashes:** Browse hashes change only Browse state, never the stored Home preferences. Shelf links from Home write the preferences into the Browse hash explicitly.
+- **The guide** is never filtered by them.
 
-### 4. Navigation and the quiet research pages
+## 3. Navigation, routes and the quiet research pages
 
-- **Tabs:** Home, Guide, Browse, Starred. The Browse arrow menu goes.
-- **Footer:** one quiet link, "Not found · N" (N = documented episodes without a whole copy, today's Missing count). It goes to Missing episodes, whose header links to Videos to identify, Identified videos and Research to-do. The routes stay the same.
-- **Guide overview:** the coverage goal panel moves out of the guide's head into a collapsed "Coverage" `<details>` at the bottom of the guide overview, with the same content. Up next moves to Home. The guide opens on the toolbar and productions.
-- **No brand:** there is still no wordmark or brand, per the existing masthead rule. The awning (a scalloped bottom edge on the masthead, CSS only) is decoration, not a brand.
+- **Routes:** `#/home` is the start view when a guide exists; with no guide, `#/` starts on Browse. `parseRoute` learns `home`, and every old route keeps working.
+- **Tabs:** Home, Guide, Browse, Starred. The Browse arrow menu and its code go.
+- **Surprise in the nav:** a Surprise item in the nav list after Guide, visible on phones only, so the bottom bar's visual order matches the DOM order. The masthead's die button is visible on wider screens only.
+- **Footer:** "Not found · N" (N = documented episodes without a whole copy) links to Missing episodes, replacing the Research to-do footer link. Missing episodes' header links quietly to Videos to identify, Identified videos and Research to-do. The Hebrew string avoids "מה חסר".
+- **The guide overview** opens on its toolbar and productions. The coverage goal panel keeps its own toggle (`state.goalOpen`) and moves to the bottom of the guide overview. Up next moves to Home.
 
-### 5. Masthead and phone layout
+## 4. Home
 
-- **Desktop masthead:** tabs, then the tools: Surprise me (die button), Sitting (button with count, opening a popover with the Sitting card), the theme button, then the language toggle. The theme button keeps its size and place relative to the language toggle.
-- **Phone (≤ 640 px):**
-  - The tabs become a fixed bottom bar: Home, Guide, Surprise, Browse, Starred, with icons and short labels. The DOM order stays the same.
-  - When the queue has items, a slim "next in sitting" bar sits just above it, with the thumbnail, title and an Open next ticket.
-  - The masthead keeps the theme, language and Sitting buttons.
-  - Primary targets are at least 44 px. Safe-area insets are respected.
-- **Masthead search (deferred):** a single search across episodes and videos is a candidate for a later round; each view keeps its own search now.
+- **Desktop:**
+  - **Controls row:** Spoken and Length, the latter with a timer icon.
+  - **Hero (left):** Up next, the existing rule, which is the next unwatched core episode with a whole copy. It now chooses among the episode's eligible whole and alternate copies, so it never picks a copy and then rejects it. It has "Another" and "Previous". When there is a last-opened video, the hero also offers "Again: <title>" as a second ticket. If no core episode qualifies, the hero falls back to a pickable clip.
+  - **Right column:** a **Sitting** card (queue with up/down/remove, total time, Open next, Clear, and Undo after Clear) and an **Again** card (last opened first, ×N, one-tap Watch, up to 8).
+  - **Character stoop:** the top 10–12 characters by tag. Each is a round thumbnail crop with names in both languages and a count under the current preferences. Kippi gets a CSS quill ring and Oofnik a bin. A tap opens Browse filtered by that character plus the preferences.
+  - **Shelves:** Starred (all, real shapes, "See all" → `#/starred`); Songs and music (pickable, "See all N" → the Browse query it shows); Productions (doors to the guide). Empty shelves are hidden.
+- **Phone (≤ 640 px):** a single column with the hero, a sitting bar if the queue is non-empty, the Again row, the stoop as a horizontal scroll, then the shelves. The tabs become a fixed bottom bar. The toast rises above the bars. Fixed bars never cover focus: `scroll-padding-bottom`.
 
-### 6. Surprise me
+## 5. Surprise
 
-- **Where:** the die button in the masthead or bottom bar, and "Another" in the hero.
-- **The pool:** uploads that play without a VPN, card or purchase (access groups direct and public, recorded `played`, `local` and `vimeo`; never `unavailable`, `restricted`, `hop` or licensed), passing Spoken and Length. On Browse, the pool is the current Browse result list, filtered the same way.
-- **The pick:** a popover card with the thumbnail, title, ticket Watch button, "+", "Another" and "Previous" (a short pick history). With a character filter active, it is labelled "{Character} picks", as play. The die face rolls through א–ו (a CSS animation, off under `prefers-reduced-motion`).
-- **Empty pool:** a short line that says why ("Nothing under 5 minutes in English") and offers to clear Length or Spoken.
+- **Where:** the masthead die (desktop) and the nav item (phone).
+- **The pool:**
+  - On Browse or Starred, the current result list filtered by `pickable` without the preferences (Browse's own facets decide).
+  - Elsewhere, all pickable records.
+- **The pick:** a popover with the thumbnail, title, ticket Watch, "+ Sitting", Another and Previous. It is labelled "{Character} picks" when a character filter is active. The die rolls through א–ו (off under reduced motion).
+- **Empty pool:** a line saying which preference empties it, with one-tap clears.
+- **Randomness:** seeded by `data-start-seed` in checks.
+- **Popover rules:** Escape, an outside click and route changes close it, and focus returns to its opener, as with the theme picker.
 
-### 7. Visual language (Terracotta tokens only)
+## 6. Visual layer (existing tokens only)
 
-- **Masthead:** an awning edge.
-- **Ticket Watch button:** the primary Watch links on Home, cards and the episode hero get a perforated stub showing the duration (`aria-hidden`; the accessible name is unchanged). Licensed and VPN links keep their shapes and marks.
-- **Stickers:** the star is a sticker on thumbnails; "×N" and ✓ as above.
-- **House-number plaques:** for episode numbers on guide tiles and the hero.
-- **Shelf ledges:** a ledge under each shelf row.
-- **Stoop:** a stone step under the character row.
-- **Parts train (episode page):** when an episode has numbered parts, the decision area shows them as train cars, each a link that records opens. Opened cars are filled. The existing parts list stays below.
-- **Watched control:** moves into the episode hero beside Watch, for one-handed use. The aside keeps the evidence ladder and identity.
-- **Oofnik's bin:** the empty Browse result. A small CSS bin, the existing "no uploads match" text, and buttons that relax the active filters one at a time, with counts.
-- **Colour:** coverage colours, the licensed teal and evidence wording keep their meanings. Character colour comes only from real thumbnails. New tokens (awning, ledge, stoop, sticker) are added to every palette and both schemes, and pass the checker's contrast and distance rules.
-- **Motion:** only the die roll, a sticker pop on star, and a card lift on hover. All are off under reduced motion. No sounds.
+- **No new palette tokens.** The awning uses `--brand` and `--accent`; ledges and the stoop `--surface-3` and `--line-strong`; stickers `--surface`, `--ink`, `--line-strong` and the shared `--star`.
+- **Ticket Watch:** primary Watch links on Home, cards and the episode hero get a perforated stub with the duration (`aria-hidden`; names unchanged). VPN, licensed and failed shapes and marks stay. The stub uses logical properties for RTL.
+- **Stickers:** the star, ×N and ✓ (per the rule above).
+- **House-number plaques:** for numbers on guide tiles and the episode hero.
+- **Parts train:** in the episode hero, when `partsOf(e)` has numbered parts. Cars follow `partsOf` numbering and each car's `accessOf` shape. A car you've opened is marked "Opened" (never evidence). Cars start at the inline start. The existing parts list stays.
+- **Watched control:** moves into the episode hero beside Watch.
+- **Oofnik's bin:** a CSS bin in the empty Browse result, the existing text, and buttons that remove one active filter each, showing the count each would give.
+- **Targets:** 44 px for star, "+", queue controls, chip removal and popover close.
+- **Motion:** the die, the star sticker and a card lift, and none under reduced motion. No sounds.
+- **Copy:** plain labels only. Home has no lede.
 
-### 8. Copy
+## 7. Phases
 
-Plain labels: Home, Up next, Sitting, Open next, Recently opened, Again, Play again, Spoken, Length, Surprise me, Another, Previous, Not found. No ledes or taglines on Home. The current ledes on other views are reviewed under the same rule and kept only where they explain something non-obvious. Every string gets EN and HE, kept in parity by the checker.
+Each phase updates the checker and `docs/library-ui.md` with the code, passes the build and checks, and is committed. From phase 3 on, each UI phase is reviewed in headless Chromium at 320, 390, 641, 761 and 1280 px, in light and dark and in English and Hebrew, with reduced motion and with keyboard focus.
 
-### 9. Docs and checks
+1. Session data, the open-tracking handler and backup import/export, with tests: only-new-fields imports, malformed values, idempotent merges, link still connected after the click.
+2. Browse Spoken and Length facets and Oofnik's bin, with tests: counts add up, Not recorded, single-select length, hash and reset, chips.
+3. Routes and nav: `#/home` with a minimal Home that holds Up next with eligible-copy selection and region-limited excluded; tabs; the footer link; the guide overview; removal of the Browse menu; the minimal phone bottom bar. The checker rewrites the nav, masthead and Up next contracts.
+4. The full Home (stoop, Again, Sitting card, shelves), the phone sitting bar, Surprise and its popover, with tests: pool eligibility asserted directly, seeded picks, popover dismissal, the ✓ rule.
+5. Visual layer: ticket, stickers, plaques, awning, stoop styling, the parts train, Watched in the hero. Measure contrast and colour distances for the new uses.
+6. README "Using it". Final browser review, including Zen opening the worktree build from `file://`, which is a different file location, so the user's own storage is untouched.
 
-- **Checker (`scripts/check-library.cjs`):**
-  - Start route and nav: Home tab, no Browse menu.
-  - Masthead structure.
-  - The Home view: shelves hold only eligible uploads; Up next obeys the rule; the stoop counts; Spoken and Length counts in Browse; the hash round-trip.
-  - Surprise: the pool's eligibility, including under Browse filters.
-  - Opened and sitting: persistence, backup export and import round-trip, merge rules, old backups.
-  - Footer "Not found" count, routes for the demoted pages, string parity, new tokens in every palette, contrast.
-  - The guide's goal panel is now inside a `<details>`.
-- **Docs:** update `docs/library-ui.md` (views, routes, storage keys, the new preferences, the phone layout) and the README's "Using it" section.
+## Then
 
-## Phases (each committed when the build and checks pass)
+Self-review, then a fresh `delegate_task` GPT-6.1-Sol review loop until there is no valid feedback or there is high confidence. Then a pull request to `main`, merge and push.
 
-1. Session data: opened, sitting, spoken and length prefs, backup, plus checks.
-2. Browse facets Spoken and Length, and Oofnik's bin, plus checks.
-3. Home view, route and nav changes, the footer link, guide overview cleanup, plus checks.
-4. Surprise me, the Sitting popover, the phone bottom bar and the sitting bar, plus checks.
-5. Visual layer: tokens, awning, ticket, stickers, stoop, plaques, train, Watched in the hero. Browser review at 390 and 1280 px, light and dark, EN and HE, with headless Chromium screenshots.
-6. Docs and README.
+## Deferred
 
-Then a self-review, a Sol review loop until high confidence, then merge to `main` through a pull request and push.
-
-## Open questions for reviewers
-
-1. Is removing the Browse arrow menu (moving its pages behind the footer "Not found" link) right, given the user's "no research desk" note, or should Identified videos stay reachable from Browse?
-2. Should Home's Spoken and Length be stored preferences, or reset each visit?
-3. Should Up next stay "next unwatched core episode", or lead with the last-opened favourite, since a baby repeats favourites?
-4. Is the shelf list too long for the use case? Which shelves should go?
-5. Anything in the current views that conflicts with the one-handed phone use and that this plan misses?
+The holiday shelf (Hebrew calendar), masthead-wide search, and the Word of the Day, Elmo and In English shelves. The stoop, Productions and the Spoken control reach all three.
