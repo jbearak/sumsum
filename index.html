@@ -3202,6 +3202,10 @@ for (const [pid, ids] of Object.entries(guide.unidentified)) {
  queueByProd.set(pid, ok); for (const id of ok) queueOf.set(id, pid);
 }
 const queueIds = p => queueByProd.get(p.id) || [];
+// A production is listed where you browse (Home's doors, the guide's productions and sections) only when it has an episode or
+// an upload: a documented episode, or uploads in its queue. One known only by its total (the 1998 Arabic-dominant version)
+// stays in the coverage summary and the research pages, and its own route still works.
+const listed = p => queueIds(p).length > 0 || (epsByProd.get(p.id) || []).length > 0;
 // Pasted links: reduce a URL to host-specific video keys by hostname. Index entries carry extra keys (an Internet
 // Archive file is also indexed under its item); a query uses the first key only. The exact-URL key keeps the query
 // string (sorted, without tracking and display parameters): playlists, Kan item pages and ?id= pages differ only there.
@@ -4550,7 +4554,7 @@ function renderRail() {
  if (!state.prod) all.setAttribute('aria-current', 'true');
  const li0 = el('li'); li0.append(all); ul0.append(li0); list.append(ul0);
  for (const [fam, key] of FAMILIES) {
-  const ps = prods.filter(p => famOf(p) === fam).sort(byRank); if (!ps.length) continue;
+  const ps = prods.filter(p => famOf(p) === fam && (listed(p) || p.id === state.prod)).sort(byRank); if (!ps.length) continue;
   list.append(el('p', 'rail-fam', t(key))); const ul = el('ul');
   for (const p of ps) {
    const m = prodModel(p), f = fmtOf(p), a = go(prodRoute(p.id), '', 'rail-item'); fk(a, 'rail-' + p.id);
@@ -4569,7 +4573,7 @@ function renderRail() {
 function renderSections(Q, narrowed) {
  const frag = document.createDocumentFragment(); let slots = 0, gaps = 0, secs = 0;
  for (const p of prods) {
-  if (state.prod && p.id !== state.prod) continue;
+  if (state.prod ? p.id !== state.prod : !listed(p)) continue;
   const res = productionSection(p, Q, narrowed); if (!res) continue;
   frag.append(res.node); slots += res.slots; gaps += res.gaps; secs++;
  }
@@ -6320,7 +6324,7 @@ function againCard() {
 function prodDoors() {
  const ul = el('ul', 'doors');
  for (const p of [...prods].sort(byRank)) {
-  if (fmtOf(p) === 'queue') continue;
+  if (fmtOf(p) === 'queue' || !listed(p)) continue;
   const a = go(prodRoute(p.id), '', 'door'); fk(a, 'door-' + p.id);
   a.append(el('span', 'door-name', prodName(p)), ltr(iso(p.years), 'door-years'));
   const li = el('li'); li.append(a); ul.append(li);
