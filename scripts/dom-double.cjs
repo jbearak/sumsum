@@ -36,9 +36,28 @@ function readLibrary(htmlPath) {
 // (default light); the returned media.set(dark) changes it and notifies the page's listeners, like a system switch;
 // options.noMatchMedia leaves window.matchMedia out; options.noBoot skips the #prefs-boot script; options.noLangBoot skips the
 // #lang-boot script (options.onLangBoot(document) runs after it, before the application, to read the toggle it set).
+// The checks read records whole: a record from a file with defaults is embedded without the fields it shares with them
+// (payload.recordDefaults[r._d]), so they are filled in here as the application does, with the thumbnails and item pages it
+// derives for YouTube videos and Internet Archive files.
+function expandRecords(payload) {
+  const defs = payload && Array.isArray(payload.recordDefaults) ? payload.recordDefaults : [];
+  for (const r of payload && Array.isArray(payload.records) ? payload.records : []) {
+    const d = Number.isInteger(r._d) ? defs[r._d] : null; if (!d) continue;
+    for (const [k, v] of Object.entries(d)) if (!(k in r)) r[k] = structuredClone(v);
+    let u; try { u = new URL(r.url); } catch { continue; }
+    const host = u.hostname.replace(/^www\./, ''), seg = u.pathname.split('/').filter(Boolean), v = u.searchParams.get('v') || '';
+    if (!r.thumbnailUrl && ['youtube.com', 'm.youtube.com'].includes(host) && /^[\w-]{11}$/.test(v)) r.thumbnailUrl = `https://i.ytimg.com/vi/${v}/hqdefault.jpg`;
+    if (host === 'archive.org' && seg[0] === 'details' && seg[1]) {
+      if (!r.thumbnailUrl) r.thumbnailUrl = 'https://archive.org/services/img/' + seg[1];
+      if (!r.sourceUrl && seg.length > 2) r.sourceUrl = 'https://archive.org/details/' + seg[1];
+    }
+  }
+  return payload;
+}
+
 function boot(htmlPath, options = {}) {
   const {html, dataText, appSource, bootSource, langBootSource} = readLibrary(htmlPath);
-  let payload = JSON.parse(dataText);
+  let payload = expandRecords(JSON.parse(dataText));
   if (options.payload) payload = options.payload(payload) || payload;
   // Elements by id are held weakly, like a browser's id lookup: a detached element is not kept alive by its id.
   // `ids` reads through to the element for callers that use the map directly.
@@ -224,7 +243,12 @@ function boot(htmlPath, options = {}) {
     }
   };
   // Route like a browser: set the hash and dispatch hashchange.
-  const navigate = async route => { location._hash = '#/' + route; history.push({type: 'nav', hash: location._hash}); await window.fire('hashchange'); };
+  // Each navigation first yields to the event loop: V8 keeps every WeakRef target (the id lookups above) alive until the current
+  // job ends, and a check that only awaits promises never ends one, so without this every page ever drawn stays in memory.
+  const navigate = async route => {
+    await new Promise(resolve => setImmediate(resolve));
+    location._hash = '#/' + route; history.push({type: 'nav', hash: location._hash}); await window.fire('hashchange');
+  };
   return {document, ids, tree, descendants, storage, downloads, blobs, context, payload, window, location, history,
     flushTimers, navigate, appSource, bootSource, langBootSource, html, media};
 }

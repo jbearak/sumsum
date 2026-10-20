@@ -18,7 +18,7 @@ const {boot, readLibrary} = require('./dom-double.cjs');
 const htmlPath = path.resolve(process.argv[2] || path.join(__dirname, '..', 'index.html'));
 const {appSource} = readLibrary(htmlPath);
 const passed = [];
-const ok = label => passed.push(label);
+const ok = label => { passed.push(label); if (process.env.CHECK_TRACE) { if (global.gc) global.gc(); } if (process.env.CHECK_TRACE) console.error('ok ' + passed.length + ' ' + label.slice(0, 90) + ' ' + Math.round(process.memoryUsage().heapUsed / 1e6) + 'MB'); };
 
 // ---------------------------------------------------------------- string table (EN/HE)
 const strStart = appSource.indexOf('/* strings:begin */'), strEnd = appSource.indexOf('/* strings:end */');
@@ -312,10 +312,13 @@ function model(payload) {
     return lang === 'he' ? he || en : en || he;
   };
   const fmtNum = (n, lang) => Number(n).toLocaleString(lang === 'he' ? 'he-IL' : 'en-US');
+  // An episode number as its production writes it: zero-padded to numberWidth digits, never grouped.
+  const fmtId = (p, n, lang) => (p && Number.isInteger(p.numberWidth) && p.numberWidth >= 1 && p.numberWidth <= 6 ?
+    String(n).padStart(p.numberWidth, '0') : fmtNum(n, lang));
   const codeOf = (p, season, n, lang = 'en') => {
     if (n == null) return '';
-    if (label(p, lang)) return tr(lang, 'codeLabel', {label: label(p, lang), n: fmtNum(n, lang)});
-    return season != null ? tr(lang, 'codeSE', {s: fmtNum(season, lang), n: fmtNum(n, lang)}) : tr(lang, 'codeN', {n: fmtNum(n, lang)});
+    if (label(p, lang)) return tr(lang, 'codeLabel', {label: label(p, lang), n: fmtId(p, n, lang)});
+    return season != null ? tr(lang, 'codeSE', {s: fmtNum(season, lang), n: fmtId(p, n, lang)}) : tr(lang, 'codeN', {n: fmtId(p, n, lang)});
   };
   const code = (e, lang = 'en') => codeOf(prodById.get(e.production), e.season, e.number, lang);
   // The code with an already formatted number part ("IETV no. 133 or 178").
@@ -330,7 +333,7 @@ function model(payload) {
     if (tt) return tt;
     if (e.number == null) return tr(lang, 'untitled');
     if (label(p, lang)) return code(e, lang);
-    const noun = tr(lang, 'noun_' + nounOf(p)), n = fmtNum(e.number, lang);
+    const noun = tr(lang, 'noun_' + nounOf(p)), n = fmtId(p, e.number, lang);
     return e.season != null ? tr(lang, 'untitledSE', {s: fmtNum(e.season, lang), noun, n}) : tr(lang, 'untitledN', {noun, n});
   };
   // The upload card's guide tag: the best-role link, with every same-role link of the same production and season when all
@@ -341,7 +344,7 @@ function model(payload) {
     const same = links.filter(l => l.role === role && l.e.production === e.production && (l.e.season ?? null) === (e.season ?? null));
     let text = code(e, lang) || epTitle(e, lang), rest = links.length - 1;
     if (same.length > 1 && same.every(l => Number.isInteger(l.e.number))) {
-      text = codeText(p, e.season ?? null, same.map(l => fmtNum(l.e.number, lang)).join(pos ? tr(lang, 'orSep') : ', '), lang);
+      text = codeText(p, e.season ?? null, same.map(l => fmtId(p, l.e.number, lang)).join(pos ? tr(lang, 'orSep') : ', '), lang);
       rest = links.length - same.length;
     } else if (same.length > 1 && pos) {
       text = same.map(l => code(l.e, lang) || epTitle(l.e, lang)).join(tr(lang, 'orSep')); rest = links.length - same.length;
@@ -381,12 +384,19 @@ function model(payload) {
         conf.length && conf.every(c => c === 'uploader-label') ? 'uploader' : 'provisional';
       const numbering = byNum.size ? (def && NUMBERINGS.includes(def.numbering) ? def.numbering : derived) : null;
       const first0 = def && Number.isInteger(def.firstNumber) && def.firstNumber > 0 ? def.firstNumber : 1;
+      // excludedNumbers are not episodes: no cell, gap or expected place; the season's exp-th number skips them.
+      const excluded = new Set((def && Array.isArray(def.excludedNumbers) ? def.excludedNumbers : [])
+        .flatMap(x => Array.from({length: x.to - x.from + 1}, (_, k) => x.from + k)));
+      let expLast = 0;
+      if (exp) { let k = 0, n = first0 - 1; while (k < exp) { n++; if (!excluded.has(n)) k++; } expLast = n; }
       const first = byNum.size ? Math.min(first0, ...byNum.keys()) : first0;
-      const last = byNum.size ? Math.min(first + 399, Math.max(max, exp ? first0 + exp - 1 : 0)) : first - 1;
-      const len = byNum.size ? last - first + 1 : 0;
-      let gaps = 0, expCells = 0; const slotNs = [];
-      for (let n = first; n <= last; n++) if (!byNum.has(n)) { slotNs.push(n); if (n <= max) gaps++; else expCells++; }
-      return {def, season, eps: ge, byNum, max, first, last, exp, numbering, len, gaps, expCells, slotNs,
+      const last = byNum.size ? Math.min(first + 399 + excluded.size, Math.max(max, expLast)) : first - 1;
+      let len = 0, gaps = 0, expCells = 0; const slotNs = [];
+      for (let n = first; n <= last; n++) {
+        if (excluded.has(n)) continue;
+        len++; if (!byNum.has(n)) { slotNs.push(n); if (n <= max) gaps++; else expCells++; }
+      }
+      return {def, season, eps: ge, byNum, max, first, last, exp, numbering, len, gaps, expCells, slotNs, excluded,
         slots: exp != null ? Math.max(0, exp - ge.length) : 0};
     });
     const exp = ts === 'known' ? p.expectedTotal : null;
@@ -470,13 +480,36 @@ function model(payload) {
   const shownOf = (en, ok = () => true, locals = {}) => { const rs = rankedOf(en, locals);
     return rs.find(r => expectDest(r, locals[r.id] || '') && ok(r)) || rs.find(ok) || rs[0]; };
   const entryTitleOf = (en, r, lang = 'en') => (en.e ? epTitle(en.e, lang) : recTitleIn(r || rankedOf(en)[0], lang));
+  // A production with more than eight seasons shows one season at a time: the chosen one, else the season of its earliest
+  // episode with a whole link that is not marked watched.
+  const paged = p => Array.isArray(p.seasons) && p.seasons.length > 8;
+  const pageGroup = (p, watchedIds = new Set(), want = null) => {
+    const m = prodModel(p), g = want != null && m.groups.find(x => x.season === want); if (g) return g;
+    const next = m.all.find(e => cov(e) === 'whole-candidate' && !watchedIds.has(e.id));
+    return (next && m.groups.find(x => x.season === (next.season ?? null))) || m.groups.find(x => x.eps.length) || m.groups[0];
+  };
   // Browse counts entries: one counts when some member passes.
   const countE = pred => entries.filter(en => en.members.some(pred)).length;
   const entryStarredIn = (en, favs) => favs.has(en.key) || en.members.some(r => favs.has(r.id || r.url));
   return {records, recById, guide: g, prods, prodById, eps, ups, poss, linked, possibleIds, queued, guideStatus, recLinks, linkTag, partsOf,
-    entries, entryOf, countE, memberB, rankedOf, shownOf, entryTitleOf, entryStarredIn, cov, ev, evSource, covLong, best, fmt, isCoreRechov, famRank, epsOf, prodModel, label, codeOf, codeText, code, epTitle, storyOf, altLabels,
+    entries, entryOf, countE, memberB, rankedOf, shownOf, entryTitleOf, entryStarredIn, fmtId, paged, pageGroup, cov, ev, evSource, covLong, best, fmt, isCoreRechov, famRank, epsOf, prodModel, label, codeOf, codeText, code, epTitle, storyOf, altLabels,
     altText, hasGuide: prods.length > 0, services: SVC, licGroups, licOther, agroups};
 }
+
+// Checks of the page shell (language and theme boot, stored values, start routes) do not read the data, so they boot a light
+// copy: the data without the large series (US Sesame Street), which every other check covers. A payload function still applies.
+const LIGHT_SERIES = new Set(['sesame-street']);
+function lightPayload(p) {
+  p.records = p.records.filter(r => !LIGHT_SERIES.has(r.series));
+  if (p.guide && Array.isArray(p.guide.productions)) {
+    const drop = new Set(p.guide.productions.filter(x => LIGHT_SERIES.has(x.series)).map(x => x.id));
+    p.guide.productions = p.guide.productions.filter(x => !drop.has(x.id));
+    p.guide.episodes = p.guide.episodes.filter(e => !drop.has(e.production));
+    for (const id of drop) delete p.guide.unidentified[id];
+  }
+  return p;
+}
+const bootLight = (htmlPath, o = {}) => boot(htmlPath, {...o, payload: q => { const r = lightPayload(q); return o.payload ? o.payload(r) || r : r; }});
 
 // The Browse card of an upload: its entry's card (an episode's copies share one).
 const cardKey = (M, rid) => 'card-' + (M.entryOf.get(rid) || {id: rid}).id;
@@ -1052,10 +1085,12 @@ async function checkGuide(H, M) {
     const m = M.prodModel(p);
     if (m.ts === 'known') assert(m.all.length + m.slots <= Math.max(m.exp, m.all.length), 'Identified plus expected stay within ' + p.id);
   }
-  // Strips: every numbered episode has a cell; gaps and expected cells match the model; inferred marking.
+  // Strips: every numbered episode has a cell; gaps and expected cells match the model; inferred marking. A paged production
+  // (one season at a time) draws no strip on the all-productions guide; its seasons are checked on its own page below.
   const cells = H.find(n => n.tagName === 'a' && H.cls(n).includes('cell'));
   let gaps = 0, exps = 0, total = 0;
-  for (const p of prods) for (const g of M.prodModel(p).groups) {
+  const flat = prods.filter(p => !M.paged(p));
+  for (const p of flat) for (const g of M.prodModel(p).groups) {
     total += g.len; gaps += g.gaps; exps += g.expCells;
     for (const e of g.byNum.values()) assert(cells.some(c => c.href === '#/episode/' + e.id), 'Strip cell for ' + e.id);
   }
@@ -1063,17 +1098,45 @@ async function checkGuide(H, M) {
   assert.equal(cells.filter(c => H.cls(c).includes('gap')).length, gaps, 'Gap cells');
   assert.equal(cells.filter(c => H.cls(c).includes('exp')).length, exps, 'Expected cells');
   const strips = H.find(n => n.tagName === 'ul' && H.cls(n).includes('strip'));
-  const numberings = prods.flatMap(p => M.prodModel(p).groups.filter(g => g.len).map(g => g.numbering));
+  const numberings = flat.flatMap(p => M.prodModel(p).groups.filter(g => g.len).map(g => g.numbering));
   assert.equal(strips.length, numberings.length);
   strips.forEach((s, i) => assert.equal(H.cls(s).includes('inferred'), numberings[i] !== 'documented', 'Strip numbering marking'));
-  for (const p of prods) {
+  for (const p of flat) {
     const m = M.prodModel(p);
     for (const g of m.groups) if (!g.len && g.open) assert(H.text().includes(tr('en', 'slotsCaption', {n: g.open.toLocaleString('en-US')})));
   }
-  // Tile budget in the all-productions album.
-  const tiles = () => H.byClass('tile');
-  assert.equal(tiles().length, prods.reduce((s, p) => s + Math.min(12, M.epsOf.get(p.id).length), 0), 'Twelve tiles per production');
-  ok(`strips: ${total} cells, ${gaps} gaps, ${exps} expected; numbering marked; tile budget`);
+  // Tile budget in the all-productions album: twelve per production, from the season a paged production shows first.
+  const tiles = () => H.byClass('tile'), watchedNow = () => new Set(JSON.parse(H.storage.get('sumsum-watched') || '[]'));
+  assert.equal(tiles().length, prods.reduce((s, p) => s + Math.min(12, M.paged(p) ? M.pageGroup(p, watchedNow()).eps.length : M.epsOf.get(p.id).length), 0),
+    'Twelve tiles per production');
+  // A paged production: every season on its own page (?season=N), with its strip (excluded numbers skipped) and every tile.
+  let pagedSeasons = 0;
+  for (const p of prods.filter(M.paged)) {
+    for (const g of M.prodModel(p).groups) {
+      await H.navigate('guide/' + encodeURIComponent(p.id) + '?season=' + g.season);
+      assert.equal(H.location.hash, '#/guide/' + encodeURIComponent(p.id) + '?season=' + g.season, 'The season is in the route');
+      assert.equal(H.$('season-pick').value, String(g.season), 'The select shows the season');
+      const sc = H.find(n => n.tagName === 'a' && H.cls(n).includes('cell'));
+      assert.equal(sc.length, g.len, `Season ${g.season}: one cell per number, excluded numbers skipped`);
+      for (const n of g.excluded) assert(!H.has('cell-' + p.id + '-' + g.season + '-' + n), 'No cell for excluded number ' + n);
+      for (const e of g.byNum.values()) assert(sc.some(c => c.href === '#/episode/' + e.id && c.textContent === M.fmtId(p, e.number)), 'Padded cell for ' + e.id);
+      assert.equal(tiles().length, g.eps.length, `Season ${g.season}: every tile`);
+      pagedSeasons++;
+    }
+    // The select changes the season and keeps focus on itself.
+    const two = M.prodModel(p).groups[1];
+    await H.navigate('guide/' + encodeURIComponent(p.id));
+    H.$('season-pick').value = String(two.season); await H.$('season-pick').fire('change');
+    assert(H.location.hash.endsWith('?season=' + two.season) && H.document.activeElement === H.$('season-pick'), 'The select picks a season');
+    // A search spans every season, without strips.
+    const last = M.prodModel(p).groups.at(-1).eps[0];
+    await H.navigate('guide/' + encodeURIComponent(p.id) + '?season=' + two.season + '&q=' + encodeURIComponent(M.code(last))); H.flushTimers();
+    assert(H.has('ep-' + last.id, H.view()) && !H.find(n => n.tagName === 'ul' && H.cls(n).includes('strip')).length,
+      'A search finds an episode of another season, without strips');
+  }
+  await H.navigate('guide');
+  ok(`strips: ${total} cells, ${gaps} gaps, ${exps} expected; numbering marked; tile budget; ${pagedSeasons} seasons of paged productions ` +
+    'on their own pages (route, select, padded cells, excluded numbers, every tile), searches across seasons');
   await checkNumbering(H, M);
 
   // Coverage chips: counts ignore their own selection; scope in the status line; hash replace.
@@ -1187,6 +1250,30 @@ async function checkGuide(H, M) {
       if (cands.length > 1) await H.fk('next-skip').click();
     }
     assert.deepEqual([...shown].sort(), cands.map(e => '#/episode/' + encodeURIComponent(e.id)).sort(), 'Up next offers exactly the candidates');
+  }
+  // The family switch: Sesame Street walks its own core episodes, earliest unwatched with an offered copy first; the choice is
+  // stored and focus stays on it. Without a stored choice, All starts on Rechov Sumsum and English Spoken on Sesame Street.
+  const ssProds = prods.filter(p => p.format === 'core' && FAMILY_OF[p.series] === 'sesame-street');
+  if (ssProds.length && cands.length) {
+    const rechov = FAMILY_OF[GOAL[0].series], epHref = e => '#/episode/' + encodeURIComponent(e.id);
+    assert(H.has('next-fam-sesame-street', H.view()) && H.has('next-fam-' + rechov, H.view()), 'Up next has a family switch');
+    assert.equal(H.fk('next-fam-' + rechov).getAttribute('aria-pressed'), 'true', 'Rechov Sumsum is the default under All');
+    if (H.has('next-skip', H.view())) await H.fk('next-skip').click();
+    await H.fk('next-fam-sesame-street').click();
+    assert.equal(H.storage.get('sumsum-upnext'), '"sesame-street"', 'The family choice is stored');
+    assert.equal(H.document.activeElement, H.fk('next-fam-sesame-street'), 'Focus stays on the switch');
+    assert.equal(H.fk('next-fam-sesame-street').getAttribute('aria-pressed'), 'true');
+    const s0 = [...ssProds].sort((a, b) => (a.order ?? 99) - (b.order ?? 99)).flatMap(p => M.epsOf.get(p.id))
+      .find(e => cov(e) === 'whole-candidate' && !seen.has(e.id) && nextCopyM(M, e, local));
+    assert.equal(H.fk('next-ep').href, epHref(s0), 'Sesame Street Up next starts at its earliest unwatched episode (Another one resets)');
+    assert.equal(H.fk('next-watch').href, expectDest(nextCopyM(M, s0, local).r, local(nextCopyM(M, s0, local).r)), 'with its chosen copy');
+    await H.fk('next-fam-' + rechov).click();
+    assert.equal(H.fk('next-ep').href, epHref(cands[0]), 'Back to Rechov Sumsum');
+    H.storage.delete('sumsum-upnext'); await H.fk('pref-spoken-en').click();
+    assert.equal(H.fk('next-fam-sesame-street').getAttribute('aria-pressed'), 'true', 'English Spoken starts on Sesame Street');
+    await H.fk('pref-spoken-all').click();
+    assert.equal(H.fk('next-fam-' + rechov).getAttribute('aria-pressed'), 'true');
+    ok('Up next family switch: Rechov Sumsum or Sesame Street, stored, earliest unwatched first, English Spoken defaults to Sesame Street');
   }
   // Strip keyboard: one tab stop, arrows by reading direction, Home/End.
   const strip0 = H.byClass('strip')[0];
@@ -1375,7 +1462,9 @@ async function checkNumbering(H, M) {
   const {prods} = M;
   let strips = 0, labelledCells = 0;
   for (const p of prods) {
-    const groups = M.prodModel(p).groups.filter(g => g.len); if (!groups.length) continue;
+    // A paged production draws only the season it shows first on its own page.
+    const ws = new Set(JSON.parse(H.storage.get('sumsum-watched') || '[]'));
+    const groups = (M.paged(p) ? [M.pageGroup(p, ws)] : M.prodModel(p).groups).filter(g => g.len); if (!groups.length) continue;
     await H.navigate('guide/' + encodeURIComponent(p.id) + '?layout=numbers');
     const uls = H.find(n => n.tagName === 'ul' && H.cls(n).includes('strip'));
     assert.equal(uls.length, groups.length, 'One strip per numbered season: ' + p.id);
@@ -1473,7 +1562,9 @@ async function checkNumbering(H, M) {
     if (lang === 'he') await H.flipLang();
     for (const p of M.prods.filter(q => M.epsOf.get(q.id).some(e => M.altLabels(e).length))) {
       await H.navigate('guide/' + encodeURIComponent(p.id) + '?layout=list');
-      for (const e of M.epsOf.get(p.id).filter(x => M.altLabels(x).length)) {
+      // A paged production lists the season it shows first.
+      const shownEps = M.paged(p) ? M.pageGroup(p, new Set(JSON.parse(H.storage.get('sumsum-watched') || '[]'))).eps : M.epsOf.get(p.id);
+      for (const e of shownEps.filter(x => M.altLabels(x).length)) {
         const al = H.byClass('altlab', H.fk('row-' + e.id).parentElement)[0];
         assert(al, `The list row of ${e.id} has its alternate labels`);
         assert.equal(al.textContent, tr(lang, 'alsoLabelled') + ': ' + M.altText(e, lang), `List row alternate labels (${lang}): ${e.id}`);
@@ -1489,6 +1580,51 @@ async function checkNumbering(H, M) {
 }
 
 // ---------------------------------------------------------------- Hebrew
+// The episode page's "About this episode": the quoted summary (English in both languages) with its source and revision link, the
+// sponsors in words, word on the street and guest stars; container labels and extent notes on upload rows.
+async function checkEpisodeAbout(H, M) {
+  const e = M.eps.find(x => typeof x.summaryEn === 'string' && x.sponsors && (x.sponsors.letters || []).length > 1 &&
+    (x.sponsors.numbers || []).length && (x.guestStars || []).length);
+  if (!e) return;
+  const list = (xs, ui) => (ui === 'he' ? xs.join(', ') : xs.length > 1 ? xs.slice(0, -1).join(', ') + ' and ' + xs.at(-1) : xs[0]);
+  const src = e.summarySource || {}, page = src.url || (e.sources || []).find(x => x && x.url).url;
+  const rev = Number.isInteger(src.revisionId) ? page + (page.includes('?') ? '&' : '?') + 'oldid=' + src.revisionId : page;
+  for (const ui of ['en', 'he']) {
+    if (ui === 'he') await H.flipLang();
+    await H.navigate('episode/' + encodeURIComponent(e.id));
+    const sec = H.byClass('ep-about')[0]; assert(sec, 'An episode with a summary has an About section (' + ui + ')');
+    assert.equal(H.byClass('sec-h', sec)[0].textContent, L[ui].aboutEpisode);
+    const sum = H.byClass('ep-summary', sec)[0];
+    assert(sum.textContent === e.summaryEn.trim() && sum.getAttribute('lang') === 'en', 'The summary is quoted verbatim, marked English (' + ui + ')');
+    const at = H.byClass('ep-attrib', sec)[0], links = H.find(n => n.tagName === 'a', at);
+    assert.equal(links[0].href, rev, 'The summary links its source revision');
+    assert(at.textContent.startsWith(L[ui].summaryFrom.split('{src}')[0]) && at.textContent.includes(src.label), 'The source is named (' + ui + ')');
+    if (/muppet\.fandom\.com/.test(page)) assert(links.some(a => a.textContent.startsWith('CC BY-SA') && a.href === 'https://www.fandom.com/licensing'), 'Muppet Wiki text carries its licence');
+    const dd = label => { const dl = H.byClass('facts', sec)[0], k = dl.children.findIndex(d => d.tagName === 'dt' && d.textContent === label); return k < 0 ? null : dl.children[k + 1]; };
+    const sp = e.sponsors, letters = tr(ui, 'sponsorLetters', {x: list(sp.letters, ui)});
+    const nums = tr(ui, sp.numbers.length > 1 ? 'sponsorNumbers' : 'sponsorNumber', {x: list(sp.numbers, ui)});
+    assert.equal(dd(L[ui].broughtBy).textContent, tr(ui, 'sponsorBoth', {a: letters, b: nums}), 'Brought to you by (' + ui + ')');
+    assert.equal(dd(L[ui].guestStars).textContent, e.guestStars.join(', '), 'Guest stars (' + ui + ')');
+    if (ui === 'he') await H.flipLang();
+  }
+  const word = M.eps.find(x => typeof x.wordOnTheStreet === 'string' && x.wordOnTheStreet.trim());
+  if (word) {
+    await H.navigate('episode/' + encodeURIComponent(word.id));
+    const dl = H.byClass('facts', H.byClass('ep-about')[0])[0], i = dl.children.findIndex(d => d.tagName === 'dt' && d.textContent === L.en.wordStreet);
+    assert(i >= 0 && dl.children[i + 1].textContent === word.wordOnTheStreet.trim(), 'Word on the street');
+  }
+  // A copy inside a compilation (or a service listing) says so on its row, with its extent note.
+  for (const c of ['compilation', 'listing']) {
+    const hit = M.eps.find(x => (x.uploads || []).some(u => u.container === c && u.role !== 'possible' && M.recById.get(u.recordId)));
+    if (!hit) continue;
+    const u = hit.uploads.find(v => v.container === c && v.role !== 'possible' && M.recById.get(v.recordId));
+    await H.navigate('episode/' + encodeURIComponent(hit.id));
+    let row = H.fk('ur-' + u.recordId); while (row && !(row.className || '').split(' ').includes('urow')) row = row.parentElement;
+    assert.equal(H.byClass('u-cont', row)[0]?.textContent, L.en['container_' + c], 'A ' + c + ' copy is labelled on its row');
+    if (u.extentNoteEn) assert(row.textContent.includes(u.extentNoteEn), 'with its extent note');
+  }
+  ok('episode About: the quoted summary with its source revision and licence, sponsors, word on the street and guest stars (EN, HE); compilation and listing rows labelled');
+}
 async function checkHebrew(H, M) {
   await H.navigate('browse');
   // After "Show more", the language toggle starts the list again from its first page (rebuilding every shown card in the other
@@ -3364,7 +3500,7 @@ async function checkStarredAndHash(htmlPath, M) {
 // distinct link names.
 async function checkRobustness(htmlPath, M) {
   for (const value of ['constructor', '__proto__', 'toString', 'hasOwnProperty']) {
-    const H = harness(boot(htmlPath, {storage: new Map([['sumsum-language', JSON.stringify(value)]])}));
+    const H = harness(bootLight(htmlPath, {storage: new Map([['sumsum-language', JSON.stringify(value)]])}));
     assert.equal(H.document.documentElement.lang, 'en', `A stored language '${value}' falls back to English`);
     assert(H.h1().textContent.trim(), 'and the app renders');
   }
@@ -3648,7 +3784,7 @@ async function checkLangBoot(htmlPath) {
     ['data-start-lang en over stored Hebrew', {'sumsum-language': '"he"'}, {'data-start-lang': 'en'}, 'en']];
   for (const [label, stored, htmlAttrs, want] of cases) {
     let early = null;
-    const app = boot(htmlPath, {storage: new Map(Object.entries(stored)), htmlAttrs, onLangBoot: doc => {
+    const app = bootLight(htmlPath, {storage: new Map(Object.entries(stored)), htmlAttrs, onLangBoot: doc => {
       early = ['lang-en', 'lang-he'].map(id => [doc.getElementById(id).getAttribute('aria-checked'), doc.getElementById(id).getAttribute('tabindex')]);
     }});
     const expect = want === 'en' ? [['true', '0'], ['false', '-1']] : [['false', '-1'], ['true', '0']];
@@ -3657,7 +3793,7 @@ async function checkLangBoot(htmlPath) {
     assert.deepEqual(late, expect, `${label}: the application keeps that state`);
     assert.equal(app.document.documentElement.lang, want, `${label}: the page language agrees`);
   }
-  const noScript = boot(htmlPath, {storage: new Map([['sumsum-language', '"he"']]), noLangBoot: true});
+  const noScript = bootLight(htmlPath, {storage: new Map([['sumsum-language', '"he"']]), noLangBoot: true});
   assert.equal(noScript.ids['lang-he'].getAttribute('aria-checked'), 'true', 'Without the inline script the application still checks Hebrew');
   ok(`language toggle before the first paint: #lang-boot checks the stored language (${cases.length} cases) and the application agrees`);
 }
@@ -3678,7 +3814,7 @@ async function checkThemePicker(htmlPath) {
   const prefs = H => { const de = H.document.documentElement; return ['palette', 'appearance', 'scheme'].map(k => de.getAttribute('data-' + k)); };
   const metaScheme = H => H.$('meta-color-scheme').getAttribute('content');
   const booted = H => { assert(H.h1() && H.h1().textContent.trim(), 'The app renders'); return H; };
-  let H = booted(harness(boot(htmlPath)));
+  let H = booted(harness(bootLight(htmlPath)));
   const P = [...H.window.sumsumTheme.palettes], A = [...H.window.sumsumTheme.appearances];
   assert.deepEqual(prefs(H), [DEFAULT_PALETTE, 'system', 'light'], `Defaults: ${DEFAULT_PALETTE} and System (here a light system scheme)`);
   assert.equal(metaScheme(H), 'light dark', 'Under System the page offers both schemes');
@@ -3788,26 +3924,26 @@ async function checkThemePicker(htmlPath) {
   // default, so that nothing stored would fail).
   const storage = H.storage;
   await H.$('tp-pal-sage').click(); await H.$('tp-app-dark').click();
-  H = booted(harness(boot(htmlPath, {storage})));
+  H = booted(harness(bootLight(htmlPath, {storage})));
   assert.deepEqual(prefs(H), ['sage', 'dark', 'dark'], 'The palette and the appearance persist across reloads');
   assert(H.$('tp-pal-sage').getAttribute('aria-checked') === 'true' && H.$('tp-app-dark').getAttribute('aria-checked') === 'true',
     'The picker shows the stored choice');
   assert.equal(metaScheme(H), 'dark');
   // Start attributes take the place of the stored values (an invalid one gives the default, not the stored value).
-  H = booted(harness(boot(htmlPath, {storage, htmlAttrs: {'data-start-palette': 'stone', 'data-start-appearance': 'light'}})));
+  H = booted(harness(bootLight(htmlPath, {storage, htmlAttrs: {'data-start-palette': 'stone', 'data-start-appearance': 'light'}})));
   assert.deepEqual(prefs(H), ['stone', 'light', 'light'], 'data-start-palette and data-start-appearance win over storage');
-  H = booted(harness(boot(htmlPath, {storage, htmlAttrs: {'data-start-palette': 'constructor', 'data-start-appearance': '__proto__'}})));
+  H = booted(harness(bootLight(htmlPath, {storage, htmlAttrs: {'data-start-palette': 'constructor', 'data-start-appearance': '__proto__'}})));
   assert.deepEqual(prefs(H), [DEFAULT_PALETTE, 'system', 'light'], 'An invalid start attribute gives the default');
   // The system scheme, with and without matchMedia.
-  assert.deepEqual(prefs(booted(harness(boot(htmlPath, {prefersDark: true})))), [DEFAULT_PALETTE, 'system', 'dark'], 'System follows a dark system scheme at start');
-  assert.deepEqual(prefs(booted(harness(boot(htmlPath, {prefersDark: true, noMatchMedia: true})))), [DEFAULT_PALETTE, 'system', 'light'],
+  assert.deepEqual(prefs(booted(harness(bootLight(htmlPath, {prefersDark: true})))), [DEFAULT_PALETTE, 'system', 'dark'], 'System follows a dark system scheme at start');
+  assert.deepEqual(prefs(booted(harness(bootLight(htmlPath, {prefersDark: true, noMatchMedia: true})))), [DEFAULT_PALETTE, 'system', 'light'],
     'Without matchMedia, System is light');
   // Hostile or broken stored values fall back to the defaults and the app still starts; an old id that is not exactly one
   // ('GREEN', 'blue ', one inside an object or an array) is not migrated.
   const hostile = ['constructor', '__proto__', 'toString', 'hasOwnProperty', 'valueOf', 'GREEN', 'Dark', 'dark', 'blue ', 'olive', 'system'].map(v => JSON.stringify(v))
     .concat(['{', 'undefined', '42', '{}', '[]', 'null', '"', 'true', '{"__proto__":"blue"}', '["blue"]']);
   for (const raw of hostile) {
-    const h = booted(harness(boot(htmlPath, {storage: new Map([['sumsum-theme', raw], ['sumsum-appearance', raw === '"system"' ? '"blue"' : raw]])})));
+    const h = booted(harness(bootLight(htmlPath, {storage: new Map([['sumsum-theme', raw], ['sumsum-appearance', raw === '"system"' ? '"blue"' : raw]])})));
     const [pal, app] = prefs(h);
     assert.equal(pal, DEFAULT_PALETTE, `A stored palette ${raw} falls back to ${DEFAULT_PALETTE}`);
     assert.equal(app, raw === '"dark"' ? 'dark' : 'system', `A stored appearance ${raw} falls back to System unless it is one`);
@@ -3818,24 +3954,24 @@ async function checkThemePicker(htmlPath) {
   const migrated = Object.entries(RENAMED_PALETTES);
   for (const [old, now] of migrated) {
     assert(!P.includes(old) && P.includes(now) && now !== DEFAULT_PALETTE, `"${old}" is an old id and ${now} a palette other than the default`);
-    const st = new Map([['sumsum-theme', JSON.stringify(old)], ['sumsum-appearance', '"dark"']]), h = booted(harness(boot(htmlPath, {storage: st})));
+    const st = new Map([['sumsum-theme', JSON.stringify(old)], ['sumsum-appearance', '"dark"']]), h = booted(harness(bootLight(htmlPath, {storage: st})));
     assert.deepEqual(prefs(h), [now, 'dark', 'dark'], `A stored "${old}" boots into ${now}`);
     assert(h.$('tp-pal-' + now).getAttribute('aria-checked') === 'true' && h.$('tp-pal-' + DEFAULT_PALETTE).getAttribute('aria-checked') === 'false',
       `The picker marks ${now} after a stored "${old}"`);
     assert.equal(st.get('sumsum-theme'), JSON.stringify(old), `A stored "${old}" stays in storage until the next choice`);
-    assert.equal(prefs(booted(harness(boot(htmlPath, {htmlAttrs: {'data-start-palette': old}}))))[0], now, `data-start-palette="${old}" gives ${now}`);
+    assert.equal(prefs(booted(harness(bootLight(htmlPath, {htmlAttrs: {'data-start-palette': old}}))))[0], now, `data-start-palette="${old}" gives ${now}`);
   }
   {
     const st = new Map([['sumsum-theme', JSON.stringify(DEFAULT_PALETTE)]]);
-    assert.equal(prefs(booted(harness(boot(htmlPath, {storage: st}))))[0], DEFAULT_PALETTE, 'A stored default stays');
+    assert.equal(prefs(booted(harness(bootLight(htmlPath, {storage: st}))))[0], DEFAULT_PALETTE, 'A stored default stays');
     st.set('sumsum-theme', JSON.stringify(migrated[0][0]));
-    const h = booted(harness(boot(htmlPath, {storage: st})));
+    const h = booted(harness(bootLight(htmlPath, {storage: st})));
     await h.$('theme-btn').click(); await h.$('tp-pal-kippi').click();
     assert.equal(st.get('sumsum-theme'), '"kippi"', 'A choice after a migrated boot stores the new id');
-    assert.equal(prefs(booted(harness(boot(htmlPath, {storage: st}))))[0], 'kippi', 'and the next boot keeps it');
+    assert.equal(prefs(booted(harness(bootLight(htmlPath, {storage: st}))))[0], 'kippi', 'and the next boot keeps it');
   }
   // Without the preferences script the control is hidden and the default palette stays.
-  H = booted(harness(boot(htmlPath, {noBoot: true})));
+  H = booted(harness(bootLight(htmlPath, {noBoot: true})));
   assert(H.$('theme-picker').hidden && !H.document.documentElement.getAttribute('data-palette'), 'Without the preferences script the theme control is hidden');
   ok(`theme picker: defaults (${DEFAULT_PALETTE}, System), the system scheme and its changes, color-scheme meta; button and radio groups named ` +
     'in EN and HE, roving tabindex, arrows (mirrored in Hebrew), Home, End and clicks choose and store; Escape returns focus; outside ' +
@@ -3894,12 +4030,31 @@ async function checkHome(htmlPath, M) {
   assert(heroRec, 'Up next offers an offered video within the preferences: ' + hero.href);
   await H.fk('pref-spoken-all').click(); await H.fk('pref-len-any').click();
   assert.deepEqual(prefs(), {spoken: 'all', len: ''});
-  // The characters: the most-tagged twelve, each opening Browse filtered by that character, with its count.
+  // The characters: twelve, ranked by entries in the Spoken language; under All the Hebrew side (everything not English-only)
+  // and the English side take turns. Each opens Browse filtered by that character, with its count within the preferences.
+  const sideOfM = r => (spokenOfM(r).includes('en') && !spokenOfM(r).includes('he') ? 'en' : 'he');
+  const charRankM = keep => {
+    const m = new Map();
+    for (const en of M.entries) for (const k of new Set(en.members.filter(keep).flatMap(r => (r.characters || []).map(tagKeyM)))) m.set(k, (m.get(k) || 0) + 1);
+    return [...m].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).map(([k]) => k);
+  };
+  const alternateM = (lists, max) => {
+    const out = [];
+    for (let i = 0; out.length < max && lists.some(l => i < l.length); i++) for (const l of lists) if (l[i] && !out.includes(l[i]) && out.length < max) out.push(l[i]);
+    return out;
+  };
+  const tokKeys = () => H.find(n => (n.getAttribute?.('data-fk') || '').startsWith('tok-')).map(a => a.getAttribute('data-fk').slice(4));
+  assert.deepEqual(tokKeys(), alternateM([charRankM(r => sideOfM(r) === 'he'), charRankM(r => sideOfM(r) === 'en')], 12),
+    'Under All, the Hebrew and English character rankings take turns');
+  for (const g of ['he', 'en']) {
+    await H.fk('pref-spoken-' + g).click();
+    assert.deepEqual(tokKeys(), charRankM(r => spokenOfM(r).includes(g)).slice(0, 12), 'The character row follows Spoken: ' + g);
+  }
+  await H.fk('pref-spoken-all').click();
   const tokens = H.find(n => (n.getAttribute?.('data-fk') || '').startsWith('tok-'));
   const charN = new Map();
   for (const en of M.entries) for (const k of new Set(en.members.flatMap(r => (r.characters || []).map(tagKeyM)))) charN.set(k, (charN.get(k) || 0) + 1);
-  const top = [...charN].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).slice(0, 12);
-  assert.equal(tokens.length, top.length, 'Twelve characters (or all there are)');
+  assert.equal(tokens.length, Math.min(12, charN.size), 'Twelve characters (or all there are)');
   for (const a of tokens) {
     const k = a.getAttribute('data-fk').slice(4);
     assert.equal(a.href, '#/browse?character=' + encodeURIComponent(k), 'A character opens Browse filtered by it: ' + k);
@@ -4041,7 +4196,7 @@ async function checkHome(htmlPath, M) {
     }
   }
   await H.fk('surprise-close').click(); assert(pop.hidden && H.document.activeElement === sb, 'The close button closes it');
-  const kippi = top.find(([k]) => /kippi/.test(k));
+  const kippi = [...charN].find(([k]) => /kippi/.test(k));
   if (kippi) {
     await H.navigate('browse?character=' + encodeURIComponent(kippi[0])); await sb.click();
     assert(H.$('surprise-h').textContent.endsWith(tr('en', 'charPicks', {name: ''}).trim()) || H.$('surprise-h').textContent.includes('Kippi'),
@@ -4255,9 +4410,12 @@ async function checkBrowsePages(H, M) {
   for (const k of SERIES) {
     assert.equal(H.chipCount(H.fk('fs-' + k)), M.records.filter(r => identifiedIds.has(r.id) && r.series === k).length, 'Identified series count ' + k);
   }
-  for (let k = 0; k < 100 && H.has('more', H.view()); k++) await H.fk('more').click();
+  // Every page when the list is short; otherwise the first ten pages, each card an identified upload, and the count above.
+  const pages = Math.ceil(identifiedIds.size / 48), full = pages <= 60;
+  for (let k = 0; k < (full ? pages : 10) && H.has('more', H.view()); k++) await H.fk('more').click();
   const shown = new Set(H.$('grid').children.map(li => H.find(n => /^card-/.test(n.getAttribute?.('data-fk') || ''), li)[0].getAttribute('data-fk').slice(5)));
-  assert.deepEqual([...shown].sort(), [...identifiedIds].sort(), 'Identified videos shows exactly the identified uploads');
+  if (full) assert.deepEqual([...shown].sort(), [...identifiedIds].sort(), 'Identified videos shows exactly the identified uploads');
+  else assert(shown.size === Math.min(identifiedIds.size, 11 * 48) && [...shown].every(id => identifiedIds.has(id)), 'Identified videos shows identified uploads');
   // Statuses outside the page, carried over from Browse or written in the hash, are dropped rather than emptying the list.
   await H.navigate('browse?gs=queue'); await H.navigate('browse/identified');
   assert(H.count() === counts.identified && !/gs=/.test(H.location.hash), 'A carried-over "Awaiting identification" filter is dropped');
@@ -4350,6 +4508,16 @@ async function checkBrowsePages(H, M) {
   assert.equal(H.number(tcount(H.$('ms-partial'))), lists['ms-parts'].length + lists['ms-excerpt'].length, 'No complete copy yet: parts + excerpts');
   assert.equal(lists['ms-missing'].length + lists['ms-parts'].length + lists['ms-excerpt'].length, counts.missing, 'The sections add up to the menu count');
   for (const id of ['ms-parts', 'ms-excerpt']) assert.equal(H.number(tcount(H.$(id + '-h'))), lists[id].length, id + ' count');
+  // A production with many seasons is folded: one heading per season with its count and a Show button, no rows until opened.
+  const pagedMissing = lists['ms-missing'].filter(e => M.paged(M.prodById.get(e.production)));
+  if (pagedMissing.length) {
+    const e0 = pagedMissing[0], p0 = M.prodById.get(e0.production);
+    assert(!H.has('td-' + e0.id, H.$('ms-missing')), 'Seasons of ' + p0.id + ' start folded');
+    const g0 = H.byClass('tgroup', H.$('ms-missing')).find(g => g.children[0].textContent === name(p0) + ' · ' + L.en.seasonLbl + ' ' + e0.season);
+    assert(g0, 'Each season is its own group, named by production and season');
+    await H.fk('more-ms-missing:' + p0.id + ':' + e0.season).click();
+    assert.equal(H.document.activeElement, H.fk('td-' + e0.id), 'Opening a season moves focus to its first episode');
+  }
   for (const id of ['ms-missing', 'ms-parts', 'ms-excerpt']) await expandAll(id + ':');
   const listOf = (secId, ulPred) => {
     const sec = H.$(secId), uls = H.find(n => n.tagName === 'ul' && H.cls(n).includes('tlist') && ulPred(n), sec);
@@ -4363,10 +4531,13 @@ async function checkBrowsePages(H, M) {
   }
   for (const sec of ['ms-missing', 'ms-partial']) {
     for (const g of H.byClass('tgroup', H.$(sec))) {
-      const p = M.prods.find(q => name(q) === g.children[0].textContent), ul = g.parentElement;
+      const head = g.children[0].textContent, sep = ' · ' + L.en.seasonLbl + ' ';
+      const p = M.prods.find(q => name(q) === head || (M.paged(q) && head.startsWith(name(q) + sep))), ul = g.parentElement;
+      const season = M.paged(p) ? Number(head.slice(name(p).length + sep.length).replace(/,/g, '')) : null;
       const c = ul.getAttribute('aria-labelledby') === 'ms-parts-h' ? 'parts-only' : ul.getAttribute('aria-labelledby') === 'ms-excerpt-h' ?
         'excerpt-only' : 'missing';
-      assert.equal(H.number(tcount(g)), M.epsOf.get(p.id).filter(e => M.cov(e) === c).length, `${sec} group count ${p.id} (${c})`);
+      assert.equal(H.number(tcount(g)), M.epsOf.get(p.id).filter(e => M.cov(e) === c && (season === null || e.season === season)).length,
+        `${sec} group count ${p.id}${season === null ? '' : ' season ' + season} (${c})`);
     }
   }
   // Expected places: one row per production with open places, gaps or an open total, its numbers linked to their slot pages.
@@ -4432,22 +4603,22 @@ async function checkBrowsePages(H, M) {
 async function checkRouteAliases(htmlPath, M) {
   const classic = M.countE(r => r.series === 'classic');
   for (const ui of ['en', 'he']) {
-    let H = harness(boot(htmlPath, {hash: '#/uploads', htmlAttrs: {'data-start-lang': ui}}));
+    let H = harness(bootLight(htmlPath, {hash: '#/uploads', htmlAttrs: {'data-start-lang': ui}}));
     assert(H.h1().textContent === L[ui].browseTitle && H.location.hash === '#/browse', `#/uploads opens Browse at start (${ui})`);
     assert.equal(H.document.title, L[ui].browseTitle + ' · ' + L[ui].appName);
     assertNav(H, 'browse', '#/uploads (' + ui + ')');
-    H = harness(boot(htmlPath, {hash: '#/uploads?series=classic&sort=longest', htmlAttrs: {'data-start-lang': ui}}));
+    H = harness(bootLight(htmlPath, {hash: '#/uploads?series=classic&sort=longest', htmlAttrs: {'data-start-lang': ui}}));
     assert(H.location.hash === '#/browse?series=classic&sort=longest' && H.count() === classic && H.$('u-sort').value === 'longest',
       `#/uploads keeps its filters (${ui}): ` + H.location.hash);
-    H = harness(boot(htmlPath, {htmlAttrs: {'data-start-lang': ui, 'data-start-view': 'uploads'}}));
+    H = harness(bootLight(htmlPath, {htmlAttrs: {'data-start-lang': ui, 'data-start-view': 'uploads'}}));
     assert(H.h1().textContent === L[ui].browseTitle && H.location.hash === '#/browse', `data-start-view="uploads" opens Browse (${ui})`);
-    H = harness(boot(htmlPath, {hash: '#/todo', htmlAttrs: {'data-start-lang': ui}}));
+    H = harness(bootLight(htmlPath, {hash: '#/todo', htmlAttrs: {'data-start-lang': ui}}));
     assert(H.h1().textContent === L[ui].todoTitle && H.location.hash === '#/todo', `#/todo still works (${ui})`);
     assertNav(H, 'todo', '#/todo (' + ui + ')');
   }
-  const H = harness(boot(htmlPath));
+  const H = harness(bootLight(htmlPath));
   await H.navigate('uploads?kind=clip');
-  assert(H.location.hash === '#/browse?kind=clip' && H.count() === M.countE(r => kindOf(r) === 'clip'), 'A followed #/uploads link keeps its filter');
+  assert(H.location.hash === '#/browse?kind=clip' && H.count() === model(H.payload).countE(r => kindOf(r) === 'clip'), 'A followed #/uploads link keeps its filter');
   await H.navigate('browse/no-such-page');
   assert(H.h1().textContent === L.en.browseTitle && H.location.hash.split('?')[0] === '#/browse', 'An unknown Browse page is Browse: ' + H.location.hash);
   await H.navigate('identified'); assert.equal(H.h1().textContent, L.en.guideTitle, 'Browse pages live under #/browse/');
@@ -4918,6 +5089,7 @@ function builderChecks(builder, dir) {
   };
   const fails = (res, pattern, label) => {
     assert.notEqual(res.status, 0, 'Builder refuses: ' + label);
+    if (process.env.CHECK_TRACE && /TypeError/.test(res.text)) console.error(res.text);
     assert(!/TypeError|Traceback \(most recent call last\):[\s\S]*TypeError/.test(res.text), 'Clear error, not a TypeError: ' + label);
     assert(pattern.test(res.text), `Builder error names the problem (${label}): ${res.text.split('\n').filter(Boolean).at(-1)}`);
     assert.equal(res.out, 'KEEP', 'A failed build leaves the previous output untouched: ' + label);
@@ -5114,7 +5286,10 @@ function builderChecks(builder, dir) {
   svcBad('participates not a boolean', (d, x) => { x.libraries[0].participates = 'yes'; }, /library 'l1': participates must be true or false/);
   svcBad('no participating library', (d, x) => { x.libraries[0].participates = false; }, /name at least one participating library/);
   svcBad('library without sources', (d, x) => { x.libraries[0].sources = []; }, /library 'l1': sources must name at least one source id/);
-  svcBad('library-card without how-to', (d, x) => { delete x.howTo; }, /a library-card service needs howTo/);
+  svcBad('library-card without how-to', (d, x) => { delete x.howTo; }, /a library-card service with libraries needs howTo/);
+  // A library-card service may be only a lookup link (Kanopy): no libraries, no how-to, but then a valid lookupUrl.
+  builds('a lookup-only library-card service', svcRun((() => { const d = svcOk(); delete d.services[0].howTo; delete d.services[0].libraries; return d; })()));
+  svcBad('a lookup-only service without its lookup URL', (d, x) => { delete x.howTo; delete x.libraries; delete x.lookupUrl; }, /needs howTo, or at least a valid lookupUrl/);
   // The how-to box shows the steps' prose, so the structured facts must agree with it (review round 1): each library is listed
   // by a step that names it in both languages and says whether its cards work; the lookup URL is a step's link; no fact is
   // checked after the build date.
@@ -5272,6 +5447,43 @@ function builderChecks(builder, dir) {
   }
   // Availability checks: a known string, or an object whose optional status is known.
   const yt1 = 'https://www.youtube.com/watch?v=AAAAAAAAAA1';
+  // Sesame Street fields: numberWidth pads numbers; excludedNumbers marks numbers in a season's range that are not episodes;
+  // a summary needs its source; sponsors, guest stars and upload containers have fixed shapes.
+  builds('numberWidth', run(recs, {guide: guide({}, {numberWidth: 4})}));
+  for (const w of [0, 7, '4', 2.5]) fails(run(recs, {guide: guide({}, {numberWidth: w})}), /numberWidth must be an integer from 1 to 6/, 'numberWidth ' + JSON.stringify(w));
+  const season = extra => ({seasons: [{season: 1, firstNumber: 1, expectedEpisodes: 3, ...extra}]});
+  builds('excludedNumbers', run(recs, {guide: guide({}, season({excludedNumbers: [{from: 2, to: 3, sourceLabel: 'Muppet Wiki', noteEn: 'Repeats.'}]}))}));
+  fails(run(recs, {guide: guide({}, season({excludedNumbers: {from: 2, to: 3}}))}), /excludedNumbers must be an array/, 'excludedNumbers not a list');
+  fails(run(recs, {guide: guide({}, season({excludedNumbers: [{from: 3, to: 2, sourceLabel: 'x'}]}))}), /excludedNumbers 1: expected \{from, to\} with 1 <= from <= to/, 'excludedNumbers reversed');
+  fails(run(recs, {guide: guide({}, season({excludedNumbers: [{from: 2, to: 3}]}))}), /excludedNumbers 1: sourceLabel required/, 'excludedNumbers without a source');
+  fails(run(recs, {guide: guide({}, season({excludedNumbers: [{from: 1, to: 1, sourceLabel: 'x'}]}))}), /episode 'fx-ep': number 1 is listed in its season's excludedNumbers/, 'an episode on an excluded number');
+  builds('a summary with its source', run(recs, {guide: guide({summaryEn: 'Big Bird sings.', summarySource: {label: 'Muppet Wiki', url: 'https://muppet.fandom.com/wiki/Episode_0001', revisionId: 5}})}));
+  fails(run(recs, {guide: guide({summaryEn: 'Big Bird sings.'})}), /summaryEn needs summarySource with a label/, 'summary without a source');
+  fails(run(recs, {guide: guide({summarySource: {label: 'Muppet Wiki'}})}), /summarySource without summaryEn/, 'source without a summary');
+  fails(run(recs, {guide: guide({summaryEn: 'x', summarySource: ['Muppet Wiki']})}), /summarySource/, 'summary source as a list');
+  fails(run(recs, {guide: guide({summaryEn: 'x', summarySource: {label: 'M', url: 'javascript:alert(1)'}})}), /summarySource url must be a public http\(s\) URL/, 'summary source url');
+  builds('sponsors and guest stars', run(recs, {guide: guide({sponsors: {letters: ['W', 'S'], numbers: ['2']}, guestStars: ['Carol Burnett'], wordOnTheStreet: 'Hug'})}));
+  for (const [label, sp] of [['both empty', {letters: [], numbers: []}], ['unknown key', {colours: ['red']}], ['long value', {letters: ['ABCDEFGHIJKLMN']}], ['a string', 'W']]) {
+    fails(run(recs, {guide: guide({sponsors: sp})}), /sponsors must be \{letters: \[\.\.\.\], numbers: \[\.\.\.\]\}/, 'sponsors: ' + label);
+  }
+  fails(run(recs, {guide: guide({guestStars: []})}), /guestStars must be a non-empty array of names/, 'empty guest stars');
+  const contained = c => guide({uploads: [{recordId: 'fx-w', role: 'whole-candidate', container: c, extentNoteEn: 'Episodes 1 and 2.'}]});
+  builds('a compilation copy', run(recs, {guide: contained('compilation')}));
+  fails(run(recs, {guide: contained('playlist')}), /upload 'fx-w': container must be one of \['compilation', 'listing'\]/, 'unknown container');
+  // Record-file defaults: filled in for validation, left out of the embedded record (its "_d" names them); unknown default keys,
+  // a record that sets "_d" and a malformed completeness-note table are refused.
+  const withDefaults = (d, records, extra = {}) => JSON.stringify({defaults: d, records, ...extra});
+  const dOut = run(withDefaults({language: 'en', sourceType: 'community'}, [rec('fx-d1', yt1), rec('fx-d2', 'https://www.youtube.com/watch?v=AAAAAAAAAA2', {language: 'he'})]));
+  builds('record defaults', dOut);
+  const dPayload = JSON.parse(dOut.out.match(/<script id="library-data" type="application\/json">([\s\S]*?)<\/script>/)[1]);
+  assert.deepEqual(dPayload.recordDefaults, [{language: 'en', sourceType: 'community'}], 'The defaults are embedded once');
+  const d1 = dPayload.records.find(r => r.id === 'fx-d1'), d2 = dPayload.records.find(r => r.id === 'fx-d2');
+  assert(d1._d === 0 && !('language' in d1) && !('sourceType' in d1), 'A record leaves out the fields equal to its defaults');
+  assert(d2.language === 'he' && !('sourceType' in d2), 'and keeps its own values');
+  fails(run(withDefaults({kind: 'clip'}, [rec('fx-d1', yt1)])), /defaults may set only .* not 'kind'/, 'a default outside the list');
+  fails(run(withDefaults({}, [rec('fx-d1', yt1)])), /defaults must be a non-empty object/, 'empty defaults');
+  fails(run([rec('fx-d1', yt1, {_d: 0})]), /entry 1: _d is reserved/, 'a record that sets _d');
+  fails(run(withDefaults({language: 'en'}, [rec('fx-d1', yt1)], {completenessNotes: {'ss-01': ''}})), /completenessNotes must map status codes to non-empty notes/, 'an empty completeness note');
   builds('object availability check', run([rec('fx-c', yt1, {access: 'unavailable', availabilityCheck: {method: 'yt-dlp', checkedAt: '2026-10-18',
     status: 'unavailable', result: 'Video unavailable'}})]));
   builds('string availability check', run([rec('fx-c', yt1, {access: 'vpn-required', availabilityCheck: 'country-restricted'})]));
@@ -5303,6 +5515,8 @@ function builderChecks(builder, dir) {
 }
 
 async function run() {
+  // CHECK_ONLY=builder runs only the builder tests (a quick loop while editing the builder).
+  if (process.env.CHECK_ONLY === 'builder') { checkBuilder(); console.log('PASS builder:'); for (const line of passed) console.log('  - ' + line); return; }
   const app = boot(htmlPath);
   const H = harness(app), M = model(app.payload);
   checkStrings();
@@ -5310,19 +5524,22 @@ async function run() {
   assert.equal(H.document.documentElement.dir, 'ltr', 'English is the default');
   assert.equal(H.h1().textContent, M.hasGuide ? L.en.homeTitle : L.en.browseTitle, 'Start view');
   assert.equal(H.location.hash, M.hasGuide ? '#/home' : '#/browse', 'Start route');
+  // Between groups the event loop runs, so pages and harnesses of finished checks can be collected (see navigate in dom-double).
+  const tick = () => new Promise(resolve => setImmediate(resolve));
   const starred = await checkUploads(H, M);
   await checkVimeoAndBackups(H, M, starred);
   if (M.hasGuide) await checkGuide(H, M);
+  if (M.hasGuide) await checkEpisodeAbout(H, M);
   await checkHebrew(H, M);
   await checkPersistence(htmlPath, app.storage, starred);
   await checkMasthead(H);
-  await checkLangBoot(htmlPath);
-  await checkThemePicker(htmlPath);
-  await checkLicensed(htmlPath, H, M);
+  await tick(); await checkLangBoot(htmlPath);
+  await tick(); await checkThemePicker(htmlPath);
+  await tick(); await checkLicensed(htmlPath, H, M);
   if (M.hasGuide) { await checkNav(H, M); await checkBrowsePages(H, M); await checkHome(htmlPath, M); }
   await sweep(H, M);
-  await checkWithoutGuide(htmlPath);
-  await checkEdgeCases(htmlPath);
+  await tick(); await checkWithoutGuide(htmlPath);
+  await tick(); await checkEdgeCases(htmlPath);
   if (M.hasGuide) await checkEntries(htmlPath);
   await checkStarredAndHash(htmlPath, M);
   await checkRouteAliases(htmlPath, M);

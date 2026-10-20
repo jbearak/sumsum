@@ -27,14 +27,14 @@
  --whole:#1b7a4b;--parts:#a86400;--excerpt:#5f4fb3;--missing:#b3392c;--unknown:#7e8a83;--whole-ink:#fff;
  --whole-bg:#e2f1e7;--parts-bg:#faefd9;--excerpt-bg:#ece9fa;--missing-bg:#fbe8e4;--unknown-bg:#eef0ea;
  --acc-ok:#1f5fa8;--acc-public:#5c6b75;--acc-vpn:#8f3f71;--acc-lic:#1d6a6a;--acc-bad:#3d3d3d;
- --ser-modern:#126844;--ser-classic:#7a5e10;--ser-shalom-classic:#2f5f8c;--ser-shalom-modern:#7a4a80;--ser-elmo:#9c4a2f;
+ --ser-modern:#126844;--ser-classic:#7a5e10;--ser-shalom-classic:#2f5f8c;--ser-shalom-modern:#7a4a80;--ser-elmo:#9c4a2f;--ser-sesame-street:#0e6670;
  --star:#f5cf45;--star-ink:#a77300;--scrim:#000000a0;--scrim-ink:#fff;--host-bg:#fffffff2;--host-ink:#18291f;
  --seg-hatch:#ffffff5c;--seg-dot:#ffffff80;--shadow-badge:0 1px 3px #0003;--shadow-toast:0 6px 30px #0004}
 :root[data-scheme=dark]{color-scheme:dark;
  --whole:#5cc790;--parts:#e9a640;--excerpt:#ab9ef2;--missing:#f2826f;--unknown:#84928a;--whole-ink:#05231a;
  --whole-bg:#173827;--parts-bg:#3a2c12;--excerpt-bg:#29244a;--missing-bg:#40201b;--unknown-bg:#1c2823;
  --acc-ok:#8cc3ff;--acc-public:#a9b6bf;--acc-vpn:#e59ac6;--acc-lic:#7fd1cc;--acc-bad:#cfcfcf;
- --ser-modern:#86d6a8;--ser-classic:#e3c167;--ser-shalom-classic:#9cc4ec;--ser-shalom-modern:#d6a6dc;--ser-elmo:#f2a28e}
+ --ser-modern:#86d6a8;--ser-classic:#e3c167;--ser-shalom-classic:#9cc4ec;--ser-shalom-modern:#d6a6dc;--ser-elmo:#f2a28e;--ser-sesame-street:#7fd3dc}
 /* Palettes. Terracotta, the default: a clay-tile masthead over a honey-stone stripe, sandstone pages, deep sea-teal buttons
    (petrol at night). The masthead is dark clay in both schemes, so its ink and controls keep one set of values. */
 :root,.tp-sw-terracotta{
@@ -316,6 +316,8 @@ html[dir=rtl] .tp{direction:rtl}
 .star[aria-pressed=true]{color:var(--star-ink)}
 .star[aria-pressed=true] svg{fill:var(--star)}
 .note{font-size:13px;color:var(--muted)}
+.ep-about{margin:0 0 18px}.ep-summary{max-width:68ch;line-height:1.55;margin:0 0 6px}
+.ep-about .facts{margin-top:10px}
 .callout{border:1px solid var(--line);border-inline-start:4px solid var(--parts);background:var(--surface);border-radius:10px;
  padding:10px 14px;font-size:13.5px;margin:0 0 14px}
 .callout.info{border-inline-start-color:var(--acc-ok)}
@@ -387,6 +389,8 @@ details.covtable>summary{cursor:pointer;font-size:13px;font-weight:700;padding:6
 .pref{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .pref-h{font-size:12.5px;font-weight:750;color:var(--muted)}
 .pref .seg-toggle{margin-inline-start:0}
+.fam-switch{margin:4px 0 8px}
+.fam-switch button{min-height:44px}
 .pref .seg-toggle button{min-height:44px}
 .pref .short{display:none}
 /* A kitchen timer: a dial with one hand. */
@@ -798,7 +802,7 @@ details.legend>summary{cursor:pointer;padding:9px 14px;font-size:13px;font-weigh
 .u-actions>.btn{min-width:0;white-space:normal;text-align:center;line-height:1.25}
 .ser-modern{--series-ink:var(--ser-modern)}.ser-classic{--series-ink:var(--ser-classic)}
 .ser-shalom-classic{--series-ink:var(--ser-shalom-classic)}.ser-shalom-modern{--series-ink:var(--ser-shalom-modern)}
-.ser-elmo{--series-ink:var(--ser-elmo)}
+.ser-elmo{--series-ink:var(--ser-elmo)}.ser-sesame-street{--series-ink:var(--ser-sesame-street)}
 .more-row{display:flex;justify-content:center;padding-top:22px}
 .empty{padding:40px 20px;text-align:center;border:1.5px dashed var(--line-strong);border-radius:12px;margin-top:18px}
 .empty p{margin:0 0 14px;color:var(--muted)}
@@ -1349,6 +1353,7 @@ en: {
  nextTitle: 'Up next',
  nextHelp: 'The next core episode not marked watched, with a whole copy that is not marked as needing a VPN, a card or a purchase.',
  nextSkip: 'Another one',
+ upNextFrom: 'Up next from',
  navHome: 'Home',
  navHomeShort: 'Home',
  homeTitle: 'Home',
@@ -1614,6 +1619,10 @@ en: {
  'findHelp_parts-only': 'Only parts are linked. Look for a whole copy or the missing parts.',
  'findHelp_excerpt-only': 'Only excerpts are linked. Look for a whole copy.',
  researchNote: 'Research note',
+ aboutEpisode: 'About this episode', summaryFrom: 'Opening sentences quoted from {src}', broughtBy: 'Brought to you by',
+ sponsorLetter: 'the letter {x}', sponsorLetters: 'the letters {x}', sponsorNumber: 'the number {x}', sponsorNumbers: 'the numbers {x}',
+ sponsorBoth: '{a} and {b}', wordStreet: 'Word on the street', guestStars: 'Guest stars',
+ container_compilation: 'In a compilation', container_listing: 'Open listing',
  slotKicker: 'Not identified yet',
  slotTitleN: 'Number {n}',
  slotExpTitle: 'Expected episode {n}',
@@ -1912,6 +1921,10 @@ en: {
  orSep: ' or ',
  moreLinks: '+{n} more',
  alsoOn: 'Also on {hosts}',
+ seasonPick: 'Season',
+ seasonWhole: '{n} of {exp} with a whole link',
+ seasonsAllMatches: 'Showing matches from every season.',
+ allSeasons: 'All {n} seasons',
  sgOneOf: 'one of',
  sgMoreTied: 'and {n} more, equally likely',
  possibleCopyOf: 'Possible copy of'
@@ -1982,6 +1995,7 @@ he: {
  nextTitle: 'הבא בתור',
  nextHelp: 'פרק השידור המרכזי הבא שלא סומן כנצפה, עם עותק שלם שלא סומן כדורש VPN, כרטיס או רכישה.',
  nextSkip: 'פרק אחר',
+ upNextFrom: 'הבא בתור מתוך',
  navHome: 'בית',
  navHomeShort: 'בית',
  homeTitle: 'בית',
@@ -2243,6 +2257,10 @@ he: {
  'findHelp_parts-only': 'מקושרים רק חלקים. חפשו עותק שלם או את החלקים החסרים.',
  'findHelp_excerpt-only': 'מקושרים רק קטעים. חפשו עותק שלם.',
  researchNote: 'הערת מחקר',
+ aboutEpisode: 'על הפרק', summaryFrom: 'המשפטים הפותחים מצוטטים מתוך {src}', broughtBy: 'בחסות',
+ sponsorLetter: 'האות {x}', sponsorLetters: 'האותיות {x}', sponsorNumber: 'המספר {x}', sponsorNumbers: 'המספרים {x}',
+ sponsorBoth: '{a} ו{b}', wordStreet: 'מילת הרחוב', guestStars: 'אורחים',
+ container_compilation: 'בתוך אוסף', container_listing: 'דף שירות פתוח',
  slotKicker: 'טרם זוהה',
  slotTitleN: 'מספר {n}',
  slotExpTitle: 'פרק צפוי {n}',
@@ -2531,6 +2549,10 @@ he: {
  orSep: ' או ',
  moreLinks: 'ועוד {n}',
  alsoOn: 'גם ב־{hosts}',
+ seasonPick: 'עונה',
+ seasonWhole: '{n} מתוך {exp} עם קישור שלם',
+ seasonsAllMatches: 'מוצגות התאמות מכל העונות.',
+ allSeasons: 'כל {n} העונות',
  sgOneOf: 'אחד מתוך',
  sgMoreTied: 'ועוד {n} באותה סבירות',
  possibleCopyOf: 'עותק אפשרי של'
@@ -2544,6 +2566,28 @@ const W = typeof window !== 'undefined' ? window : null;
 const root = document.documentElement;
 const payload = JSON.parse($('library-data').textContent);
 const records = Array.isArray(payload) ? payload : (payload.records || []);
+// Records from a file with defaults are embedded without the fields they share (payload.recordDefaults[r._d]): they are filled
+// back in here. A YouTube video or an Internet Archive file without a thumbnail gets the host's own, and an archive file
+// without a source page gets its item page.
+{
+ const defs = !Array.isArray(payload) && Array.isArray(payload.recordDefaults) ? payload.recordDefaults : [];
+ const own = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
+ for (const r of records) {
+  if (!r || typeof r !== 'object' || !Number.isInteger(r._d) || !defs[r._d]) continue;
+  const d = defs[r._d];
+  for (const k of Object.keys(d)) if (!own(r, k)) r[k] = typeof d[k] === 'object' && d[k] ? JSON.parse(JSON.stringify(d[k])) : d[k];
+  let u = null; try { u = new URL(r.url); } catch { u = null; }
+  if (!u) continue;
+  const h = u.hostname.replace(/^www\./, ''), seg = u.pathname.split('/').filter(Boolean);
+  if (!r.thumbnailUrl && (h === 'youtube.com' || h === 'm.youtube.com') && /^[\w-]{11}$/.test(u.searchParams.get('v') || '')) {
+   r.thumbnailUrl = 'https://i.ytimg.com/vi/' + u.searchParams.get('v') + '/hqdefault.jpg';
+  }
+  if (h === 'archive.org' && seg[0] === 'details' && seg[1]) {
+   if (!r.thumbnailUrl) r.thumbnailUrl = 'https://archive.org/services/img/' + seg[1];
+   if (!r.sourceUrl && seg.length > 2) r.sourceUrl = 'https://archive.org/details/' + seg[1];
+  }
+ }
+}
 const meta = (!Array.isArray(payload) && payload.meta) || {};
 // payload.guide is optional: without data/episode-guide.json the app is a plain uploads library.
 const guideIn = !Array.isArray(payload) && payload.guide && typeof payload.guide === 'object' ? payload.guide : {};
@@ -2692,6 +2736,13 @@ function fmtN(n) {
  if (Number.isSafeInteger(x) && x >= 0) return String(x).replace(/\B(?=(\d{3})+$)/g, ',');
  if (!NUM_FMT.has(lang)) NUM_FMT.set(lang, new Intl.NumberFormat(lang === 'he' ? 'he-IL' : 'en-US'));
  return NUM_FMT.get(lang).format(x);
+}
+// An episode number as its production writes it: zero-padded to numberWidth digits ("Episode 0001"), and never grouped
+// ("1,234"); other productions' numbers as counts.
+function fmtId(p, n) {
+ const w = p && Number.isInteger(p.numberWidth) && p.numberWidth >= 1 && p.numberWidth <= 6 ? p.numberWidth : 0, x = Number(n);
+ if (!w || !Number.isSafeInteger(x) || x < 0) return fmtN(n);
+ return String(x).padStart(w, '0');
 }
 function collator() {
  if (!COLLATOR.has(lang)) COLLATOR.set(lang, new Intl.Collator(lang, {numeric: true}));
@@ -2969,7 +3020,7 @@ const byRank = (a, b) => prodRank(a) - prodRank(b) || (a.order ?? 99) - (b.order
 // A production without a name in either language falls back to its id rather than an empty heading.
 const prodName = p => (p ? pick(p.nameEn, p.nameHe) || String(p.id || '') : '');
 const epById = new Map(), epsByProd = new Map(prods.map(p => [p.id, []])), recLinks = new Map(), upsById = new Map();
-const possById = new Map(), matchedIds = new Set();
+const possById = new Map(), matchedIds = new Set(), CONTAINERS = ['compilation', 'listing'];
 // An explicit `part` is the displayed part number; without one, parts are numbered by their position.
 const partNum = v => (Number.isInteger(v) && v > 0 ? v : null);
 for (const e of guide.episodes) {
@@ -2977,7 +3028,9 @@ for (const e of guide.episodes) {
  epById.set(e.id, e);
  epsByProd.get(e.production).push(e);
  const all = (Array.isArray(e.uploads) ? e.uploads : []).filter(u => u && recById.has(u.recordId))
-  .map(u => ({r: recById.get(u.recordId), role: u.role, part: u.role === 'part' ? partNum(u.part) : null}));
+  .map(u => ({r: recById.get(u.recordId), role: u.role, part: u.role === 'part' ? partNum(u.part) : null,
+   // A copy inside a longer upload (a compilation) or an open listing, with what the link holds beyond this episode.
+   container: CONTAINERS.includes(u.container) ? u.container : null, extent: typeof u.extentNoteEn === 'string' ? u.extentNoteEn : ''}));
  const ups = all.filter(u => ROLES.includes(u.role)), poss = all.filter(u => u.role === 'possible');
  upsById.set(e.id, ups); possById.set(e.id, poss);
  for (const u of [...ups, ...poss]) {
@@ -3303,12 +3356,12 @@ function epTitle(e) {
  if (e.number == null) return t('untitled');
  if (numLabel(p)) return codeOf(p, e.season, e.number);
  const noun = t('noun_' + nounOf(p));
- return e.season != null ? t('untitledSE', {s: fmtN(e.season), noun, n: fmtN(e.number)}) : t('untitledN', {noun, n: fmtN(e.number)});
+ return e.season != null ? t('untitledSE', {s: fmtN(e.season), noun, n: fmtId(p, e.number)}) : t('untitledN', {noun, n: fmtId(p, e.number)});
 }
 function epAlt(e) { const alt = lang === 'he' ? e.titleEn : heTitle(e); return alt && alt !== epTitle(e) ? alt : ''; }
 function codeOf(p, season, n) {
  if (n == null) return '';
- return codeText(p, season, fmtN(n));
+ return codeText(p, season, fmtId(p, n));
 }
 // The code with an already formatted number part ("IETV no. 133 or 178", "No. 1, 2, 3").
 function codeText(p, season, n) {
@@ -3575,7 +3628,8 @@ function numberTokens(e) {
  const p = prodById.get(e.production), n = e.number, s0 = e.season != null;
  if (!Number.isInteger(n)) return s0 ? ['season ' + e.season, 'עונה ' + e.season] : [];
  if (numLabel(p)) {
-  return [p.numberLabelEn, p.numberLabelHe].filter(x => typeof x === 'string').map(x => x + ' ' + n)
+  const ns = [...new Set([String(n), fmtId(p, n)])];
+  return [p.numberLabelEn, p.numberLabelHe].filter(x => typeof x === 'string').flatMap(x => ns.map(k => x + ' ' + k)).concat(ns)
    .concat('<' + n + '>', s0 ? ['season ' + e.season, 'עונה ' + e.season] : []);
  }
  const shown = [codeIn('en', e.season, n), codeIn('he', e.season, n)];
@@ -3639,8 +3693,12 @@ function epSearchWords(e) {
 }
 // Search words for a number: the production's own label ("מס׳ חינוכית 98"), else season and episode in Hebrew.
 function numberWords(p, season, n) {
- const label = p && (typeof p.numberLabelHe === 'string' && p.numberLabelHe.trim() || numLabel(p));
- if (label) return label + ' ' + (n ?? '');
+ // An English-language series searches with its English label and its written number ("Episode 0153").
+ const en = p && SERIES_INFO[p.series] && SERIES_INFO[p.series].searchLanguage === 'en';
+ const label = p && (en ? typeof p.numberLabelEn === 'string' && p.numberLabelEn.trim() :
+  typeof p.numberLabelHe === 'string' && p.numberLabelHe.trim() || numLabel(p));
+ if (label) return label + ' ' + (n == null ? '' : fmtId(p, n));
+ if (en) return season != null ? 'season ' + season + ' episode ' + n : 'episode ' + (n ?? '');
  return season != null ? 'עונה ' + season + ' פרק ' + n : 'פרק ' + (n ?? '');
 }
 function totalState(p) {
@@ -3656,9 +3714,19 @@ function deriveNumbering(eps) {
 // A season's strip covers first .. last: `firstNumber` (default 1) up to the highest known number, or up to
 // firstNumber + expectedEpisodes - 1 when that is higher. A number below firstNumber (the builder warns) widens the start
 // rather than disappearing. At most 400 cells.
+// excludedNumbers (season 45's repeat labels 4527-4551) are not episodes: no cell, gap or expected place.
 function makeGroup(def, season, eps) {
  const exp = def && Number.isInteger(def.expectedEpisodes) ? def.expectedEpisodes : null;
  const first0 = def && Number.isInteger(def.firstNumber) && def.firstNumber > 0 ? def.firstNumber : 1;
+ const excluded = new Set();
+ for (const x of def && Array.isArray(def.excludedNumbers) ? def.excludedNumbers : []) {
+  if (x && Number.isInteger(x.from) && Number.isInteger(x.to) && x.from <= x.to && x.to - x.from < 10000) {
+   for (let n = x.from; n <= x.to; n++) excluded.add(n);
+  }
+ }
+ // The last expected number: the exp-th number from firstNumber that is not excluded.
+ let expLast = 0;
+ if (exp) { let k = 0, n = first0 - 1; while (k < exp && n < first0 + exp + excluded.size) { n++; if (!excluded.has(n)) k++; } expLast = n; }
  const byNum = new Map(); let max = 0, min = Infinity;
  for (const e of eps) {
   if (!(Number.isInteger(e.number) && e.number > 0)) continue;
@@ -3667,11 +3735,13 @@ function makeGroup(def, season, eps) {
  }
  const numbering = byNum.size ? (def && NUMBERINGS.includes(def.numbering) ? def.numbering : deriveNumbering(eps)) : null;
  const first = byNum.size ? Math.min(first0, min) : first0;
- const last = byNum.size ? Math.min(first + 399, Math.max(max, exp ? first0 + exp - 1 : 0)) : first - 1;
- const len = byNum.size ? last - first + 1 : 0;
- let gaps = 0, expCells = 0;
- for (let n = first; n <= last; n++) if (!byNum.has(n)) { if (n <= max) gaps++; else expCells++; }
- return {def, season, eps, exp, byNum, max, first, last, numbering, len, gaps, expCells,
+ const last = byNum.size ? Math.min(first + 399 + excluded.size, Math.max(max, expLast)) : first - 1;
+ let len = 0, gaps = 0, expCells = 0;
+ for (let n = first; n <= last; n++) {
+  if (excluded.has(n)) continue;
+  len++; if (!byNum.has(n)) { if (n <= max) gaps++; else expCells++; }
+ }
+ return {def, season, eps, exp, byNum, max, first, last, numbering, len, gaps, expCells, excluded,
   slots: exp != null ? Math.max(0, exp - eps.length) : 0, unnumbered: eps.filter(e => !byNum.has(e.number))};
 }
 const modelCache = new Map();
@@ -3728,11 +3798,24 @@ function prodModel(p) {
 const seasonLabel = g => iso((g.def && pick(g.def.labelEn, g.def.labelHe)) ||
  (g.season != null ? t('seasonLbl') + ' ' + fmtN(g.season) : t('otherEpisodes')));
 const slotRoute = (p, g, n) => 'slot/' + encodeURIComponent(p.id) + '/' + (g.season ?? '-') + '/' + n;
+// A production with many seasons (Sesame Street has 56) shows one season at a time, chosen in a select on its own page; a
+// search or filter lists the matching episodes of every season. The season shown first is the one of its earliest episode
+// with a whole link that is not marked watched.
+const PAGED_SEASONS = 8;
+const paged = p => !!p && Array.isArray(p.seasons) && p.seasons.length > PAGED_SEASONS;
+function pageGroup(p, m) {
+ const want = state.prod === p.id ? state.g.season : null;
+ const g = want != null && m.groups.find(x => x.season === want);
+ if (g) return g;
+ const next = m.all.find(e => covOf(e) === 'whole-candidate' && !watched.has(e.id));
+ return (next && m.groups.find(x => x.season === (next.season ?? null))) || m.groups.find(x => x.eps.length) || m.groups[0];
+}
+const seasonRoute = (p, season) => prodRoute(p.id) + (paged(p) && season != null ? '?season=' + season : '');
 
 /* ================= state and routing ================= */
 const state = {
  view: 'guide', prod: '', epId: '', recId: '', slot: null,
- g: {q: '', cov: new Set(), fmt: new Set(), ev: new Set(), conf: new Set(), unwatched: false, layout: 'album', more: false},
+ g: {q: '', cov: new Set(), fmt: new Set(), ev: new Set(), conf: new Set(), unwatched: false, layout: 'album', more: false, season: null},
  u: {q: '', series: new Set(), kinds: new Set(), gs: new Set(), ag: new Set(), theme: '', character: '', starred: false, sort: 'series',
   spoken: new Set(), len: '', limit: 48},
  shuffle: new Map(), limits: new Map(), railOpen: false, filtersOpen: false, goalOpen: false, openTotals: new Set(), nextSkip: 0, mapOpen: '',
@@ -3762,6 +3845,7 @@ function queryString() {
   const g = state.g; add('q', g.q); add('cov', csv(g.cov)); add('fmt', csv(g.fmt)); add('ev', csv(g.ev)); add('conf', csv(g.conf));
   if (g.unwatched) add('mine', 'unwatched');
   if (g.layout !== 'album') add('layout', g.layout);
+  if (state.prod && g.season != null && paged(prodById.get(state.prod))) add('season', g.season);
  } else if (UVIEWS.includes(state.view)) {
   const u = state.u; add('q', u.q); add('series', csv(u.series)); add('kind', csv(u.kinds)); add('gs', csv(u.gs));
   add('ag', csv(u.ag)); add('spoken', csv(u.spoken)); add('len', u.len); add('theme', u.theme); add('character', u.character);
@@ -3814,7 +3898,7 @@ const setFrom = (set, v, allowed) => {
 function applyRoute(r) {
  if (r.view !== state.view && UVIEWS.includes(r.view)) state.u.limit = 48;
  state.view = r.view;
- if (r.view === 'guide') state.prod = r.arg;
+ if (r.view === 'guide') { if (r.arg !== state.prod) state.g.season = null; state.prod = r.arg; }
  if (r.view === 'episode') state.epId = r.arg;
  if (r.view === 'record') state.recId = r.arg;
  if (r.view === 'slot') state.slot = r.arg;
@@ -3828,6 +3912,9 @@ function applyRoute(r) {
   const g = state.g; g.q = q.q || ''; setFrom(g.cov, q.cov, COVS); setFrom(g.fmt, q.fmt, EP_FORMATS);
   setFrom(g.ev, q.ev, ['none', ...EVS]); setFrom(g.conf, q.conf, CONFS); g.unwatched = q.mine === 'unwatched';
   g.layout = ['album', 'numbers', 'list'].includes(q.layout) ? q.layout : 'album';
+  const sn = q.season !== undefined && /^\d+$/.test(q.season) ? Number(q.season) : null;
+  const sp = state.prod ? prodById.get(state.prod) : null;
+  g.season = sp && paged(sp) && (sp.seasons || []).some(x => x.season === sn) ? sn : null;
  }
  if (UVIEWS.includes(r.view)) {
   const u = state.u; u.q = q.q || ''; setFrom(u.series, q.series, Object.keys(SERIES)); setFrom(u.kinds, q.kind, KINDS.map(k => k[0]));
@@ -4574,8 +4661,12 @@ function productionSection(p, Q, filtered) {
   }
   shownSlots = filtered ? 0 : m.slots; shownGaps = filtered ? 0 : m.inferredGaps;
  }
- const layout = g.layout, limitKey = 'p:' + (scoped ? 's:' : 'a:') + layout + ':' + p.id;
- const limit = state.limits.get(limitKey) ?? (layout === 'album' ? (scoped ? 96 : 12) : layout === 'list' ? 200 : Infinity);
+ const pg = paged(p), sel = pg ? pageGroup(p, m) : null;
+ if (pg && scoped) sec.append(seasonPicker(p, m, sel, filtered));
+ const layout = g.layout, limitKey = 'p:' + (scoped ? 's:' : 'a:') + layout + ':' + p.id + (pg && !filtered ? ':' + sel.season : '');
+ // One season of a paged production is shown whole on its own page.
+ const limit = state.limits.get(limitKey) ?? (pg && scoped && !filtered ? Infinity :
+  layout === 'album' ? (scoped ? 96 : 12) : layout === 'list' ? 200 : Infinity);
  let rendered = 0, table;
  const hidden = [];
  if (layout === 'list' && visible.size) {
@@ -4588,7 +4679,9 @@ function productionSection(p, Q, filtered) {
   thead.append(tr); table.append(thead); wrap.append(table); sec.append(wrap);
  }
  const headed = m.groups.length > 1 || m.groups.some(gr => gr.def && gr.season != null);
- for (const gr of m.groups) {
+ // A paged production draws the chosen season, or (filtered) the seasons with matches; strips only on its own page.
+ const shownGroups = pg && !filtered ? [sel] : m.groups;
+ for (const gr of shownGroups) {
   const eps = gr.eps.filter(e => visible.has(e.id));
   const showSlots = !filtered && gr.open > 0 && !gr.len;
   if (!eps.length && !showSlots && !(gr.len && !filtered)) continue;
@@ -4611,7 +4704,7 @@ function productionSection(p, Q, filtered) {
    if (gr.numbering) h.append(el('span', 'numtag n-' + gr.numbering, t('num_' + gr.numbering)));
    box.append(h);
   }
-  if (gr.len) {
+  if (gr.len && (!pg || (scoped && (!filtered || (layout === 'numbers' && eps.length))))) {
    box.append(strip(p, gr, filtered ? visible : null));
    if (gr.gaps) box.append(el('p', 'strip-note', t('numLong_' + gr.numbering)));
   }
@@ -4636,7 +4729,11 @@ function productionSection(p, Q, filtered) {
   if (showSlots) box.append(slotBlock(gr.open));
   sec.append(box);
  }
- if (!filtered && m.restSlots && layout !== 'list') sec.append(slotBlock(m.restSlots));
+ if (!filtered && m.restSlots && layout !== 'list' && !pg) sec.append(slotBlock(m.restSlots));
+ if (pg && !scoped && !filtered) {
+  const a = go(seasonRoute(p, sel.season), t('allSeasons', {n: fmtN(m.groups.length)}), 'linkbtn'); fk(a, 'seasons-' + p.id);
+  const pa = el('p', 'seasons-link'); pa.append(a); sec.append(pa);
+ }
  if (hidden.length) {
   const first = hidden[0], step = scoped && hidden.length > 96;
   const more = btn('btn ghost show-more', step ? t('showMoreEps', {n: fmtN(96)}) : t('showAllEps', {n: fmtN(visible.size)}), () => {
@@ -4648,6 +4745,22 @@ function productionSection(p, Q, filtered) {
  if (qAll.length) sec.append(queueBlock(p, qAll, scoped));
  return {node: sec, slots: shownSlots, gaps: shownGaps};
 }
+// The season select of a paged production: each season with its years and how many of its episodes have a whole link.
+function seasonPicker(p, m, sel, filtered) {
+ const box = el('div', 'season-pick'); const lbl = el('label', 'fh', t('seasonPick')); lbl.setAttribute('for', 'season-pick');
+ const s = el('select'); s.setAttribute('id', 'season-pick'); fk(s, 'season-pick');
+ for (const gr of m.groups) {
+  const whole = gr.eps.filter(e => covOf(e) === 'whole-candidate').length;
+  s.add(new Option(seasonLabel(gr) + ' · ' + t('seasonWhole', {n: fmtN(whole), exp: fmtN(gr.exp ?? gr.eps.length)}), String(gr.season ?? '')));
+ }
+ s.value = String(sel.season ?? '');
+ s.addEventListener('change', ev => {
+  const v = ev.target.value; state.g.season = /^\d+$/.test(v) ? Number(v) : null; G.focusAfter = 'season-pick'; updateGuide();
+ });
+ box.append(lbl, s);
+ if (filtered) box.append(el('p', 'note', t('seasonsAllMatches')));
+ return box;
+}
 function strip(p, g, visibleSet) {
  const ul = el('ul', 'strip' + (g.numbering !== 'documented' ? ' inferred' : ''));
  ul.setAttribute('aria-label', g.def || g.season != null ? t('stripLabel', {season: seasonLabel(g)}) : t('stripLabelPlain'));
@@ -4655,16 +4768,17 @@ function strip(p, g, visibleSet) {
  // A production with its own number label names its cells by that label ("IETV no. 98: ...").
  const labelled = !!numLabel(p), gapKey = (g.numbering === 'documented' ? 'cellGapDoc' : 'cellGapInf') + (labelled ? 'L' : '');
  for (let n = g.first; n <= g.last; n++) {
+  if (g.excluded.has(n)) continue;
   const eps = g.byNum.get(n); let a, label;
   if (eps) {
-   const e = eps[0]; label = t('cellEp', {code: epCode(e) || fmtN(n), title: epTitle(e), cov: covLabel(e, true)});
-   a = go(epRoute(e.id), fmtN(n), 'cell cov-' + COV_CLASS[covOf(e)]);
+   const e = eps[0]; label = t('cellEp', {code: epCode(e) || fmtId(p, n), title: epTitle(e), cov: covLabel(e, true)});
+   a = go(epRoute(e.id), fmtId(p, n), 'cell cov-' + COV_CLASS[covOf(e)]);
    if (visibleSet && !eps.some(x => visibleSet.has(x.id))) a.className += ' dim';
   } else if (n <= g.max) {
-   label = t(gapKey, {n: fmtN(n), code: codeOf(p, g.season, n)});
-   a = go(slotRoute(p, g, n), fmtN(n), 'cell gap'); if (visibleSet) a.className += ' dim';
+   label = t(gapKey, {n: fmtId(p, n), code: codeOf(p, g.season, n)});
+   a = go(slotRoute(p, g, n), fmtId(p, n), 'cell gap'); if (visibleSet) a.className += ' dim';
   } else {
-   label = labelled ? t('cellExpL', {code: codeOf(p, g.season, n)}) : t('cellExp', {n: fmtN(n)});
+   label = labelled ? t('cellExpL', {code: codeOf(p, g.season, n)}) : t('cellExp', {n: fmtId(p, n)});
    a = go(slotRoute(p, g, n), '?', 'cell exp'); if (visibleSet) a.className += ' dim';
   }
   a.setAttribute('aria-label', label); a.setAttribute('title', label); a.tabIndex = cells.length ? -1 : 0;
@@ -4698,14 +4812,15 @@ function epThumbRecord(e) {
  const u = upsOf(e).find(x => x.r.thumbnailUrl); return u ? u.r : null;
 }
 function numberArt(e, cls, muted) {
- const art = el('span', cls); const bn = el('span', 'bignum' + (muted ? ' muted' : ''), e.number != null ? fmtN(e.number) : '?');
+ const p = prodById.get(e.production);
+ const art = el('span', cls); const bn = el('span', 'bignum' + (muted ? ' muted' : ''), e.number != null ? fmtId(p, e.number) : '?');
  bn.setAttribute('aria-hidden', 'true'); art.append(bn); return art;
 }
 function tile(e, p) {
  const li = el('li'), cov = covOf(e), card = el('div', 'tile cov-' + COV_CLASS[cov]);
  const art = numberArt(e, 'art', cov !== 'missing'), tr = epThumbRecord(e);
  const img = tr && imgEl(tr.thumbnailUrl, 320, 180); if (img) art.append(img);
- if (e.number != null) { const n = el('span', 'num'); n.setAttribute('aria-hidden', 'true'); n.textContent = fmtN(e.number); art.append(n); }
+ if (e.number != null) { const n = el('span', 'num'); n.setAttribute('aria-hidden', 'true'); n.textContent = fmtId(p, e.number); art.append(n); }
  if (watched.has(e.id)) { const w = el('span', 'seen', '✓'); w.setAttribute('aria-hidden', 'true'); art.append(w); }
  const body = el('span', 'tile-body');
  const a = titleDir(go(epRoute(e.id), epTitle(e), 'tile-title'), e, n => { n.setAttribute('dir', 'auto'); return n; }); fk(a, 'ep-' + e.id);
@@ -4744,7 +4859,7 @@ function linksSummary(e) {
 }
 function epRow(e, p) {
  const tr = el('tr'), b = bestLink(e);
- tr.append(el('td', 'c-no', e.number != null ? fmtN(e.number) : '–'));
+ tr.append(el('td', 'c-no', e.number != null ? fmtId(p, e.number) : '–'));
  const tt = el('td', 'c-title'); const a = titleDir(go(epRoute(e.id), epTitle(e)), e); fk(a, 'row-' + e.id);
  tt.append(a);
  const alt = epAlt(e); if (alt) tt.append(auto('span', 'alt', alt));
@@ -4788,7 +4903,7 @@ VIEWS.episode = function mountEpisode(v) {
  const e = epById.get(state.epId), p = prodById.get(e.production), f = fmtOf(p), cov = covOf(e);
  setTitle(epTitle(e) + ' · ' + prodName(p));
  const sib = epsByProd.get(e.production) || [], i = sib.indexOf(e);
- const c = crumbs([go('guide', t('guideTitle')), go(prodRoute(p.id), prodName(p))]);
+ const c = crumbs([go('guide', t('guideTitle')), go(seasonRoute(p, e.season ?? null), prodName(p))]);
  const pager = el('span', 'pager');
  if (i > 0) {
   const a = go(epRoute(sib[i - 1].id), (lang === 'he' ? '→ ' : '← ') + t('prevEp'), 'btn ghost');
@@ -4849,6 +4964,7 @@ VIEWS.episode = function mountEpisode(v) {
  const grid = el('div', 'detail-grid'), main = el('div'), aside = el('aside');
  // The Watch link's service explains how to reach it (hoopla: which library cards work).
  const hb = b && b.acc === 'licensed' ? howToBox(svcOf(b.r)) : null; if (hb) main.append(hb);
+ const ab = aboutEpisode(e, p); if (ab) main.append(ab);
  const note = pick(e.noteEn, e.noteHe);
  if (note) { const c2 = el('p', 'callout'); c2.append(el('strong', '', t('researchNote') + ': '), noteOf('span', '', e.noteEn, e.noteHe)); main.append(c2); }
  main.append(el('h2', 'sec-h', t('epUploads')));
@@ -4872,14 +4988,14 @@ VIEWS.episode = function mountEpisode(v) {
   main.append(h3); const ul = el('ul', 'urows'), src = evSource(e);
   us.forEach((u, k) => {
    const no = role === 'part' && (rs.length > 1 || (explicit && parts[k].of > 1)) ? parts[k] : null;
-   ul.append(uploadRow(u.r, role, no ? no.no : 0, no ? no.of : 0, src && src.r.id === u.r.id ? src.level : ''));
+   ul.append(uploadRow(u.r, role, no ? no.no : 0, no ? no.of : 0, src && src.r.id === u.r.id ? src.level : '', u));
   });
   main.append(ul);
  }
  // Possible copies: probably this episode, identity unresolved. Listed apart; they never count.
  if (poss.length) {
   const h3 = el('h3', 'sec-h'); h3.append(txt(t('rolePl_possible') + ' '), el('small', '', fmtN(poss.length)));
-  const ul = el('ul', 'urows possible'); for (const u of poss) ul.append(uploadRow(u.r, 'possible', 0, 0, ''));
+  const ul = el('ul', 'urows possible'); for (const u of poss) ul.append(uploadRow(u.r, 'possible', 0, 0, '', u));
   main.append(h3, el('p', 'note', t('possibleHelp')), ul);
  }
  if (ups.length > 1) main.append(compareTable(ups));
@@ -4893,6 +5009,40 @@ VIEWS.episode = function mountEpisode(v) {
  aside.append(identityCard(e, p));
  grid.append(main, aside); v.append(grid);
 };
+// What happens in the episode, quoted from a named source (Muppet Wiki, under its CC BY-SA licence), then its sponsors, word on
+// the street and guest stars. The quoted text stays English in both languages; only the labels are translated.
+const listText = xs => (lang === 'he' ? xs.join(', ') : xs.length > 1 ? xs.slice(0, -1).join(', ') + ' and ' + xs.at(-1) : xs[0] || '');
+const textList = v => strList(v).filter(x => x.trim());
+function aboutEpisode(e, p) {
+ const sum = typeof e.summaryEn === 'string' ? e.summaryEn.trim() : '', sp = e.sponsors && typeof e.sponsors === 'object' ? e.sponsors : {};
+ const letters = textList(sp.letters), numbers = textList(sp.numbers), guests = textList(e.guestStars);
+ const word = typeof e.wordOnTheStreet === 'string' ? e.wordOnTheStreet.trim() : '';
+ if (!sum && !letters.length && !numbers.length && !guests.length && !word) return null;
+ const sec = el('section', 'ep-about'); sec.setAttribute('aria-labelledby', 'about-h');
+ const h = el('h2', 'sec-h', t('aboutEpisode')); h.setAttribute('id', 'about-h'); sec.append(h);
+ if (sum) {
+  sec.append(en('p', 'ep-summary', sum));
+  const src = e.summarySource && typeof e.summarySource === 'object' ? e.summarySource : {};
+  const page = safeUrl(src.url) ? src.url : ((e.sources || []).find(x => x && safeUrl(x.url)) || {}).url;
+  const rev = Number.isInteger(src.revisionId) && page ? page + (page.includes('?') ? '&' : '?') + 'oldid=' + src.revisionId : page;
+  const at = el('p', 'note ep-attrib'), name = srcText(typeof src.label === 'string' ? src.label : '');
+  at.append(tWith('summaryFrom', 'src', rev ? ext(rev, name) : name));
+  if (/muppet\.fandom\.com/.test(page || '')) at.append(txt(' · '), ext('https://www.fandom.com/licensing', 'CC BY-SA'));
+  sec.append(at);
+ }
+ const rows = [];
+ if (letters.length || numbers.length) {
+  const ls = letters.length ? t(letters.length > 1 ? 'sponsorLetters' : 'sponsorLetter', {x: listText(letters)}) : '';
+  const ns = numbers.length ? t(numbers.length > 1 ? 'sponsorNumbers' : 'sponsorNumber', {x: listText(numbers)}) : '';
+  rows.push([t('broughtBy'), ltrIn(ls && ns ? t('sponsorBoth', {a: ls, b: ns}) : ls || ns)]);
+ }
+ if (word) rows.push([t('wordStreet'), en('span', '', word)]);
+ if (guests.length) rows.push([t('guestStars'), en('span', '', guests.join(', '))]);
+ if (rows.length) sec.append(facts(rows));
+ return sec;
+}
+// Sponsor text mixes Hebrew labels with Latin letters: a dir=auto span keeps each run in order.
+const ltrIn = s => { const x = el('span', '', s); x.setAttribute('dir', 'auto'); return x; };
 // The parts as a train: one car per numbered part, in order from the inline start, each opening its part. A car you have opened
 // is marked "Opened" (yours, not evidence); a part that needs a VPN or a card, or failed a check, keeps that shape.
 function partsTrain(e) {
@@ -4958,7 +5108,7 @@ function storyFact(e) {
 function identityCard(e, p) {
  const id = el('section', 'card'); id.append(el('h2', '', t('identityTitle')));
  id.append(facts([[t('production'), prodName(p)], [t('seasonLbl'), e.season != null ? fmtN(e.season) : ''],
-  [t('numberLbl'), e.number != null ? (numLabel(p) ? epCode(e) : fmtN(e.number)) : ''],
+  [t('numberLbl'), e.number != null ? (numLabel(p) ? epCode(e) : fmtId(p, e.number)) : ''],
   [t('confidence'), CONFS.includes(e.confidence) ? t('conf_' + e.confidence) : ''],
   // With a story name from another source, the Hebrew title is named for what it is: the verbatim catalogue title.
   [t(storyOf(e) ? 'catTitle' : 'hebTitle'), e.titleHe ? auto('span', '', e.titleHe) : ''], [t('storyName'), storyFact(e)],
@@ -4994,7 +5144,7 @@ function identityCard(e, p) {
  }
  return id;
 }
-function uploadRow(r, role, partNo, partCount, epCheck) {
+function uploadRow(r, role, partNo, partCount, epCheck, link) {
  const li = el('li', 'urow ser-' + r.series);
  const art = thumb(bigThumb(r.thumbnailUrl), 336, 189); const d = duration(r.durationSeconds); if (d) art.append(ltr(d, 'u-dur'));
  art.append(el('span', 'u-host', hostLabel(r)));
@@ -5008,7 +5158,10 @@ function uploadRow(r, role, partNo, partCount, epCheck) {
  const m = el('p', 'urow-meta'); m.append(el('span', '', t('role_' + role))); if (r.uploader) m.append(bdi(r.uploader));
  m.append(el('span', '', t(r.sourceType === 'official' ? 'official' : 'community')), el('span', '', t('upCheck', {level: t('ev_' + recEv(r))})));
  if (epCheck) m.append(el('span', '', t('upEpCheck', {level: t('ev_' + epCheck)})));
- body.append(m, accessLine(r));
+ if (link && link.container) m.append(el('span', 'u-cont', t('container_' + link.container)));
+ body.append(m);
+ if (link && link.extent) body.append(en('p', 'note', link.extent));
+ body.append(accessLine(r));
  const act = el('div', 'urow-actions');
  // A possible copy's own link is secondary: its identity is unresolved.
  const wcls = role === 'possible' ? 'btn ghost' : 'btn';
@@ -5047,7 +5200,7 @@ function compareTable(ups) {
 function slotInfo(s) {
  const p = prodById.get(s && s.prod); if (!p || !Number.isInteger(s.n)) return null;
  const g = prodModel(p).groups.find(x => (x.season ?? null) === (s.season ?? null));
- if (!g || !g.len || s.n < g.first || s.n > g.last || g.byNum.has(s.n)) return null;
+ if (!g || !g.len || s.n < g.first || s.n > g.last || g.byNum.has(s.n) || g.excluded.has(s.n)) return null;
  return {p, g, n: s.n, gap: s.n <= g.max};
 }
 VIEWS.slot = function mountSlot(v) {
@@ -5057,11 +5210,11 @@ VIEWS.slot = function mountSlot(v) {
  // production with its own number label names the slot by it ("Season 2, IETV no. 98").
  const code = numLabel(p) ? codeOf(p, g.season, n) : '', s = g.season != null ? fmtN(g.season) : '';
  const title = code ? (gap ? (s ? t('slotTitleSL', {s, code}) : code) : s ? t('slotExpTitleSL', {s, code}) : t('slotExpTitleL', {code})) :
-  gap ? (s ? t('untitledSE', {s, noun: t('noun_' + nounOf(p)), n: fmtN(n)}) : t('slotTitleN', {n: fmtN(n)})) :
-  s ? t('slotExpTitleS', {s, n: fmtN(n)}) : t('slotExpTitle', {n: fmtN(n)});
+  gap ? (s ? t('untitledSE', {s, noun: t('noun_' + nounOf(p)), n: fmtId(p, n)}) : t('slotTitleN', {n: fmtId(p, n)})) :
+  s ? t('slotExpTitleS', {s, n: fmtId(p, n)}) : t('slotExpTitle', {n: fmtId(p, n)});
  setTitle(title + ' · ' + prodName(p));
- v.append(crumbs([go('guide', t('guideTitle')), go(prodRoute(p.id), prodName(p))]));
- const hero = el('div', 'hero'); const art = numberArt({number: gap ? n : null}, 'u-art ph gapph', true);
+ v.append(crumbs([go('guide', t('guideTitle')), go(seasonRoute(p, g.season), prodName(p))]));
+ const hero = el('div', 'hero'); const art = numberArt({number: gap ? n : null, production: p.id}, 'u-art ph gapph', true);
  const info2 = el('div'); info2.append(el('p', 'kicker', [prodName(p), t('slotKicker')].join(' · ')), h1(title));
  const tags = el('div', 'head-tags'); const tg = el('span', 'tag');
  tg.append(glyph(gap ? 'gap' : 'slot'), txt(t(gap ? 'cov_gap' : 'cov_slot'))); tags.append(tg);
@@ -5600,7 +5753,7 @@ function linkGroup(links) {
  const {e, role} = links[0], p = prodById.get(e.production), pos = role === 'possible';
  const same = links.filter(l => l.role === role && l.e.production === e.production && (l.e.season ?? null) === (e.season ?? null));
  if (same.length > 1 && same.every(l => Number.isInteger(l.e.number))) {
-  return {text: codeText(p, e.season ?? null, same.map(l => fmtN(l.e.number)).join(pos ? t('orSep') : ', ')),
+  return {text: codeText(p, e.season ?? null, same.map(l => fmtId(p, l.e.number)).join(pos ? t('orSep') : ', ')),
    rest: links.length - same.length};
  }
  if (same.length > 1 && pos) return {text: same.map(l => epCode(l.e) || epTitle(l.e)).join(t('orSep')), rest: links.length - same.length};
@@ -5763,21 +5916,28 @@ VIEWS.todo = function mountTodo(v) {
 };
 // "269 or more" is a translated string: a bare '+' after the digits is a neutral that moves before them in Hebrew.
 const openCount = (n, open) => (open ? t('countOpen', {n: fmtN(n)}) : fmtN(n));
+// A production with many seasons (Sesame Street) is one group per season, each folded to its heading and count until opened.
 function epGroups(sid, eps, watchIt) {
- const by = new Map(); for (const e of eps) { if (!by.has(e.production)) by.set(e.production, []); by.get(e.production).push(e); }
- return groupRows(sid, [...by].map(([pid, list]) => [prodById.get(pid), list.map(e => ['td-' + e.id, () => todoEpRow(e, watchIt)])]));
+ const by = new Map();
+ for (const e of eps) {
+  const p = prodById.get(e.production), k = paged(p) ? e.production + ':' + (e.season ?? '') : e.production;
+  if (!by.has(k)) by.set(k, {p, season: paged(p) ? e.season : undefined, list: []});
+  by.get(k).list.push(e);
+ }
+ return groupRows(sid, [...by.values()].map(({p, season, list}) => [p, list.map(e => ['td-' + e.id, () => todoEpRow(e, watchIt)]), season]));
 }
 // Rows are [focus key, builder] pairs: only the rows shown (25 per group) are built, so the cost follows the budget,
 // not the size of the queue. Each group is headed by its production and count. "Show all" moves focus to the first newly
 // revealed row.
 function groupRows(sid, groups) {
  const out = [];
- for (const [p, rows] of groups) {
+ for (const [p, rows, season] of groups) {
   if (!p || !rows.length) continue;
-  const h = el('li', 'tgroup');
-  h.append(el('span', '', prodName(p)), el('span', 'fmt fmt-' + fmtOf(p), t('fs_' + fmtOf(p))), el('span', 'tcount', fmtN(rows.length)));
+  const h = el('li', 'tgroup'), folded = season !== undefined;
+  h.append(el('span', '', prodName(p) + (folded && season != null ? ' · ' + t('seasonLbl') + ' ' + fmtN(season) : '')),
+   el('span', 'fmt fmt-' + fmtOf(p), t('fs_' + fmtOf(p))), el('span', 'tcount', fmtN(rows.length)));
   out.push(h);
-  const key = sid + ':' + p.id, limit = state.limits.get(key) ?? 25;
+  const key = sid + ':' + p.id + (folded ? ':' + season : ''), limit = state.limits.get(key) ?? (folded ? 0 : 25);
   out.push(...rows.slice(0, limit).map(([, make]) => make()));
   if (rows.length > limit) {
    const li = el('li'); li.style.padding = '8px 0'; const next = rows[limit][0];
@@ -6007,16 +6167,30 @@ function nextCopy(e) {
  }
  return best ? {r: best.r, role: best.role, acc: accessOf(best.r), i: 0, n: 0} : null;
 }
-function nextCands() {
+// Up next walks one family's core episodes: Rechov Sumsum (the goal series) or Sesame Street, chosen with the switch on its
+// card and stored as sumsum-upnext. Without a stored choice, English Spoken picks Sesame Street; anything else, Rechov Sumsum.
+const UPNEXT_FAMS = [FAMILY_OF[[...GOAL_SERIES][0]], 'sesame-street']
+ .filter((f, i, a) => f && a.indexOf(f) === i && prods.some(p => upNextCore(p, f) && (epsByProd.get(p.id) || []).length));
+function upNextCore(p, f) { return f === FAMILY_OF[[...GOAL_SERIES][0]] ? isCoreRechov(p) : fmtOf(p) === 'core' && famOf(p) === f; }
+const upNextFam = () => {
+ const s = readStored('sumsum-upnext', ''); if (UPNEXT_FAMS.includes(s)) return s;
+ return UPNEXT_FAMS[prefs.spoken === 'en' && UPNEXT_FAMS.length > 1 ? 1 : 0] || '';
+};
+function famCands(f) {
  const out = [];
- for (const p of prods) {
-  if (!isCoreRechov(p)) continue;
+ for (const p of [...prods].sort(byRank)) {
+  if (!upNextCore(p, f)) continue;
   for (const e of epsByProd.get(p.id) || []) {
    if (covOf(e) !== 'whole-candidate' || watched.has(e.id)) continue;
    const b = nextCopy(e); if (b) out.push({e, b});
   }
  }
- if (out.length) return out;
+ return out;
+}
+function nextCands() {
+ // The chosen family first; when nothing in it qualifies, the other family's.
+ const f = upNextFam();
+ for (const g of [f, ...UPNEXT_FAMS.filter(x => x !== f)]) { const out = g ? famCands(g) : []; if (out.length) return out; }
  // No core episode fits the preferences: any offered entry that does, through its first offered member.
  return entries.map(en => [en, pickMember(en, pickable)]).filter(([, r]) => r).map(([en, r]) => ({e: en.e, b: entryB(en, r)}));
 }
@@ -6136,16 +6310,20 @@ const prefQuery = extra => {
  const q = [...extra]; if (prefs.spoken !== 'all') q.push('spoken=' + prefs.spoken); if (prefs.len) q.push('len=' + prefs.len);
  return 'browse' + (q.length ? '?' + q.join('&') : '');
 };
-// The characters with the most entries (editorial tags on their members), each with a picture from a video tagged with that
-// character alone.
-let stoopCache = null;
+// The characters with the most entries (editorial tags on their members) in the Spoken language, each with a picture from a
+// video tagged with that character alone. Under All, the Hebrew and English rankings take turns, so the thousands of English
+// Sesame Street videos never push Kippi and Oofnik off the row.
+const stoopCache = new Map();
 const hasChar = (r, k) => (r.characters || []).some(v => tagKey(v) === k);
-function stoopChars() {
- if (stoopCache) return stoopCache;
+// Home's two language sides: English-only videos, and everything else (Hebrew, mixed or unrecorded).
+const sideOf = r => (spokenOf(r).includes('en') && !spokenOf(r).includes('he') ? 'en' : 'he');
+// Ranked by a side (under All) or by the Spoken language itself.
+function charRank(g, side) {
  const m = new Map();
  for (const en of entries) {
   const counted = new Set();
   for (const r of en.members) {
+   if (side ? sideOf(r) !== g : !spokenOf(r).includes(g)) continue;
    const ks = [...new Set((r.characters || []).map(tagKey).filter(Boolean))];
    for (const k of ks) {
     if (!m.has(k)) m.set(k, {k, raw: (r.characters || []).find(v => tagKey(v) === k), n: 0, pic: null, solo: false});
@@ -6154,8 +6332,23 @@ function stoopChars() {
    }
   }
  }
- stoopCache = [...m.values()].sort((a, b) => b.n - a.n || a.k.localeCompare(b.k)).slice(0, 12);
- return stoopCache;
+ return [...m.values()].sort((a, b) => b.n - a.n || a.k.localeCompare(b.k));
+}
+// Lists taking turns, first list first, each item once (by `key`), up to `max`.
+function alternate(lists, key, max) {
+ const out = [], seen = new Set();
+ for (let i = 0; out.length < max && lists.some(l => i < l.length); i++) {
+  for (const l of lists) {
+   const x = l[i]; if (!x || seen.has(key(x)) || out.length >= max) continue;
+   seen.add(key(x)); out.push(x);
+  }
+ }
+ return out;
+}
+function stoopChars() {
+ const sp = prefs.spoken;
+ if (!stoopCache.has(sp)) stoopCache.set(sp, sp === 'all' ? alternate([charRank('he', true), charRank('en', true)], c => c.k, 12) : charRank(sp).slice(0, 12));
+ return stoopCache.get(sp);
 }
 function stoop() {
  const cs = stoopChars(); if (!cs.length) return null;
@@ -6176,20 +6369,36 @@ function stoop() {
  }
  sec.append(h, ul, el('div', 'stoop-step')); return sec;
 }
+// The family switch on the Up next card: two small buttons, the chosen one pressed.
+function famSwitch() {
+ if (UPNEXT_FAMS.length < 2) return null;
+ const box = el('div', 'seg-toggle fam-switch'); box.setAttribute('role', 'group'); box.setAttribute('aria-label', t('upNextFrom'));
+ const cur = upNextFam();
+ for (const f of UPNEXT_FAMS) {
+  const fam = FAMILIES.find(x => x.id === f) || {};
+  const b = btn('', pick(fam.en, fam.he) || f, () => {
+   persist('sumsum-upnext', f); state.nextSkip = 0; mount(false); restoreFocus('next-fam-' + f);
+  }, 'next-fam-' + f);
+  b.setAttribute('aria-pressed', String(f === cur)); box.append(b);
+ }
+ return box;
+}
 function heroNext() {
  const cands = nextCands(), sec = el('section', 'next'); sec.setAttribute('aria-labelledby', 'next-h');
  const h = el('h2', 'kicker', t('nextTitle')); h.setAttribute('id', 'next-h');
+ const fs = famSwitch();
  if (!cands.length) {
-  sec.className += ' none'; sec.append(h, el('p', '', t('nothingFits')), prefClears()); return sec;
+  sec.className += ' none'; sec.append(h); if (fs) sec.append(fs); sec.append(el('p', '', t('nothingFits')), prefClears()); return sec;
  }
  const n = cands.length, {e, b} = cands[((state.nextSkip % n) + n) % n], r = b.r, p = e && prodById.get(e.production);
  const art = el('span', 'u-art'); const img = imgEl(bigThumb(r.thumbnailUrl), 640, 360); if (img) art.append(img);
  const d = duration(r.durationSeconds); if (d) art.append(ltr(d, 'u-dur'));
- if (e && e.number != null) { const pl = el('span', 'plaque', fmtN(e.number)); pl.setAttribute('aria-hidden', 'true'); art.append(pl); }
+ if (e && e.number != null) { const pl = el('span', 'plaque', fmtId(p, e.number)); pl.setAttribute('aria-hidden', 'true'); art.append(pl); }
  const body = el('div', 'next-body');
  const tt = el('p', 'next-title');
  const a = e ? titleDir(go(epRoute(e.id), epTitle(e)), e) : titleDir(go(recRoute(r.id), recTitle(r)), r); fk(a, 'next-ep'); tt.append(a);
- body.append(h, tt, el('p', 'note', e ? [prodName(p), epCode(e)].filter(Boolean).join(' · ') :
+ body.append(h); if (fs) body.append(fs);
+ body.append(tt, el('p', 'note', e ? [prodName(p), epCode(e)].filter(Boolean).join(' · ') :
   [pick(...(SERIES[r.series] || [r.series])), t('k1_' + kindOf(r))].join(' · ')), accessLine(r));
  const title = e ? epTitle(e) : recTitle(r);
  const actions = el('div', 'next-act');
@@ -6320,7 +6529,9 @@ VIEWS.home = function mountHome(v) {
  const starredEns = entries.filter(entryStarred);
  const s1 = shelf('starred', t('navStarred'), starredEns, ['starred', starredEns.length]); if (s1) v.append(s1);
  const isMusic = r => (r.themes || []).some(x => tagKey(x) === MUSIC), musicPick = r => isMusic(r) && pickable(r);
- const musicOk = entries.filter(en => en.members.some(musicPick));
+ // Under All, Hebrew and English songs take turns, as on the character row.
+ const musicAll = entries.filter(en => en.members.some(musicPick)), sideSongs = g => musicAll.filter(en => sideOf(shownMember(en, musicPick)) === g);
+ const musicOk = prefs.spoken === 'all' ? alternate([sideSongs('he'), sideSongs('en')], en => en.id, Infinity) : musicAll;
  const s2 = shelf('music', t('shelfMusic'), musicOk, [prefQuery(['theme=' + encodeURIComponent(MUSIC)]),
   entries.filter(en => en.members.some(r => isMusic(r) && prefOk(r))).length], 12, musicPick);
  if (s2) v.append(s2);

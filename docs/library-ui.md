@@ -11,15 +11,15 @@ The views nav has four items: Home, Episode guide, Browse and Starred. Phones al
 **Home** (`#/home`) is the start view when the guide exists; without a guide the library starts on Browse. It holds:
 
 - Two stored preferences, Spoken (All languages, Hebrew, English) and Length (any, or up to 5, 10, 20 or 30 minutes). They are `sumsum-spoken` and `sumsum-length`. They shape what Home and Surprise offer, never the guide, and a Browse hash never changes them.
-- **Up next.** This is the next core Rechov Sumsum episode (a core production of a goal series in `data/series.json`) not marked watched, with its best *offered* whole or alternate copy.
+- **Up next.** This is the earliest core episode of one family not marked watched, with its best *offered* whole or alternate copy. A two-button switch on the card picks the family, Rechov Sumsum (the core productions of the goal series in `data/series.json`) or Sesame Street, stored as `sumsum-upnext`; without a stored choice, Spoken English starts on Sesame Street and anything else on Rechov Sumsum. When the chosen family has nothing to offer, Up next uses the other.
   - **Offered:** not marked as needing a VPN, a card or a purchase, not failed or region-limited in a check, and within the preferences.
   - **Choosing the copy:** the copy is picked among the episode's offered copies, so a copy that isn't offered never hides one that is.
   - **When no episode fits:** Up next offers any offered video.
   - **Wording:** nothing says these videos play; most links are not test-played.
   - **Again:** when the last opened video is something else, the hero offers it again.
 - **The queue and Again.** The queue card and the masthead's Queue popover show the queue. Again lists opened videos, last first, with their counts.
-- **The characters.** The twelve most-tagged characters each open Browse filtered by that character (with the preferences).
-- **The shelves.** Starred shows every starred video with its real Watch shape. Songs and music shows offered videos only. "See all" opens the same Browse query and counts what it shows.
+- **The characters.** Twelve characters, ranked by the entries tagged with them in the Spoken language, each opening Browse filtered by that character (with the preferences). Under All, the Hebrew side (everything that is not English only) and the English side take turns, so thousands of English Sesame Street videos never push Kippi and Oofnik off the row.
+- **The shelves.** Starred shows every starred video with its real Watch shape. Songs and music shows offered videos only; under All, Hebrew and English songs take turns. "See all" opens the same Browse query and counts what it shows.
 - **The production doors.**
 
 **Surprise** picks a random offered video. On Browse and Starred it picks from the list on screen; elsewhere it uses the Home preferences. When a character filter is on, the heading names the character. The popover and the queue popover close on Escape, an outside click or a route change, and focus returns to their button. `data-start-seed` on `<html>` makes the picks repeatable for the checks.
@@ -34,7 +34,7 @@ The views nav has four items: Home, Episode guide, Browse and Starred. Phones al
 
 **What is not found** is one quiet footer link, "Not found · N", to Missing episodes. That page links on to the other research pages:
 
-- **Missing episodes** (`#/browse/missing`): documented episodes without a whole copy (missing, then parts or excerpts only), then expected places not identified yet.
+- **Missing episodes** (`#/browse/missing`): documented episodes without a whole copy (missing, then parts or excerpts only), then expected places not identified yet. A production with more than eight seasons is one group per season, folded to its heading and count until opened.
 - **Videos to identify** (`#/browse/unidentified`): uploads in a production's `unidentified` queue and uploads linked only as `possible` copies, by production. `?prod=` shows one production.
 - **Identified videos** (`#/browse/identified`): every upload that is not awaiting identification, with the same filters.
 
@@ -45,6 +45,10 @@ The Research to-do page (`#/todo`, formerly To find) is linked from Missing epis
 "Awaiting identification" always means both kinds, queued and possible-only; the Browse facet chip for the queue alone is "In an identification queue". A link to Videos to identify counts what the page it opens lists.
 
 The guide's coverage panel for core Rechov Sumsum sits at the end of the guide overview.
+
+A production with more than eight seasons (Sesame Street, 56) shows one season at a time, chosen with a season picker and kept in the route as `?season=N` (dropped when the production changes; an unknown season falls back). Without a route season, the first shown is the season of the earliest unwatched episode with a whole link. Searches and filters span every season and then show the matches without strips. The unscoped guide shows that production's first season with an "All N seasons" link. Its numbers are zero-padded (`numberWidth`).
+
+The episode page shows "About this episode" when the guide has details: the summary quoted in English with its source revision and licence, "Brought to you by" the sponsor letters and numbers, word on the street and guest stars. Upload rows inside a compilation or on a service listing say so.
 
 A production with no documented episode and no queued upload, known only by its total (the 1998 Arabic-dominant version), gets no door on Home and no rail entry or section in the guide. The coverage summary still names it, and its own route still opens.
 

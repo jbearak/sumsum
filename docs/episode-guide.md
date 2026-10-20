@@ -1,6 +1,6 @@
 # Editing the episode guide
 
-Read this before editing `data/episode-guide.json`, a record's `production` or `guideEpisodeId`, or `data/licensed-services.json`. The evidence and counting rules in [AGENTS.md](../AGENTS.md#evidence-and-episode-counts) apply throughout. `validate_guide()` in `scripts/build-library.py` is the authoritative list of the guide's required fields and allowed values, as `validate_services()` is for the services file; [files-and-build.md](files-and-build.md#building) summarises what the builder refuses and what it only warns about.
+Read this before editing `data/episode-guide.json` or a guide part (`data/guide-*.json`), a record's `production` or `guideEpisodeId`, or `data/licensed-services.json`. The evidence and counting rules in [AGENTS.md](../AGENTS.md#evidence-and-episode-counts) apply throughout. `validate_guide()` in `scripts/build-library.py` is the authoritative list of the guide's required fields and allowed values, as `validate_services()` is for the services file; [files-and-build.md](files-and-build.md#building) summarises what the builder refuses and what it only warns about.
 
 ## Episode identity and titles
 
@@ -14,9 +14,20 @@ Read this before editing `data/episode-guide.json`, a record's `production` or `
 - Uploader and archive season/episode labels, such as archive.org "S2E58", are alternate labels. Put them in `altLabels`, never in `number`. Each entry is `{labelEn, labelHe?, sourceLabel, url?}`; `sourceLabel` names who uses the label.
 - The exception is a production without a documented numbering, when a label is the only evidence of an episode: the label may supply its `number`, with `confidence: "uploader-label"`. Hop!'s post titles and old site codes number some 2006 and 2009 episodes this way. A label on an episode documented by its title, such as the community "episode 30" for Karambula, still goes in `altLabels`.
 
+- The importer writes `data/guide-sesame-street.json` (US Sesame Street), so edit `scripts/import-sesame-street.py` or its inputs, not that file, and re-run it. Its numbers are Sesame Workshop's and Muppet Wiki's production numbers (`Episode 0001`).
+
+## Episode details and numbering
+
+- `numberWidth` (production, 1–6): numbers are shown zero-padded to that many digits, without thousands separators (Sesame Street's `0001`). Search matches the padded and the plain number.
+- `excludedNumbers` (season): `[{from, to, sourceLabel, noteEn?}]`, numbers inside a season's range that are not episodes (Sesame Street season 45's repeat labels, 4527–4551). The strip, its slots, the range warning and the Missing page skip them; the builder refuses an episode on an excluded number.
+- `summaryEn` is quoted verbatim from the source named in `summarySource` `{label, url?, revisionId?}`; without a `url`, the episode's first source is the page. The episode page shows it with a link to that revision and, for Muppet Wiki, its CC BY-SA licence ([data/ATTRIBUTION.md](../data/ATTRIBUTION.md)). It is the source's opening one or two sentences, verbatim; never compose or reword one.
+- `sponsors` `{letters, numbers}` (short strings, not both empty), `wordOnTheStreet` and `guestStars` (a non-empty list of names) are shown under "About this episode".
+- A production with more than eight seasons is shown one season at a time ([library-ui.md](library-ui.md#views-and-routes)).
+
 ## Uploads, coverage and evidence
 
 - To link an upload, add `{recordId, role}` to the episode's `uploads`, with `part` for numbered parts. Set the record's `production` and `guideEpisodeId` to match.
+- An upload may say what its link holds beyond this episode: `container` is `compilation` (one video with several programmes) or `listing` (a service's season or series page), with an optional `extentNoteEn` saying what it covers. Its row is labelled "In a compilation" or "Open listing"; the role still decides how it counts.
 - Roles are `whole-candidate`, `alternate-edition`, `part`, `excerpt` and `possible`. A `part` splits the programme itself; numbered parts of one story or segment are `excerpt`s.
 - A `possible` copy is probably the episode but unresolved. It never counts toward coverage, the totals or the Watch button. It may stay in its production's `unidentified` queue, because its identity is unresolved.
 - `coverage` is `whole-candidate`, `parts-only`, `excerpt-only` or `missing`, and must agree with the upload roles.

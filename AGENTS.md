@@ -1,6 +1,6 @@
 # Project purpose
 
-Maintain a local, interactive video-link library for classic and modern Rechov Sumsum, classic and modern Shalom Sesame, and Elmo's Israeli talk show, תכנית האירוח של אלמו. Collect episode and clip links, source metadata, and evidence about completeness and availability. Store links and metadata, never video media.
+Maintain a local, interactive video-link library for classic and modern Rechov Sumsum, classic and modern Shalom Sesame, Elmo's Israeli talk show, תכנית האירוח של אלמו, and the US Sesame Street from its first episode (1969; added 2026-10-19). Collect episode and clip links, source metadata, and evidence about completeness and availability. Store links and metadata, never video media.
 
 The library is `index.html`, a self-contained file generated from `library.template.html` and `data/`. Preserve filtering by series, program type, theme and character, dynamic filter counts, longest-first duration sorting, and the UI preferences: language (English by default, with a Hebrew toggle and RTL layout), palette (Terracotta by default) and appearance (System by default). Full episodes and complete installments of short series are separate categories.
 
@@ -68,7 +68,7 @@ Keep `index.html` at its path and keep opening it the same way, as a file in Zen
 # Evidence and episode counts
 
 - Count upload URLs separately from distinct episode identities. Alternate hosts, duplicate editions and numbered parts do not add episodes.
-- Keep original Rechov Sumsum, the 1998 Rechov Sumsum/Shara'a Simsim co-production, the modern core seasons, short series and home-video compilations distinct when calculating coverage.
+- Keep original Rechov Sumsum, the 1998 Rechov Sumsum/Shara'a Simsim co-production, the modern core seasons, short series, home-video compilations and US Sesame Street distinct when calculating coverage. `scripts/import-sesame-street.py` writes the Sesame Street guide part and records from its sweep, so change its inputs rather than its output ([docs/episode-guide.md](docs/episode-guide.md)).
 - Number the original series and the 1998 co-production by the IETV programme numbers in the NLI catalogue. Uploader and archive.org season/episode labels, such as "S2E58", follow broadcast or collector order: keep them as alternate labels and evidence in `altLabels`, not in `number` ([one exception](docs/episode-guide.md#episode-identity-and-titles)).
 - Do not infer a full episode from duration alone or from Hop's generic use of the word פרק. A short installment can be complete within its own series without being a complete core Rechov Sumsum broadcast.
 - Distinguish metadata checked, playback startup observed, complete playback reviewed, and completeness compared against a reference edition. Record the exact URL, date and evidence for a stronger claim.

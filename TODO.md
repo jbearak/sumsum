@@ -1,6 +1,6 @@
 # Episode coverage and acquisition checklist
 
-Audited 2026-10-18 against [data/episode-guide.json](data/episode-guide.json): 14 productions, 386 episodes and 2,272 catalog records.
+Audited 2026-10-18 against [data/episode-guide.json](data/episode-guide.json): 14 productions, 386 episodes and 2,272 catalog records. US Sesame Street, added 2026-10-19, is a separate guide part with its own section below.
 
 Each episode counts once, however many uploads, hosts, editions or numbered parts link to it. Productions stay separate: the original IETV series, the 1998 co-production, each modern season, the short series, the home-video tapes and the two Shalom Sesame series each have their own denominator.
 
@@ -33,6 +33,17 @@ Counted separately:
 | Classic Shalom Sesame | 11, [UMass](https://www.umass.edu/langctr/jhweb.html) | 11 | 11 | 0 | |
 | Shalom Sesame 2010 | 12, [official store](https://web.archive.org/web/2012/http://store.sesamestreet.org/Product.aspx?cp=21415_21456_21463&pc=6EAM0976) | 12 | 12 | 0 | 11 of the 12 rest on licensed listings only |
 
+US Sesame Street (its own family, counted on its own; added 2026-10-19 from [data/guide-sesame-street.json](data/guide-sesame-street.json)):
+
+| Production | Episodes made | Guide rows | Whole candidate | Parts only | Excerpt only | Missing | Awaiting identification |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Sesame Street, seasons 1-56, 1969-2026 | 4,744 aired, [Muppet Wiki season guides](https://muppet.fandom.com/wiki/Sesame_Street_seasons) | 4,744 | 4,111 | 3 | 385 | 245 | 2,417 |
+
+- 24,951 link records back it: 8,867 archive.org, 13,120 YouTube and 2,964 other (2,219 licensed listings on HBO Max, Hulu, Netflix, Tubi, The Roku Channel, Kanopy, Apple TV, Prime Video, Google TV and YouTube purchases).
+- Of the 4,111 whole candidates, 4,099 have a free link not known to have failed, 5 rest only on licensed listings and 7 only on links that failed a check.
+- 18 of the 245 missing episodes have a possible copy. Most missing and excerpt-only episodes are in seasons 5-9 (1973-78); season 42 has 10 missing.
+- Season 45's repeat labels 4527-4551 are not episodes (`excludedNumbers`). Season 57 is announced and not aired.
+
 Five more long classic uploads sit in the unassigned queue because their production is not established.
 
 Read the totals with these limits:
@@ -43,7 +54,7 @@ Read the totals with these limits:
 - The 2006 and 2009 rows include numbered rows from Hop! labels that may be the same programmes as titled rows. Between 32 and 34 of the 40 titles of 2006 are unknown, and between 21 and 24 of the 28 titles of 2009.
 - There is no combined modern total, because the 2015 figure is contested.
 
-Research notes: [classic](research/episode-totals-classic-rechov.md), [modern and Elmo](research/episode-totals-hop.md), [Shalom Sesame](research/episode-totals-shalom.md), [October 2026 sweep](research/acquisition-sweep-2026-10.md).
+Research notes: [classic](research/episode-totals-classic-rechov.md), [modern and Elmo](research/episode-totals-hop.md), [Shalom Sesame](research/episode-totals-shalom.md), [October 2026 sweep](research/acquisition-sweep-2026-10.md), [US Sesame Street](research/sesame-street-us.md) and [its totals](research/episode-totals-sesame-street.md).
 
 ## Next work
 
@@ -141,6 +152,12 @@ English titles are editorial. The one linked title is "נוח וברוש לא ח
 
 - [ ] "שיר קסומסום עם מוישה אופניק" (Holon Mediatheque 054005). Find a publisher list of the 1999 tapes.
 
+### US Sesame Street
+
+- [ ] The 245 missing and 385 excerpt-only episodes, mostly seasons 5-9. The Missing episodes page lists them by season.
+- [ ] The 2,417 uploads in the Sesame Street identification queue: compilations and uploads whose numbers the sweep could not verify.
+- [ ] The three parts-only episodes (1285, 2275, 2282) each have two archive.org part sets with identical durations (TinyDroid's collection and pannoni4's items), so their parts train lists each number twice. Confirm they are the same files and keep one set as the parts.
+
 ## Identifications that need viewing
 
 These cannot be settled from metadata. Each one needs someone to watch the upload.
@@ -172,6 +189,8 @@ For each check, record the exact URL, the date and the evidence level reached: p
 - [ ] 2015: check "התיק של אלמו" and "לחמם את האף", whose archived pages make no full-episode claim, and the six story files shorter than the 7.1 net minutes per episode accounted in 2014 (hop-5086 5:21, hop-5096 5:26, hop-5085 6:12, hop-5091 6:17, hop-5083 6:46, hop-5075 7:03).
 - [ ] Elmo: check whether the 7:41-10:10 Hop! assets are complete programmes or web edits.
 
+- [ ] US Sesame Street: every link is at metadata-checked. Test-play a sample of the archive.org and YouTube whole candidates, and re-check the 1,145 links that failed a check on 2026-10-19 before removing any. Two sweep matches that were not Sesame Street episodes are listed under `rejectedLinks` in the audit.
+
 ## Research tasks
 
 - [ ] Find where the archive.org season and slot numbering comes from (the deleted archionir2 channel) and the IBA Classics numbering.
@@ -189,6 +208,7 @@ For each check, record the exact URL, the date and the evidence level reached: p
 | Classic Rechov Sumsum | [episode-totals-classic-rechov.md](research/episode-totals-classic-rechov.md) | [classic-rechov-episode-audit.json](data/classic-rechov-episode-audit.json), [nli-ietv-catalogue.json](data/nli-ietv-catalogue.json) |
 | Modern Rechov Sumsum, short series, Sesame Stories and Israeli Elmo | [episode-totals-hop.md](research/episode-totals-hop.md) | [hop-episode-audit.json](data/hop-episode-audit.json) |
 | Both Shalom Sesame series | [episode-totals-shalom.md](research/episode-totals-shalom.md) | [shalom-episode-audit.json](data/shalom-episode-audit.json) |
+| US Sesame Street | [sesame-street-us.md](research/sesame-street-us.md), [episode-totals-sesame-street.md](research/episode-totals-sesame-street.md) | [sesame-street-episode-audit.json](data/sesame-street-episode-audit.json), [sesame-street-link-evidence.json](data/sesame-street-link-evidence.json) |
 | All productions | [acquisition-sweep-2026-10.md](research/acquisition-sweep-2026-10.md) | [episode-guide.json](data/episode-guide.json) |
 
 ## How to update this list
