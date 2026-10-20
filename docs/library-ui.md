@@ -10,7 +10,7 @@ The views nav has four items: Home, Episode guide, Browse and Starred. Phones al
 
 **Home** (`#/home`) is the start view when the guide exists; without a guide the library starts on Browse. It holds:
 
-- Two stored preferences, Spoken (All languages, Hebrew, English) and Length (any, or up to 5, 10, 20 or 30 minutes). They are `sumsum-spoken` and `sumsum-length`. They shape what Home and Surprise offer, never the guide, and a Browse hash never changes them.
+- Two stored preferences, Spoken (All languages, Hebrew, English) and Length (any, up to 5, 10, 20 or 30 minutes, or full episodes). They are `sumsum-spoken` and `sumsum-length`. They shape what Home and Surprise offer, never the guide, and a Browse hash never changes them.
 - **Up next.** This is the earliest core episode of one family not marked watched, with its best *offered* whole or alternate copy. A two-button switch on the card picks the family, Rechov Sumsum (the core productions of the goal series in `data/series.json`) or Sesame Street, stored as `sumsum-upnext`; without a stored choice, Spoken English starts on Sesame Street and anything else on Rechov Sumsum. When the chosen family has nothing to offer, Up next uses the other, presses its button and says so in one line.
   - **Offered:** not marked as needing a VPN, a card or a purchase, not failed or region-limited in a check, and within the preferences.
   - **Choosing the copy:** the copy is picked among the episode's offered copies, so a copy that isn't offered never hides one that is.
@@ -29,7 +29,7 @@ The views nav has four items: Home, Episode guide, Browse and Starred. Phones al
 **Browse** (`#/browse`) lists every upload with the filters. The old All uploads route, `#/uploads`, still lands there with its filters.
 
 - **Spoken** goes by series (`spoken` in `data/series.json`): Rechov Sumsum and Elmo's talk show are Hebrew, Shalom Sesame and Sesame Street English, whatever a listing's recorded language says (the user, 2026-10-20; recorded values often name subtitles, as on the official "Hebrew with English Subtitles" uploads, or are missing, as on Hop). A recorded language that leaves out the series' own and names one other than Hebrew or English (Arabic, Russian) marks a dub, under Other languages. Each upload has one group.
-- **Length** is one choice at a time: up to 5, 10, 20 or 30 minutes. A video without a known duration shows only under Any length.
+- **Length** is one choice at a time: up to 5, 10, 20 or 30 minutes, or Full episodes (`len=full`), the Full episodes program type whatever its duration, so short-series installments and unconfirmed episodes stay out. A video without a known duration shows only under Any length or, when it is a full episode, Full episodes.
 - **An empty result** shows Oofnik's bin, drawn in CSS, with one button per active filter group. Each button gives the count that clearing that group alone would show.
 
 **What is not found** is one quiet footer link, "Not found · N", to Missing episodes. That page links on to the other research pages:

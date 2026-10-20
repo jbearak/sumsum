@@ -708,9 +708,9 @@ async function checkUploads(H, M) {
   ok('counts ignore their own facet; zero-count selections retained; full vs short-series separate; multi-select');
 
   // Spoken: the series' language; a recorded language without it that names another than Hebrew or English is a dub (Other).
-  // Length: one choice at a time, up to N minutes; unknown durations pass only under Any.
+  // Length: one choice at a time, up to N minutes or full episodes; unknown durations pass only under Any.
   const spokenOf = spokenOfM;
-  const lenOk = (r, n) => Number(r.durationSeconds) > 0 && Number(r.durationSeconds) <= n * 60;
+  const lenOk = lenOkM;
   const SP = ['he', 'en', 'other'];
   assert.equal(H.chipCount(H.fk('fsp-all')), N, 'All languages counts every upload');
   for (const g of SP) assert.equal(H.chipCount(H.fk('fsp-' + g)), countE(r => spokenOf(r).includes(g)), 'Spoken count ' + g);
@@ -719,6 +719,8 @@ async function checkUploads(H, M) {
   for (const r of records) if (FAMILY_OF[r.series] === 'rechov' && spokenOf(r).includes('en')) assert.fail('Rechov Sumsum is never English: ' + r.id);
   assert.equal(H.chipCount(H.fk('fl-any')), N);
   for (const n of [5, 10, 20, 30]) assert.equal(H.chipCount(H.fk('fl-' + n)), countE(r => lenOk(r, n)), 'Length count ' + n);
+  assert.equal(H.chipCount(H.fk('fl-full')), countE(r => kindOf(r) === 'episode'), 'Full episodes counts the Full episodes type');
+  assert.equal(H.fk('fl-full').textContent.startsWith(L.en.kEpisode), true, 'Full episodes is named like the type');
   await H.fk('fsp-he').click(); await H.fk('fsp-en').click();
   const heEnR = r => spokenOf(r).some(g => g === 'he' || g === 'en'), heEnN = countE(heEnR);
   assert.equal(H.count(), heEnN, 'Spoken choices add up (either language)');
@@ -726,7 +728,12 @@ async function checkUploads(H, M) {
   assert.equal(H.fk('fl-10').getAttribute('aria-pressed'), 'false', 'Length is one choice at a time');
   assert.equal(H.count(), countE(r => heEnR(r) && lenOk(r, 5)), 'Length narrows the result (one member passes both)');
   assert(/[?&]spoken=he%2Cen(&|$)/.test(H.location.hash) && /[?&]len=5(&|$)/.test(H.location.hash), 'Spoken and length are in the hash: ' + H.location.hash);
-  for (const k of [5, 10, 20, 30]) assert.equal(H.chipCount(H.fk('fl-' + k)), countE(r => heEnR(r) && lenOk(r, k)), 'Length counts ignore the length choice');
+  for (const k of [5, 10, 20, 30, 'full']) assert.equal(H.chipCount(H.fk('fl-' + k)), countE(r => heEnR(r) && lenOk(r, k)), 'Length counts ignore the length choice');
+  await H.fk('fl-full').click();
+  assert.equal(H.fk('fl-5').getAttribute('aria-pressed'), 'false', 'Full episodes replaces a duration');
+  assert.equal(H.count(), countE(r => heEnR(r) && kindOf(r) === 'episode'), 'Full episodes narrows to the type, whatever the duration');
+  assert(/[?&]len=full(&|$)/.test(H.location.hash) && H.has('ux-len'), 'Full episodes is in the hash, with a removable chip');
+  await H.fk('fl-5').click();
   assert.equal(H.chipCount(H.fk('fsp-other')), countE(r => lenOk(r, 5) && spokenOf(r).includes('other')), 'Spoken counts follow the length');
   assert(H.has('ux-sp-he') && H.has('ux-len'), 'Removable chips for both');
   await H.fk('ux-len').click(); assert.equal(H.count(), heEnN, 'Removing the length chip clears it');
@@ -4129,7 +4136,8 @@ const spokenOfM = r => {
   const dub = !parts.includes(own) && parts.some(x => x !== 'he' && x !== 'en');
   return [dub || (own !== 'he' && own !== 'en') ? 'other' : own];
 };
-const lenOkM = (r, n) => !n || (Number(r.durationSeconds) > 0 && Number(r.durationSeconds) <= Number(n) * 60);
+const lenOkM = (r, n) => !n || (n === 'full' ? kindOf(r) === 'episode' :
+  Number(r.durationSeconds) > 0 && Number(r.durationSeconds) <= Number(n) * 60);
 const tagKeyM = v => normalizeQ((NAMES[String(v).toLowerCase()] || NAMES[normalizeQ(v)] || [v])[0]);
 async function checkHome(htmlPath, M) {
   const H = harness(boot(htmlPath, {htmlAttrs: {'data-start-seed': '11'}})), {records} = M, keyOf = r => r.id || r.url;
@@ -4157,6 +4165,11 @@ async function checkHome(htmlPath, M) {
   assert.equal(H.fk('see-music').href, '#/browse?theme=' + encodeURIComponent(tagKeyM('music')) + '&len=5', 'See all opens the same query in Browse');
   assert.equal(H.number(H.fk('see-music').textContent), M.countE(r => isMusic(r) && prefOk(r)), 'See all counts what Browse will show');
   await H.navigate('browse?len=10'); assert.equal(H.storage.get('sumsum-length'), '"5"', 'A Browse hash does not change the Home preference');
+  await H.navigate('home');
+  await H.fk('pref-len-full').click(); assert.equal(H.storage.get('sumsum-length'), '"full"', 'Full episodes is stored');
+  assert(shelfCards('music').every(a => musicPick(cardRec(a, 'smusic-card-', musicPick))), 'Full episodes applies to the shelves');
+  assert.equal(H.fk('see-music').href, '#/browse?theme=' + encodeURIComponent(tagKeyM('music')) + '&len=full', 'See all carries Full episodes');
+  await H.fk('pref-len-5').click();
   await H.navigate('home');
   await H.fk('pref-spoken-en').click(); assert.equal(H.storage.get('sumsum-spoken'), '"en"');
   const hero = H.fk('next-watch'), heroRec = records.find(r => expectDest(r) === hero.href && pickable(r));
