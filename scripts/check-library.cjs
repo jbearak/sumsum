@@ -208,6 +208,7 @@ function expectWatchShort(b, lang, list = false) {
   const base = b.acc === 'licensed' ? expectLicWatch(b.r, lang, true) : tr(lang, 'tw_' + hostKind(expectDest(b.r)));
   const q = b.role === 'part' ? [b.n > 1 ? tr(lang, 'twPart', {i: b.i.toLocaleString(), n: b.n.toLocaleString()}) : tr(lang, 'role_part')] :
     b.role === 'excerpt' ? [tr(lang, 'twExcerpt')] : [];
+  const ck = CONT.get(b.r) || 0; if (ck) q.push(tr(lang, ck === 2 ? 'twlistingQ' : 'twcompQ'));
   if (b.acc === 'unavailable' && !list) q.push(tr(lang, 'tw_unavailable'));
   return [base, ...q].join(' · ');
 }
@@ -218,6 +219,7 @@ const expectWatchBase = (r, lang, local = '') => (expectAccess(r, local) === 'li
 function expectWatchLong(b, lang, local = '') {
   const q = b.role === 'part' ? [b.n > 1 ? tr(lang, 'partOf', {i: b.i.toLocaleString(), n: b.n.toLocaleString()}) : tr(lang, 'role_part')] :
     b.role === 'excerpt' ? [tr(lang, 'excerptQ')] : [];
+  const ck = CONT.get(b.r) || 0; if (ck) q.push(tr(lang, ck === 2 ? 'listingQ' : 'compQ'));
   if (b.acc === 'unavailable') q.push(tr(lang, 'unavailableQ'));
   return [expectWatchBase(b.r, lang, local), ...q].join(' · ');
 }
@@ -1657,6 +1659,8 @@ async function checkEpisodeAbout(H, M) {
     let row = H.fk('ur-' + u.recordId); while (row && !(row.className || '').split(' ').includes('urow')) row = row.parentElement;
     assert.equal(H.byClass('u-cont', row)[0]?.textContent, L.en['container_' + c], 'A ' + c + ' copy is labelled on its row');
     if (u.extentNoteEn) assert(row.textContent.includes(u.extentNoteEn), 'with its extent note');
+    const wl = H.byClass('wl', row)[0];
+    if (wl) assert(wl.textContent.includes(' · ' + L.en[c === 'listing' ? 'listingQ' : 'compQ']), 'Its Watch label says what it opens: ' + wl.textContent);
   }
   // A copy of the episode alone outranks a compilation on the same host; an episode whose only whole copy is a compilation
   // still has a star and a "+" that act on what Watch opens (the compilation's entry), and "+" toggles.
@@ -3500,6 +3504,7 @@ async function checkEntries(htmlPath) {
   // An episode whose only whole copy is a compilation (no entry of its own): star and "+" act on the compilation's entry.
   await H.navigate('episode/edge-order-4');
   assert.equal(H.fk('ep-watch').href, 'https://archive.org/details/edge-order/compilation.mp4');
+  assert(H.fk('ep-watch').textContent.includes(' · ' + L.en.compQ), 'The Watch button says the copy is in a compilation');
   assert(H.has('ep-star', H.view()), 'A compilation-only episode can be starred');
   await H.fk('ep-q').click(); H.flushTimers();
   assert.equal(H.fk('ep-q').getAttribute('aria-pressed'), 'true', 'Its "+" shows the compilation queued');
@@ -5545,6 +5550,8 @@ function builderChecks(builder, dir) {
       'guide: episode season ' + JSON.stringify(bad));
     fails(run(recs, {guide: guide({}, {seasons: [{season: bad, firstNumber: 66, expectedEpisodes: 65}]})}),
       /season 1: season must be an integer or null/, 'guide: seasons[] key ' + JSON.stringify(bad));
+    fails(run(recs, {guide: guide({}, {seasons: [{season: bad, firstNumber: 1, expectedEpisodes: 3, excludedNumbers: [{from: 2, to: 2, sourceLabel: 'x'}]}]})}),
+      /season 1: season must be an integer or null/, 'guide: seasons[] key with excludedNumbers ' + JSON.stringify(bad));
   }
   // Availability checks: a known string, or an object whose optional status is known.
   const yt1 = 'https://www.youtube.com/watch?v=AAAAAAAAAA1';

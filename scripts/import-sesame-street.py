@@ -304,6 +304,11 @@ def build_record(c, rels, waits, episodes_by_number):
         r["sourceType"] = "official"
     if licensed and sid:
         r["access"] = "licensed"
+    # The file default note describes a community upload; official uploads and service listings say what they are instead.
+    if r.get("access") == "licensed":
+        r["notes"] = "A listing on a streaming or retail service, not a free upload. Access depends on the service; availability may change."
+    elif r.get("sourceType") == "official":
+        r["notes"] = "Official upload, as the sweep classified its uploader or site; availability may change."
     if clean(c.get("thumbnailUrl")) and host_of(url) not in ("youtube.com", "archive.org"):
         r["thumbnailUrl"] = c["thumbnailUrl"]
     counted = sorted({n for n, role, *_ in rels if role in ("whole-candidate", "alternate-edition", "part")})

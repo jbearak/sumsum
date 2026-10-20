@@ -48,7 +48,7 @@ The guide's coverage panel for core Rechov Sumsum sits at the end of the guide o
 
 A production with more than eight seasons (Sesame Street, 56) shows one season at a time, chosen with a season picker and kept in the route as `?season=N` (dropped when the production changes; an unknown season falls back). Without a route season, the first shown is the season of the earliest unwatched episode with a whole link. Searches and filters span every season and show the matching seasons' tiles without strips (the Numbers layout keeps dimmed strips on the production's own page). The unscoped guide shows that same season, up to 12 tiles, with an "All N seasons" link; its "Show all" counts that season's episodes. Its numbers are zero-padded (`numberWidth`).
 
-The episode page shows "About this episode" when the guide has details: the summary quoted in English with its source revision and licence, "Brought to you by" the sponsor letters and numbers, word on the street and guest stars. Upload rows inside a compilation or on a service listing say so.
+The episode page shows "About this episode" when the guide has details: the summary quoted in English with its source revision and licence, "Brought to you by" the sponsor letters and numbers, word on the street and guest stars. Upload rows inside a compilation or on a service listing say so, and every Watch label for such a copy adds "In a compilation" or "Opens a listing" (short labels: "compilation", "listing").
 
 A production with no documented episode and no queued upload, known only by its total (the 1998 Arabic-dominant version), gets no door on Home and no rail entry or section in the guide. The coverage summary still names it, and its own route still opens.
 

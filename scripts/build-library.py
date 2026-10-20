@@ -598,7 +598,8 @@ def validate_guide(guide, records, source, series):
     excluded = {}
     for pid, p in productions.items():
         for s in p.get("seasons") if isinstance(p.get("seasons"), list) else []:
-            if isinstance(s, dict) and isinstance(s.get("excludedNumbers"), list):
+            # A malformed season key is reported above; it must not reach the dict as a key.
+            if isinstance(s, dict) and isinstance(s.get("excludedNumbers"), list) and (s.get("season") is None or is_int(s.get("season"))):
                 for x in s["excludedNumbers"]:
                     if isinstance(x, dict) and is_int(x.get("from")) and is_int(x.get("to")):
                         for n in range(x["from"], min(x["to"], x["from"] + 10000) + 1):

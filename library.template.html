@@ -1543,6 +1543,7 @@ en: {
  tw_web: 'Open',
  twPart: '{i}/{n}',
  twExcerpt: 'excerpt',
+ twcompQ: 'compilation', twlistingQ: 'listing',
  tw_unavailable: 'unavailable',
  twFind: 'Find it',
  watchOn_vimeo: 'Watch on Vimeo',
@@ -1551,6 +1552,7 @@ en: {
  watchOn_web: 'Open video page',
  partOf: 'Part {i} of {n}',
  excerptQ: 'Excerpt',
+ compQ: 'In a compilation', listingQ: 'Opens a listing',
  unavailableQ: 'Unavailable',
  searchYoutube: 'Search YouTube',
  findAria: 'Search YouTube for {title}',
@@ -2183,6 +2185,7 @@ he: {
  tw_web: 'פתיחה',
  twPart: '{i}/{n}',
  twExcerpt: 'קטע',
+ twcompQ: 'אוסף', twlistingQ: 'רשימה',
  tw_unavailable: 'לא זמין',
  twFind: 'איתור',
  watchOn_vimeo: 'צפייה ב־Vimeo',
@@ -2191,6 +2194,7 @@ he: {
  watchOn_web: 'פתיחת עמוד הסרטון',
  partOf: 'חלק {i} מתוך {n}',
  excerptQ: 'קטע',
+ compQ: 'בתוך אוסף', listingQ: 'פותח דף רשימה',
  unavailableQ: 'לא זמין',
  searchYoutube: 'חיפוש ביוטיוב',
  findAria: 'חיפוש ביוטיוב: {title}',
@@ -3457,6 +3461,8 @@ function watchText(b, short, listShort) {
  const q = [];
  if (b.role === 'part') q.push(b.n > 1 ? t(short ? 'twPart' : 'partOf', {i: fmtN(b.i), n: fmtN(b.n)}) : t('role_part'));
  else if (b.role === 'excerpt') q.push(t(short ? 'twExcerpt' : 'excerptQ'));
+ // A link that holds more than this episode says so: a compilation video, or a service's listing to pick the episode from.
+ const ck = contClass(b.r); if (ck) q.push(t((short ? 'tw' : '') + (ck === 2 ? 'listingQ' : 'compQ')));
  // A link that failed an availability check says so wherever it is offered (tiles and List rows have no access line).
  // The phone List label is the exception: at 320 px the table has no room for the word or the mark (the title column keeps
  // 96 px), so there the host word is struck through and muted, and the link's name still says it.
