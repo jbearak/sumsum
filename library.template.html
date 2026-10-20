@@ -1742,7 +1742,7 @@ en: {
  noUploadsMatch: 'No uploads match these filters.',
  relaxFilter: 'Clear {name} · {n}',
  fSpoken: 'Spoken',
- spokenHelp: 'By series: Rechov Sumsum in Hebrew, Shalom Sesame and Sesame Street in English. Dubs are under Other languages.',
+ spokenHelp: 'By series: Rechov Sumsum and Elmo\'s talk show in Hebrew, Shalom Sesame and Sesame Street in English. Dubs are under Other languages.',
  allLanguages: 'All languages',
  spHe: 'Hebrew',
  spEn: 'English',
@@ -2379,7 +2379,7 @@ he: {
  noUploadsMatch: 'אין העלאות שמתאימות למסננים.',
  relaxFilter: 'ניקוי {name} · {n}',
  fSpoken: 'שפה מדוברת',
- spokenHelp: 'לפי הסדרה: רחוב סומסום בעברית, שלום סומסום ורחוב סומסום האמריקאי באנגלית. דיבובים תחת שפות אחרות.',
+ spokenHelp: 'לפי הסדרה: רחוב סומסום ותכנית האירוח של אלמו בעברית, שלום סומסום ורחוב סומסום האמריקאי באנגלית. דיבובים תחת שפות אחרות.',
  allLanguages: 'כל השפות',
  spHe: 'עברית',
  spEn: 'אנגלית',
@@ -6340,7 +6340,7 @@ const prefQuery = extra => {
 // Sesame Street videos never push Kippi and Oofnik off the row.
 const stoopCache = new Map();
 const hasChar = (r, k) => (r.characters || []).some(v => tagKey(v) === k);
-// Home's two language sides: English-only videos, and everything else (Hebrew, mixed or unrecorded).
+// Home's two language sides: English videos, and everything else (Hebrew and dubs).
 const sideOf = r => (spokenOf(r).includes('en') && !spokenOf(r).includes('he') ? 'en' : 'he');
 // Ranked by a side (under All) or by the Spoken language itself.
 function charRank(g, side) {
