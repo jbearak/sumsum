@@ -8,6 +8,7 @@ Read this before changing data files, scripts or the build. The rules, and the t
 | --- | --- |
 | `library.template.html` | Editable UI source |
 | `data/series.json` | Series registry: the guide rail's families, every series with its English and Hebrew labels and YouTube search terms, and the goal rows (the series whose core productions count as core Rechov Sumsum) |
+| `data/link-priority.json` | The user's link order: the tiers an entry's copies are ranked by, highest first ([library-ui.md](library-ui.md#entries-and-link-order)) |
 | `data/vocabulary.json` | Editorial English and Hebrew names for theme and character tags, keyed by the lowercase tag |
 | `data/episode-guide.json` | Episode guide: productions, totals with their evidence, episodes, upload roles, coverage and evidence levels, and the queues of uploads awaiting identification |
 | `data/nli-ietv-catalogue.json` | National Library of Israel IETV catalogue extract: original-series programmes 1-198 and co-production programmes 1-70, with titles, summaries, runtimes and record ids |
@@ -39,6 +40,8 @@ Read this before changing data files, scripts or the build. The rules, and the t
 
 - It reads the series registry, `data/series.json` (`--series PATH` for another file), and embeds it for the app. It refuses a record or production whose series is not listed, and a missing or malformed registry: a key repeated within one object, a duplicate, non-slug or all-digit id, a series whose family is not listed, a label without English or Hebrew text, an empty search prefix, a search language other than `he` or `en`, or goal rows that repeat a series or span two families.
 - It embeds the tag vocabulary, `data/vocabulary.json` (`--vocabulary PATH` for another file). It refuses a missing file, a repeated key, a key that is not lowercase, has outer spaces or is a reserved name, and a name pair that is not `[English, Hebrew]` text with Hebrew letters in the second. The checks require a name pair for every tag a record uses.
+
+- It embeds the link order, `data/link-priority.json` (`--link-priority PATH`), and refuses a file that does not list each tier exactly once.
 
 - With no inputs it embeds every `data/*-records.json` file and merges records by URL. It integrates the exact links and explicit playback evidence from `data/hop-player-links.json`.
 - It embeds `data/episode-guide.json` by default. `--guide PATH` uses another guide, and an explicit path that does not exist is an error. Without the default guide it builds a plain uploads library.

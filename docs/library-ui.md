@@ -48,6 +48,34 @@ The guide's coverage panel for core Rechov Sumsum sits at the end of the guide o
 
 A production with no documented episode and no queued upload, known only by its total (the 1998 Arabic-dominant version), gets no door on Home and no rail entry or section in the guide. The coverage summary still names it, and its own route still opens.
 
+## Entries and link order
+
+Browse, Starred, Home's shelves, Again, Surprise and the queue show **entries**, one per episode or video, so an episode is never listed several times.
+
+- **An episode entry** holds the counted copies of one episode: whole, alternate edition and parts. Its card is headed by the episode and opens its page.
+  - Excerpts are other videos, and possible copies are unresolved, so neither joins it.
+  - A record that is a counted copy of several episodes (a compilation) is an entry of its own, so a star or an open never stands for two episodes.
+- **A video entry** is every other record. Records that are the same video on another page join it (the same host video id in the record's own link, such as one Vimeo video on two Hop! pages).
+- **The research pages stay per upload:** Videos to identify, Identified videos, Missing episodes, record pages and the to-do export.
+
+An entry's copies are ranked by `data/link-priority.json`, the user's order (2026-10-19). Each link falls into one tier, and the file ranks the tiers. Links that failed a check come after every tier.
+
+- **How a link gets its tier** (`tierOf` in the template):
+  - A licensed listing goes by its service: subscribed, library card, free with ads, or paid (buy, rent, or a subscription the user does not have).
+  - A link needing the Israel VPN is `vpn`.
+  - A region-limited free stream ranks with `free-with-ads`.
+  - Anything else goes by host: archive.org, YouTube, Vimeo, or `other-free`.
+- **How copies are sorted** (`copyKey`): usable before failed, then whole and alternate editions, parts, excerpts, then the tier, then official before community, then part number.
+- **What uses the order:**
+  - The Watch button and Up next open the first copy that fits.
+  - A card shows the first copy that passes every active filter together, and names the other places once each ("Also on YouTube, Vimeo").
+  - The episode page lists each role's copies in this order.
+- **What counts as offered:** services with `subscribed: true` count as offered, like free links. Library-card, free-with-ads and paid listings and links needing the VPN do not.
+- **Stars:** an entry is starred by its own key (`ep:<episode id>`, or a video's record key) or by a star on any of its copies. Unstarring the entry clears both. Record pages and episode upload rows still star one upload.
+- **Opens:** summed over an entry's copies.
+- **The queue:** stores the exact link chosen (a record key), so a queued part stays that part. It is named by its entry.
+- **Again:** reopens the copy opened last.
+
 ## Evidence display
 
 Evidence is said in words, never with a graphic. The levels are "Details checked, not test-played" (metadata checked, which every linked episode has), "Seen to play" (playback started), "Checked in full" and "Compared with a reference", and "Nothing to check yet" without an upload. Guide tiles, and List rows on phones (where the Evidence column is hidden), show a text badge only above the first level. The List's Evidence column and the episode page's tag name every level; the episode page keeps its ladder, with "Now" at the level. Production pages summarise the levels with counts, and the legend explains each in one line. Evidence wording never says "watched": it is about what the project checked, not about the user's own Watched marks.

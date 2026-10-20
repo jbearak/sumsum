@@ -919,8 +919,9 @@ def load_vocabulary(path):
 # Licensed services (data/licensed-services.json): how each licensed service is reached, with sourced facts. A record with
 # access 'licensed' is matched to a service by its link's hostname. 'library-card': free with a participating public
 # library's card (hoopla); 'purchase-or-rent': bought or rented with an account (Apple TV, Prime Video); 'subscription':
-# included with a paid subscription.
-SERVICE_MODELS = ("library-card", "purchase-or-rent", "subscription")
+# included with a paid subscription ('subscribed': true marks one the user already has, offered like a free link);
+# 'free-with-ads': free to watch with advertising (Tubi).
+SERVICE_MODELS = ("library-card", "subscription", "free-with-ads", "purchase-or-rent")
 SOURCE_KINDS = {"library-page", "service-page", "secondary", "user-observation"}
 SLUG_RE = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 HOST_RE = re.compile(r"^(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,}$")
@@ -951,6 +952,22 @@ def _day_ok(value):
         return False
 
 
+# Link priority (data/link-priority.json): the order in which an entry's copies are offered, highest first. Every tier is
+# listed exactly once; links that failed a check always come last, after every tier. The app classifies each link into one
+# tier: licensed listings by their service (subscribed, library-card, free-with-ads, or paid: purchase, rental or a
+# subscription the user does not have), links needing the Israel VPN as vpn, region-limited free streams as free-with-ads,
+# and other links by host (archive.org, YouTube, Vimeo, or other-free for every other host).
+LINK_TIERS = ("archive", "youtube", "subscribed", "vimeo", "other-free", "vpn", "library-card", "free-with-ads", "paid")
+
+
+def load_link_priority(path):
+    data = load_table(path)
+    tiers = data.get("tiers") if isinstance(data, dict) else None
+    if not isinstance(tiers, list) or sorted(map(str, tiers)) != sorted(LINK_TIERS) or len(tiers) != len(LINK_TIERS):
+        raise ValueError(f"{path.name}: tiers must list each of {list(LINK_TIERS)} exactly once, got {tiers!r}")
+    return {"tiers": tiers}
+
+
 def validate_services(data, name):
     """Refuse a malformed licensed-services file with a located message; return the hostname -> service id map."""
     if not isinstance(data, dict) or not isinstance(data.get("services"), list) or not data["services"]:
@@ -977,6 +994,8 @@ def validate_services(data, name):
             raise ValueError(f"{where}: name must be a non-empty string")
         if not enum_ok(s.get("model"), SERVICE_MODELS):
             raise ValueError(f"{where}: model must be one of {list(SERVICE_MODELS)}, got {s.get('model')!r}")
+        if s.get("subscribed") is not None and (s["subscribed"] is not True or s["model"] != "subscription"):
+            raise ValueError(f"{where}: subscribed may only be true, on a subscription service")
         if not isinstance(s.get("hosts"), list) or not s["hosts"]:
             raise ValueError(f"{where}: hosts must be a non-empty list of hostnames")
         for h in s["hosts"]:
@@ -1225,6 +1244,8 @@ def main():
     parser.add_argument("--guide", type=Path, help="episode guide JSON (default: data/episode-guide.json if it exists)")
     parser.add_argument("--series", type=Path, default=ROOT / "data/series.json", help="series registry JSON")
     parser.add_argument("--vocabulary", type=Path, default=ROOT / "data/vocabulary.json", help="tag vocabulary JSON")
+    parser.add_argument("--link-priority", type=Path, default=ROOT / "data/link-priority.json",
+                        help="link priority JSON (the order of an entry's copies)")
     parser.add_argument("--services", type=Path,
                         help="licensed services JSON (default: data/licensed-services.json if it exists)")
     args = parser.parse_args()
@@ -1234,6 +1255,8 @@ def main():
     series_ids = {s["id"] for s in registry["series"]}
     vocabulary_path = args.vocabulary if args.vocabulary.is_absolute() else ROOT / args.vocabulary
     vocabulary = load_vocabulary(vocabulary_path)
+    priority_path = args.link_priority if args.link_priority.is_absolute() else ROOT / args.link_priority
+    link_priority = load_link_priority(priority_path)
     records = []
     seen = {}
     origin = {}  # record id -> (url, "file, entry n") of its first occurrence, for duplicate-id errors
@@ -1341,6 +1364,7 @@ def main():
         "inputFiles": [p.name for p in inputs],
         "seriesFile": series_path.name,
         "vocabularyFile": vocabulary_path.name,
+        "linkPriorityFile": priority_path.name,
     }
     if guide is not None:
         meta.update({"guideFile": guide_path.name, "guideSha256": guide_sha, "guideCounts": guide_counts(guide, {g["series"] for g in registry["goal"]})})
@@ -1351,7 +1375,7 @@ def main():
     else:
         notices.append(f"No licensed services file ({services_path.name} not found): licensed listings are labelled without "
                        "their access terms.")
-    payload = {"meta": meta, "series": registry, "vocabulary": vocabulary, "records": records, "guide": guide if guide is not None else EMPTY_GUIDE}
+    payload = {"meta": meta, "series": registry, "vocabulary": vocabulary, "linkPriority": link_priority, "records": records, "guide": guide if guide is not None else EMPTY_GUIDE}
     if services is not None:
         payload["services"] = services
     # Escape HTML-significant characters inside the script data block. JSON strings
