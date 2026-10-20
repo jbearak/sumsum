@@ -951,7 +951,7 @@ def load_guide(path, records, explicit, series, parts=()):
 
 # The series registry (data/series.json): the guide rail's families, the series every record and production names, and
 # the core broadcast series counted toward the core Rechov Sumsum goal. The app reads all of it from the payload.
-SERIES_FIELDS = ("id", "en", "he", "family", "searchPrefix", "searchLanguage")
+SERIES_FIELDS = ("id", "en", "he", "family", "searchPrefix", "searchLanguage", "spoken")
 
 
 def load_table(path):
@@ -1011,6 +1011,8 @@ def load_series(path):
             raise ValueError(f"{where}: searchPrefix must be non-empty text")
         if s.get("searchLanguage") not in ("he", "en"):
             raise ValueError(f"{where}: searchLanguage must be 'he' or 'en'")
+        if s.get("spoken") not in ("he", "en"):
+            raise ValueError(f"{where}: spoken must be 'he' or 'en'")
         family_of[s["id"]] = s["family"]
     rows = []
     for i, g in enumerate(goal, 1):

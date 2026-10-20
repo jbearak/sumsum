@@ -43,7 +43,7 @@ Read this before changing data files, scripts or the build. The rules, and the t
 
 `python3 scripts/build-library.py [record-file.json ...] [--guide PATH] [--guide-part PATH ...] [--services PATH] [--series PATH] [--vocabulary PATH] [--output PATH]`
 
-- It reads the series registry, `data/series.json` (`--series PATH` for another file), and embeds it for the app. It refuses a record or production whose series is not listed, and a missing or malformed registry: a key repeated within one object, a duplicate, non-slug or all-digit id, a series whose family is not listed, a label without English or Hebrew text, an empty search prefix, a search language other than `he` or `en`, or goal rows that repeat a series or span two families.
+- It reads the series registry, `data/series.json` (`--series PATH` for another file), and embeds it for the app. It refuses a record or production whose series is not listed, and a missing or malformed registry: a key repeated within one object, a duplicate, non-slug or all-digit id, a series whose family is not listed, a label without English or Hebrew text, an empty search prefix, a search or spoken language other than `he` or `en`, or goal rows that repeat a series or span two families.
 - It embeds the tag vocabulary, `data/vocabulary.json` (`--vocabulary PATH` for another file). It refuses a missing file, a repeated key, a key that is not lowercase, has outer spaces or is a reserved name, and a name pair that is not `[English, Hebrew]` text with Hebrew letters in the second. The checks require a name pair for every tag a record uses.
 
 - It embeds the link order, `data/link-priority.json` (`--link-priority PATH`), and refuses a file that does not list each tier exactly once.
@@ -76,7 +76,7 @@ A series is what a record is filed under and what a production belongs to. A fam
 2. Add `--ser-ID` colours to the light and dark scheme rules at the top of `library.template.html`, and a `.ser-ID{--series-ink:var(--ser-ID)}` rule beside the others. The checker refuses a missing one and checks their contrast.
 3. Add its records to a `data/*-records.json` file, and its productions to the guide, as [episode-guide.md](episode-guide.md) describes.
 4. Add new character and theme names to `data/vocabulary.json`. The checker requires an English and Hebrew name for every tag. A name shared with a dub (Bert is בנץ in Rechov Sumsum) has one entry for every series: decide how it reads before reusing it.
-5. `searchLanguage` chooses the language of an episode's title words in its YouTube searches. A number-only search still uses the production's number label or the Hebrew season and episode words; check those for a non-Hebrew series. Browse search is bilingual whatever the series.
+5. `spoken` (`he` or `en`) is the language the series is spoken in, which the Spoken filter and Home's Spoken preference use. `searchLanguage` chooses the language of an episode's title words in its YouTube searches. A number-only search still uses the production's number label or the Hebrew season and episode words; check those for a non-Hebrew series. Browse search is bilingual whatever the series.
 6. Update the copy that names the programs (the page title, `appName`, the Home and guide ledes, AGENTS.md's project purpose), TODO.md, the research notes and an episode audit.
 7. Rebuild and run the checks.
 

@@ -36,12 +36,13 @@ const NAMES = Object.assign(Object.create(null), JSON.parse(readLibrary(htmlPath
 // ---------------------------------------------------------------- independent model of the data
 // The series registry (payload.series, from data/series.json): set from each booted payload by model(), like the services.
 // The rules below (what counts as core, how productions rank) are the checker's own; the registry supplies the facts.
-let SERIES = [], GOAL = [], FAMILY_ORDER = [], FAMILY_OF = {};
+let SERIES = [], GOAL = [], FAMILY_ORDER = [], FAMILY_OF = {}, SPOKEN_OF = {};
 const useSeries = payload => {
   const reg = payload && payload.series && typeof payload.series === 'object' ? payload.series : {};
   const list = v => (Array.isArray(v) ? v.filter(x => x && typeof x.id === 'string') : []);
   SERIES = list(reg.series).map(x => x.id);
   FAMILY_OF = Object.fromEntries(list(reg.series).map(x => [x.id, x.family]));
+  SPOKEN_OF = Object.fromEntries(list(reg.series).map(x => [x.id, x.spoken]));
   FAMILY_ORDER = list(reg.families).map(x => x.id);
   GOAL = (Array.isArray(reg.goal) ? reg.goal : []).filter(x => x && SERIES.includes(x.series));
 };
@@ -706,17 +707,16 @@ async function checkUploads(H, M) {
   assert.equal(H.count(), N, 'Selecting no types includes all types');
   ok('counts ignore their own facet; zero-count selections retained; full vs short-series separate; multi-select');
 
-  // Spoken: from the recorded language; a mixed value counts in each group it names; empty and 'und' are Not recorded.
+  // Spoken: the series' language; a recorded language without it that names another than Hebrew or English is a dub (Other).
   // Length: one choice at a time, up to N minutes; unknown durations pass only under Any.
-  const spokenOf = r => {
-    const parts = String(r.language ?? '').toLowerCase().split(/[^a-z]+/).filter(x => x && x !== 'und');
-    return parts.length ? [...new Set(parts.map(x => (x === 'he' || x === 'en' ? x : 'other')))] : ['none'];
-  };
+  const spokenOf = spokenOfM;
   const lenOk = (r, n) => Number(r.durationSeconds) > 0 && Number(r.durationSeconds) <= n * 60;
-  const SP = ['he', 'en', 'other', 'none'];
+  const SP = ['he', 'en', 'other'];
   assert.equal(H.chipCount(H.fk('fsp-all')), N, 'All languages counts every upload');
   for (const g of SP) assert.equal(H.chipCount(H.fk('fsp-' + g)), countE(r => spokenOf(r).includes(g)), 'Spoken count ' + g);
-  assert(SP.reduce((n, g) => n + H.chipCount(H.fk('fsp-' + g)), 0) >= N, 'Every upload is in at least one language group');
+  assert(SP.reduce((n, g) => n + H.chipCount(H.fk('fsp-' + g)), 0) >= N, 'Every upload is in a language group');
+  assert(records.every(r => spokenOf(r).length === 1), 'One language per upload');
+  for (const r of records) if (FAMILY_OF[r.series] === 'rechov' && spokenOf(r).includes('en')) assert.fail('Rechov Sumsum is never English: ' + r.id);
   assert.equal(H.chipCount(H.fk('fl-any')), N);
   for (const n of [5, 10, 20, 30]) assert.equal(H.chipCount(H.fk('fl-' + n)), countE(r => lenOk(r, n)), 'Length count ' + n);
   await H.fk('fsp-he').click(); await H.fk('fsp-en').click();
@@ -730,8 +730,8 @@ async function checkUploads(H, M) {
   assert.equal(H.chipCount(H.fk('fsp-other')), countE(r => lenOk(r, 5) && spokenOf(r).includes('other')), 'Spoken counts follow the length');
   assert(H.has('ux-sp-he') && H.has('ux-len'), 'Removable chips for both');
   await H.fk('ux-len').click(); assert.equal(H.count(), heEnN, 'Removing the length chip clears it');
-  await H.navigate('browse?spoken=none,bogus&len=7');
-  assert.equal(H.count(), countE(r => spokenOf(r).includes('none')), 'Unknown values in the hash are dropped');
+  await H.navigate('browse?spoken=other,none,bogus&len=7');
+  assert.equal(H.count(), countE(r => spokenOf(r).includes('other')), 'Unknown values in the hash are dropped');
   await H.fk('fsp-all').click(); assert.equal(H.count(), N, 'All languages clears the spoken choice');
   // An empty result shows the bin and one button per active filter group, each with what clearing it alone would show.
   const lone = SERIES.map(sr => [sr, SP.find(g => records.some(r => spokenOf(r).includes(g)) &&
@@ -748,7 +748,7 @@ async function checkUploads(H, M) {
     await H.fk('fs-all').click();
   }
   assert.equal(H.count(), N);
-  ok('spoken and length filters: counts from the recorded language and duration, mixed languages in each group, one length at a time, hash, chips, the bin and its relax buttons');
+  ok('spoken and length filters: counts from the series language (dubs as Other) and duration, one length at a time, hash, chips, the bin and its relax buttons');
 
   // Search: debounced typing, aliases, pasted links by hostname.
   const typed = async q => { H.$('u-search').value = q; await H.$('u-search').fire('input'); H.flushTimers(); return H.count(); };
@@ -2008,7 +2008,7 @@ async function checkSeriesRegistry(htmlPath) {
   const H = harness(boot(htmlPath, {payload: p => {
     p.series.families.push({id: 'test-fam', en: 'Test family', he: 'משפחת בדיקה'});
     p.series.series.push({id: 'test-street', en: 'Test Street', he: 'רחוב בדיקה', family: 'test-fam', searchPrefix: 'Test Street',
-      searchLanguage: 'en'});
+      searchLanguage: 'en', spoken: 'en'});
     p.records.push({id: 'test-rec-1', url, series: 'test-street', kind: 'episode', titleEn: 'Test Street: The Big Test',
       durationSeconds: 1500, themes: [], characters: []});
     p.guide.productions.push({id: 'test-core', series: 'test-street', format: 'core', order: -1, years: '2026', nameEn: 'Test Street core',
@@ -4110,10 +4110,12 @@ function menuModel(M) {
       missing: M.eps.filter(e => M.cov(e) !== 'whole-candidate').length}};
 }
 // ---------------------------------------------------------------- Home, the queue and Surprise
-// The recorded spoken language and length, as the app reads them (Browse's facets and Home's preferences).
+// The spoken language and length, as the app reads them (Browse's facets and Home's preferences): the series' language,
+// unless the recorded language leaves it out and names one other than Hebrew or English (a dub, Other).
 const spokenOfM = r => {
-  const parts = String(r.language ?? '').toLowerCase().split(/[^a-z]+/).filter(x => x && x !== 'und');
-  return parts.length ? [...new Set(parts.map(x => (x === 'he' || x === 'en' ? x : 'other')))] : ['none'];
+  const own = SPOKEN_OF[r.series], parts = String(r.language ?? '').toLowerCase().split(/[^a-z]+/).filter(x => x && x !== 'und');
+  const dub = !parts.includes(own) && parts.some(x => x !== 'he' && x !== 'en');
+  return [dub || (own !== 'he' && own !== 'en') ? 'other' : own];
 };
 const lenOkM = (r, n) => !n || (Number(r.durationSeconds) > 0 && Number(r.durationSeconds) <= Number(n) * 60);
 const tagKeyM = v => normalizeQ((NAMES[String(v).toLowerCase()] || NAMES[normalizeQ(v)] || [v])[0]);
@@ -5232,7 +5234,7 @@ function builderChecks(builder, dir) {
   // The series registry: a series added there is accepted and embedded; a malformed registry is refused.
   const registry = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'data', 'series.json'), 'utf8'));
   const withSeries = edit => { const reg = JSON.parse(JSON.stringify(registry)); edit(reg); return write('series.json', reg); };
-  const usSeries = {id: 'us-street', en: 'US street', he: 'רחוב אמריקאי', family: 'us', searchPrefix: 'Street', searchLanguage: 'en'};
+  const usSeries = {id: 'us-street', en: 'US street', he: 'רחוב אמריקאי', family: 'us', searchPrefix: 'Street', searchLanguage: 'en', spoken: 'en'};
   const addUs = reg => { reg.families.push({id: 'us', en: 'US', he: 'אמריקאי'}); reg.series.push({...usSeries}); };
   const usBuild = run([rec('fx-us', 'https://www.youtube.com/watch?v=AAAAAAAAAA1', {series: 'us-street'})], {series: withSeries(addUs)});
   assert.equal(usBuild.status, 0, usBuild.text);
@@ -5267,6 +5269,7 @@ function builderChecks(builder, dir) {
     ['list-valued family', reg => reg.series.push({...usSeries, family: ['us']}), /family \['us'\] is not listed/],
     ['Hebrew label without Hebrew', reg => { addUs(reg); reg.series.at(-1).he = 'US'; }, /series 'us-street'\.he has no Hebrew letters/],
     ['search language', reg => { addUs(reg); reg.series.at(-1).searchLanguage = 'fr'; }, /searchLanguage must be 'he' or 'en'/],
+    ['spoken language', reg => { addUs(reg); delete reg.series.at(-1).spoken; }, /spoken must be 'he' or 'en'/],
     ['goal across families', reg => { addUs(reg); reg.goal.push({series: 'us-street', en: 'US', he: 'אמריקאי'}); }, /goal series must belong to one family/],
     ['goal series listed twice', reg => reg.goal.push({...reg.goal[0]}), /goal row 3: series 'classic' is listed twice/],
     ['goal row without labels', reg => reg.goal.push({series: 'elmo'}), /goal row 3 must be \{en, he\}/],

@@ -1742,12 +1742,11 @@ en: {
  noUploadsMatch: 'No uploads match these filters.',
  relaxFilter: 'Clear {name} · {n}',
  fSpoken: 'Spoken',
- spokenHelp: 'From the language recorded for each video.',
+ spokenHelp: 'By series: Rechov Sumsum in Hebrew, Shalom Sesame and Sesame Street in English. Dubs are under Other languages.',
  allLanguages: 'All languages',
  spHe: 'Hebrew',
  spEn: 'English',
  spOther: 'Other languages',
- spNone: 'Not recorded',
  fLength: 'Length',
  lenAny: 'Any length',
  lenUpTo: 'Up to {n} min',
@@ -2380,12 +2379,11 @@ he: {
  noUploadsMatch: 'אין העלאות שמתאימות למסננים.',
  relaxFilter: 'ניקוי {name} · {n}',
  fSpoken: 'שפה מדוברת',
- spokenHelp: 'לפי השפה שנרשמה לכל סרטון.',
+ spokenHelp: 'לפי הסדרה: רחוב סומסום בעברית, שלום סומסום ורחוב סומסום האמריקאי באנגלית. דיבובים תחת שפות אחרות.',
  allLanguages: 'כל השפות',
  spHe: 'עברית',
  spEn: 'אנגלית',
  spOther: 'שפות אחרות',
- spNone: 'לא נרשמה',
  fLength: 'אורך',
  lenAny: 'כל אורך',
  lenUpTo: 'עד {n} דקות',
@@ -3134,15 +3132,17 @@ function recsByVid(key) {
 const kindOf = r => (r.kind === 'episode' && r.programFormat === 'short-form' ? 'short-episode' :
  r.kind === 'episode' && r.completenessStatus === 'runtime-inferred' ? 'unverified' : r.kind);
 const mapKey = r => r.id || r.url;
-// Spoken language, from the language recorded for each record ('he', 'en', 'en-he', 'und' ...). A mixed value counts in each
-// group it names; an empty or 'und' value is Not recorded. The data records the language of the listing, often unchecked
-// against the audio, so the filter says it reads the recorded language.
-const SPOKEN = [['he', 'spHe'], ['en', 'spEn'], ['other', 'spOther'], ['none', 'spNone']];
+// Spoken language: the series' own ('spoken' in the registry), so Rechov Sumsum is Hebrew and Shalom Sesame and Sesame Street
+// are English whatever a listing says (its recorded language often names subtitles, or is missing). A recorded language that
+// leaves out the series' own and names one other than Hebrew or English marks a dub: Other languages.
+const SPOKEN = [['he', 'spHe'], ['en', 'spEn'], ['other', 'spOther']];
 const spokenCache = new Map();
 function spokenOf(r) {
  if (spokenCache.has(r)) return spokenCache.get(r);
+ const own = SERIES_INFO[r.series]?.spoken;
  const parts = String(r.language ?? '').toLowerCase().split(/[^a-z]+/).filter(x => x && x !== 'und');
- const g = parts.length ? [...new Set(parts.map(x => (x === 'he' || x === 'en' ? x : 'other')))] : ['none'];
+ const dub = !parts.includes(own) && parts.some(x => x !== 'he' && x !== 'en');
+ const g = [dub || (own !== 'he' && own !== 'en') ? 'other' : own];
  spokenCache.set(r, g); return g;
 }
 // Length: up to a number of minutes. A record without a known duration passes only when no length is chosen.
@@ -5621,7 +5621,7 @@ function selectGroup(id, titleKey, allKey, field, Q) {
  sel.value = state.u[id]; sel.addEventListener('change', e => { state.u[id] = e.target.value; state.u.limit = 48; updateUploads(); });
  g.append(sel); return g;
 }
-// Spoken: a record with two recorded languages counts under each, so the chips can add up to more than the total.
+// Spoken: one language per record; an entry whose members differ counts under each.
 function spokenGroup(Q) {
  const u = state.u, m = new Map(); let total = 0;
  for (const en of listEntries()) {
