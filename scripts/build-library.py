@@ -1324,7 +1324,20 @@ RECORD_TEXT = ("titleEn", "titleHe", "title", "originalTitle", "uploader", "subs
                "descriptionHe", "completenessNote", "playbackVerificationNote")
 
 
+# A record's recorded language: lowercase codes from LANGUAGES joined by hyphens ('he', 'en-he', 'ru-he'), or 'und'. The app
+# reads the parts as a list (the Spoken filter), so a region ('he-IL'), an old or three-letter code ('iw', 'eng') or another
+# spelling would read as a dub; the builder refuses them. Add a new language here.
+LANGUAGES = {"he", "en", "ar", "ru", "es"}
+
+
+def language_ok(value):
+    return value == "und" or (isinstance(value, str) and all(x in LANGUAGES for x in value.split("-")))
+
+
 def validate_record_fields(r, where):
+    if r.get("language") is not None and not language_ok(r["language"]):
+        raise ValueError(f"{where}: language must be 'und' or codes from {sorted(LANGUAGES)} joined by hyphens, "
+                         f"got {r['language']!r}"[:400])
     if r.get("access") is not None and not enum_ok(r["access"], ACCESS):
         raise ValueError(f"{where}: access must be one of {sorted(ACCESS)} (or absent), got {r['access']!r}")
     check = r.get("availabilityCheck")
