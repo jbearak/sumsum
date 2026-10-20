@@ -1750,7 +1750,8 @@ en: {
  fLength: 'Length',
  lenAny: 'Any length',
  lenUpTo: 'Up to {n} min',
- lenShort: '≤ {n} min',
+ lenShort: '≤ {n}',
+ lenFullShort: 'Episodes',
  allShort: 'All',
  starAria: 'Star {title}',
  starredToast: 'Starred. Stars stay in this browser only.',
@@ -2387,7 +2388,8 @@ he: {
  fLength: 'אורך',
  lenAny: 'כל אורך',
  lenUpTo: 'עד {n} דקות',
- lenShort: 'עד {n} ד׳',
+ lenShort: 'עד {n}',
+ lenFullShort: 'פרקים',
  allShort: 'הכול',
  starAria: 'סימון בכוכב: {title}',
  starredToast: 'סומן בכוכב. הכוכבים נשארים רק בדפדפן הזה.',
@@ -3147,10 +3149,13 @@ function spokenOf(r) {
  const g = [dub || (own !== 'he' && own !== 'en') ? 'other' : own];
  spokenCache.set(r, g); return g;
 }
-// Length: up to a number of minutes. A record without a known duration passes only when no length is chosen.
-const LENS = ['5', '10', '20', '30'];
+// Length: up to a number of minutes, or full episodes (the Full episodes program type, whatever their duration). A record
+// without a known duration passes only when no length or full episodes is chosen.
+const LENS = ['5', '10', '20', '30'], LEN_FULL = 'full', LEN_OPTS = [...LENS, LEN_FULL];
+const lenName = k => (k === LEN_FULL ? t('kEpisode') : t('lenUpTo', {n: fmtN(Number(k))}));
 const lenOk = (r, len) => {
  if (!len) return true;
+ if (len === LEN_FULL) return kindOf(r) === 'episode';
  const sec = Number(r.durationSeconds); return Number.isFinite(sec) && sec > 0 && sec <= Number(len) * 60;
 };
 const ownMapping = k => (Object.prototype.hasOwnProperty.call(mappings, k) ? mappings[k] : undefined);
@@ -3937,7 +3942,7 @@ function applyRoute(r) {
   const u = state.u; u.q = q.q || ''; setFrom(u.series, q.series, Object.keys(SERIES)); setFrom(u.kinds, q.kind, KINDS.map(k => k[0]));
   setFrom(u.gs, q.gs, !hasGuide ? [] : r.view === 'identified' ? ID_STATUS : GSTATUS.map(k => k[0]));
   setFrom(u.ag, agAlias(q.ag), AGROUPS.map(k => k[0]));
-  setFrom(u.spoken, q.spoken, SPOKEN.map(k => k[0])); u.len = LENS.includes(q.len) ? q.len : '';
+  setFrom(u.spoken, q.spoken, SPOKEN.map(k => k[0])); u.len = LEN_OPTS.includes(q.len) ? q.len : '';
   u.theme = TAG_KEYS.theme.has(q.theme) ? q.theme : ''; u.character = TAG_KEYS.character.has(q.character) ? q.character : '';
   u.starred = q.starred === '1' || q.saved === '1';
   u.sort = ['series', 'title', 'longest'].includes(q.sort) ? q.sort : 'series';
@@ -5635,11 +5640,11 @@ function spokenGroup(Q) {
  return facetGroup('fSpoken', 'spoken', [chip(t('allLanguages'), total, !u.spoken.size, () => { u.spoken.clear(); u.limit = 48; updateUploads(); }, 'fsp-all'),
   ...SPOKEN.map(([k, label]) => chip(t(label), m.get(k) || 0, u.spoken.has(k), set(k), 'fsp-' + k))], t('spokenHelp'));
 }
-// Length: one choice at a time (the steps nest), each counted as if chosen.
+// Length: one choice at a time (the steps nest; Full episodes stands apart), each counted as if chosen.
 function lengthGroup(Q) {
  const u = state.u, rs = listEntries().filter(en => entryMatch(en, Q, 'len'));
  const pickLen = k => () => { u.len = k; u.limit = 48; updateUploads(); };
- return facetGroup('fLength', 'len', ['', ...LENS].map(k => chip(k ? t('lenUpTo', {n: fmtN(Number(k))}) : t('lenAny'),
+ return facetGroup('fLength', 'len', ['', ...LEN_OPTS].map(k => chip(k ? lenName(k) : t('lenAny'),
   k ? rs.filter(en => entryMatch(en, Q, 'len', r => lenOk(r, k))).length : rs.length, u.len === k, pickLen(k), 'fl-' + (k || 'any'))));
 }
 // Facet groups, the Filters toggle label and the removable filter chips.
@@ -5680,7 +5685,7 @@ function renderFacets(Q) {
  for (const k of u.gs) defs.push([t(GSTATUS.find(z => z[0] === k)[1]), () => u.gs.delete(k), 'g-' + k]);
  for (const k of u.ag) defs.push([AGROUPS.find(z => z[0] === k)[1](), () => u.ag.delete(k), 'a-' + k]);
  for (const k of u.spoken) defs.push([t(SPOKEN.find(z => z[0] === k)[1]), () => u.spoken.delete(k), 'sp-' + k]);
- if (u.len) defs.push([t('lenUpTo', {n: fmtN(Number(u.len))}), () => { u.len = ''; }, 'len']);
+ if (u.len) defs.push([lenName(u.len), () => { u.len = ''; }, 'len']);
  if (u.theme) defs.push([tagName(u.theme), () => { u.theme = ''; }, 'theme']);
  if (u.character) defs.push([tagName(u.character), () => { u.character = ''; }, 'character']);
  U.active.replaceChildren(...xchips(defs.map(([l, fn, k]) => [l, () => { fn(); u.limit = 48; }, k]), 'ux-', 'u-search', updateUploads));
@@ -6142,13 +6147,13 @@ function renderAbout() {
 }
 
 /* ================= home ================= */
-// Home's two stored preferences (UI preferences, outside the backup): the spoken language and the longest length of the
+// Home's two stored preferences (UI preferences, outside the backup): the spoken language and the length (a longest length, or full episodes) of the
 // videos Home offers. Browse has its own Spoken and Length filters in its hash; they never change these.
 const HOME_SPOKEN = ['all', 'he', 'en'];
 const prefs = {spoken: 'all', len: ''};
 {
  const sp = readStored('sumsum-spoken', 'all'), ln = readStored('sumsum-length', '');
- prefs.spoken = HOME_SPOKEN.includes(sp) ? sp : 'all'; prefs.len = LENS.includes(ln) ? ln : '';
+ prefs.spoken = HOME_SPOKEN.includes(sp) ? sp : 'all'; prefs.len = LEN_OPTS.includes(ln) ? ln : '';
 }
 const prefOk = r => (prefs.spoken === 'all' || spokenOf(r).includes(prefs.spoken)) && lenOk(r, prefs.len);
 // Videos offered without being asked for (Up next, the generated shelves, Surprise): not marked as needing a VPN, a library
@@ -6550,7 +6555,8 @@ VIEWS.home = function mountHome(v) {
  const h = h1(t('homeTitle'), 'sr-only'); v.append(h);
  const ctl = el('div', 'prefs');
  ctl.append(prefGroup('spoken', 'fSpoken', [['all', [t('allLanguages'), t('allShort')]], ['he', [t('spHe'), t('spHe')]], ['en', [t('spEn'), t('spEn')]]]),
-  prefGroup('len', 'fLength', [['', [t('lenAny'), t('allShort')]], ...LENS.map(k => [k, [t('lenUpTo', {n: fmtN(Number(k))}), t('lenShort', {n: fmtN(Number(k))})]])]));
+  prefGroup('len', 'fLength', [['', [t('lenAny'), t('allShort')]], ...LENS.map(k => [k, [t('lenUpTo', {n: fmtN(Number(k))}), t('lenShort', {n: fmtN(Number(k))})]]),
+   [LEN_FULL, [t('kEpisode'), t('lenFullShort')]]]));
  v.append(ctl);
  const top = el('div', 'home-top'), side = el('div', 'home-side');
  side.append(queueCard('home')); const ag = againCard(); if (ag) side.append(ag);
