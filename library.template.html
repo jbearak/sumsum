@@ -27,14 +27,14 @@
  --whole:#1b7a4b;--parts:#a86400;--excerpt:#5f4fb3;--missing:#b3392c;--unknown:#7e8a83;--whole-ink:#fff;
  --whole-bg:#e2f1e7;--parts-bg:#faefd9;--excerpt-bg:#ece9fa;--missing-bg:#fbe8e4;--unknown-bg:#eef0ea;
  --acc-ok:#1f5fa8;--acc-public:#5c6b75;--acc-vpn:#8f3f71;--acc-lic:#1d6a6a;--acc-bad:#3d3d3d;
- --ser-modern:#126844;--ser-classic:#7a5e10;--ser-shalom-classic:#2f5f8c;--ser-shalom-modern:#7a4a80;--ser-elmo:#9c4a2f;
+ --ser-modern:#126844;--ser-classic:#7a5e10;--ser-shalom-classic:#2f5f8c;--ser-shalom-modern:#7a4a80;--ser-elmo:#9c4a2f;--ser-sesame-street:#0e6670;
  --star:#f5cf45;--star-ink:#a77300;--scrim:#000000a0;--scrim-ink:#fff;--host-bg:#fffffff2;--host-ink:#18291f;
  --seg-hatch:#ffffff5c;--seg-dot:#ffffff80;--shadow-badge:0 1px 3px #0003;--shadow-toast:0 6px 30px #0004}
 :root[data-scheme=dark]{color-scheme:dark;
  --whole:#5cc790;--parts:#e9a640;--excerpt:#ab9ef2;--missing:#f2826f;--unknown:#84928a;--whole-ink:#05231a;
  --whole-bg:#173827;--parts-bg:#3a2c12;--excerpt-bg:#29244a;--missing-bg:#40201b;--unknown-bg:#1c2823;
  --acc-ok:#8cc3ff;--acc-public:#a9b6bf;--acc-vpn:#e59ac6;--acc-lic:#7fd1cc;--acc-bad:#cfcfcf;
- --ser-modern:#86d6a8;--ser-classic:#e3c167;--ser-shalom-classic:#9cc4ec;--ser-shalom-modern:#d6a6dc;--ser-elmo:#f2a28e}
+ --ser-modern:#86d6a8;--ser-classic:#e3c167;--ser-shalom-classic:#9cc4ec;--ser-shalom-modern:#d6a6dc;--ser-elmo:#f2a28e;--ser-sesame-street:#7fd3dc}
 /* Palettes. Terracotta, the default: a clay-tile masthead over a honey-stone stripe, sandstone pages, deep sea-teal buttons
    (petrol at night). The masthead is dark clay in both schemes, so its ink and controls keep one set of values. */
 :root,.tp-sw-terracotta{
@@ -316,6 +316,8 @@ html[dir=rtl] .tp{direction:rtl}
 .star[aria-pressed=true]{color:var(--star-ink)}
 .star[aria-pressed=true] svg{fill:var(--star)}
 .note{font-size:13px;color:var(--muted)}
+.ep-about{margin:0 0 18px}.ep-summary{max-width:68ch;line-height:1.55;margin:0 0 6px}
+.ep-about .facts{margin-top:10px}
 .callout{border:1px solid var(--line);border-inline-start:4px solid var(--parts);background:var(--surface);border-radius:10px;
  padding:10px 14px;font-size:13.5px;margin:0 0 14px}
 .callout.info{border-inline-start-color:var(--acc-ok)}
@@ -387,6 +389,8 @@ details.covtable>summary{cursor:pointer;font-size:13px;font-weight:700;padding:6
 .pref{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .pref-h{font-size:12.5px;font-weight:750;color:var(--muted)}
 .pref .seg-toggle{margin-inline-start:0}
+.fam-switch{margin:4px 0 8px}
+.fam-switch button{min-height:44px}
 .pref .seg-toggle button{min-height:44px}
 .pref .short{display:none}
 /* A kitchen timer: a dial with one hand. */
@@ -784,6 +788,7 @@ details.legend>summary{cursor:pointer;padding:9px 14px;font-size:13px;font-weigh
 .u-pub{font-size:12.5px;color:var(--muted);margin:0;overflow-wrap:anywhere}
 .u-pub b{font-weight:600}
 .u-by{font-size:12px;color:var(--muted);margin:0;overflow-wrap:anywhere}
+.u-also{font-size:12px;color:var(--muted);margin:0;overflow-wrap:anywhere}
 .u-tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}
 /* A tag wider than the card wraps inside its pill like text, the glyph staying beside the first word, instead of being
    clipped by the card. */
@@ -797,7 +802,7 @@ details.legend>summary{cursor:pointer;padding:9px 14px;font-size:13px;font-weigh
 .u-actions>.btn{min-width:0;white-space:normal;text-align:center;line-height:1.25}
 .ser-modern{--series-ink:var(--ser-modern)}.ser-classic{--series-ink:var(--ser-classic)}
 .ser-shalom-classic{--series-ink:var(--ser-shalom-classic)}.ser-shalom-modern{--series-ink:var(--ser-shalom-modern)}
-.ser-elmo{--series-ink:var(--ser-elmo)}
+.ser-elmo{--series-ink:var(--ser-elmo)}.ser-sesame-street{--series-ink:var(--ser-sesame-street)}
 .more-row{display:flex;justify-content:center;padding-top:22px}
 .empty{padding:40px 20px;text-align:center;border:1.5px dashed var(--line-strong);border-radius:12px;margin-top:18px}
 .empty p{margin:0 0 14px;color:var(--muted)}
@@ -1348,6 +1353,8 @@ en: {
  nextTitle: 'Up next',
  nextHelp: 'The next core episode not marked watched, with a whole copy that is not marked as needing a VPN, a card or a purchase.',
  nextSkip: 'Another one',
+ upNextFrom: 'Up next from',
+ upNextNone: 'Nothing in {name} fits right now.',
  navHome: 'Home',
  navHomeShort: 'Home',
  homeTitle: 'Home',
@@ -1536,6 +1543,7 @@ en: {
  tw_web: 'Open',
  twPart: '{i}/{n}',
  twExcerpt: 'excerpt',
+ twcompQ: 'compilation', twlistingQ: 'listing',
  tw_unavailable: 'unavailable',
  twFind: 'Find it',
  watchOn_vimeo: 'Watch on Vimeo',
@@ -1544,6 +1552,7 @@ en: {
  watchOn_web: 'Open video page',
  partOf: 'Part {i} of {n}',
  excerptQ: 'Excerpt',
+ compQ: 'In a compilation', listingQ: 'Opens a listing',
  unavailableQ: 'Unavailable',
  searchYoutube: 'Search YouTube',
  findAria: 'Search YouTube for {title}',
@@ -1613,6 +1622,10 @@ en: {
  'findHelp_parts-only': 'Only parts are linked. Look for a whole copy or the missing parts.',
  'findHelp_excerpt-only': 'Only excerpts are linked. Look for a whole copy.',
  researchNote: 'Research note',
+ aboutEpisode: 'About this episode', summaryFrom: 'Opening sentences quoted from {src}', broughtBy: 'Brought to you by',
+ sponsorLetter: 'the letter {x}', sponsorLetters: 'the letters {x}', sponsorNumber: 'the number {x}', sponsorNumbers: 'the numbers {x}',
+ sponsorBoth: '{a} and {b}', wordStreet: 'Word on the street', guestStars: 'Guest stars',
+ container_compilation: 'In a compilation', container_listing: 'Open listing',
  slotKicker: 'Not identified yet',
  slotTitleN: 'Number {n}',
  slotExpTitle: 'Expected episode {n}',
@@ -1851,9 +1864,11 @@ en: {
  agLicOther: 'Other licensed listings',
  'agLic_library-card': 'Free with a library card ({services})',
  'agLic_subscription': 'Subscription ({services})',
+ 'agLic_free-with-ads': 'Free with ads ({services})',
  'agLic_purchase-or-rent': 'Buy or rent ({services})',
  'lic_library-card': 'free with a library card',
  'lic_subscription': 'with a subscription',
+ 'lic_free-with-ads': 'free with ads',
  'lic_purchase-or-rent': 'buy or rent',
  acc_licSvc: '{service} · {req}',
  acc_licensed: '{host} · licensed listing; its access terms are not recorded',
@@ -1862,10 +1877,12 @@ en: {
  tw_licensed: 'Licensed',
  'twLic_library-card': '{service} · library card',
  'twLic_subscription': '{service} · subscription',
+ 'twLic_free-with-ads': '{service} · free with ads',
  'twLic_purchase-or-rent': '{service} · buy/rent',
  watchLicensed: 'Open on {host} (licensed listing)',
  'watchLic_library-card': 'Watch on {service} with a library card',
  'watchLic_subscription': 'Watch on {service} with a subscription',
+ 'watchLic_free-with-ads': 'Watch free with ads on {service}',
  'watchLic_purchase-or-rent': 'Buy or rent on {service}',
  licensedNote: 'A licensed listing whose access terms are not recorded here. It is not a free upload, and the listing is not ' +
   'playback evidence.',
@@ -1873,6 +1890,8 @@ en: {
   "that library's monthly limit. It is not a free public upload, and the listing is not playback evidence.",
  'licNote_subscription': 'A listing on {service}, included with a {service} subscription. It is not a free upload, and the ' +
   'listing is not playback evidence.',
+ 'licNote_free-with-ads': 'A listing on {service}, free to watch with advertising. It is not a free upload, and the listing ' +
+  'is not playback evidence.',
  'licNote_purchase-or-rent': 'A store listing on {service}: you buy or rent the programme with an account. It is not a free ' +
   'upload, and the listing is not playback evidence.',
  howToTitle: 'How to watch on {service}',
@@ -1904,6 +1923,11 @@ en: {
  sg_alt: 'matches an alternate label',
  orSep: ' or ',
  moreLinks: '+{n} more',
+ alsoOn: 'Also on {hosts}',
+ seasonPick: 'Season',
+ seasonWhole: '{n} of {exp} with a whole link',
+ seasonsAllMatches: 'Showing matches from every season.',
+ allSeasons: 'All {n} seasons',
  sgOneOf: 'one of',
  sgMoreTied: 'and {n} more, equally likely',
  possibleCopyOf: 'Possible copy of'
@@ -1974,6 +1998,8 @@ he: {
  nextTitle: 'הבא בתור',
  nextHelp: 'פרק השידור המרכזי הבא שלא סומן כנצפה, עם עותק שלם שלא סומן כדורש VPN, כרטיס או רכישה.',
  nextSkip: 'פרק אחר',
+ upNextFrom: 'הבא בתור מתוך',
+ upNextNone: 'אין כרגע פרק מתאים ב{name}.',
  navHome: 'בית',
  navHomeShort: 'בית',
  homeTitle: 'בית',
@@ -2159,6 +2185,7 @@ he: {
  tw_web: 'פתיחה',
  twPart: '{i}/{n}',
  twExcerpt: 'קטע',
+ twcompQ: 'אוסף', twlistingQ: 'רשימה',
  tw_unavailable: 'לא זמין',
  twFind: 'איתור',
  watchOn_vimeo: 'צפייה ב־Vimeo',
@@ -2167,6 +2194,7 @@ he: {
  watchOn_web: 'פתיחת עמוד הסרטון',
  partOf: 'חלק {i} מתוך {n}',
  excerptQ: 'קטע',
+ compQ: 'בתוך אוסף', listingQ: 'פותח דף רשימה',
  unavailableQ: 'לא זמין',
  searchYoutube: 'חיפוש ביוטיוב',
  findAria: 'חיפוש ביוטיוב: {title}',
@@ -2235,6 +2263,10 @@ he: {
  'findHelp_parts-only': 'מקושרים רק חלקים. חפשו עותק שלם או את החלקים החסרים.',
  'findHelp_excerpt-only': 'מקושרים רק קטעים. חפשו עותק שלם.',
  researchNote: 'הערת מחקר',
+ aboutEpisode: 'על הפרק', summaryFrom: 'המשפטים הפותחים מצוטטים מתוך {src}', broughtBy: 'בחסות',
+ sponsorLetter: 'האות {x}', sponsorLetters: 'האותיות {x}', sponsorNumber: 'המספר {x}', sponsorNumbers: 'המספרים {x}',
+ sponsorBoth: '{a} ו{b}', wordStreet: 'מילת הרחוב', guestStars: 'אורחים',
+ container_compilation: 'בתוך אוסף', container_listing: 'דף שירות פתוח',
  slotKicker: 'טרם זוהה',
  slotTitleN: 'מספר {n}',
  slotExpTitle: 'פרק צפוי {n}',
@@ -2467,9 +2499,11 @@ he: {
  // in order.
  'agLic_library-card': 'חינם עם כרטיס ספרייה (\u2068{services}\u2069)',
  'agLic_subscription': 'במנוי (\u2068{services}\u2069)',
+ 'agLic_free-with-ads': 'חינם עם פרסומות (\u2068{services}\u2069)',
  'agLic_purchase-or-rent': 'קנייה או השכרה (\u2068{services}\u2069)',
  'lic_library-card': 'חינם עם כרטיס ספרייה',
  'lic_subscription': 'במנוי',
+ 'lic_free-with-ads': 'חינם עם פרסומות',
  'lic_purchase-or-rent': 'קנייה או השכרה',
  acc_licSvc: '{service} · {req}',
  acc_licensed: '{host} · רישום ברישיון; תנאי הגישה אליו לא תועדו',
@@ -2478,15 +2512,18 @@ he: {
  tw_licensed: 'ברישיון',
  'twLic_library-card': '{service} · כרטיס ספרייה',
  'twLic_subscription': '{service} · מנוי',
+ 'twLic_free-with-ads': '{service} · עם פרסומות',
  'twLic_purchase-or-rent': '{service} · קנייה/השכרה',
  watchLicensed: 'פתיחה ב־{host} (רישום ברישיון)',
  'watchLic_library-card': 'צפייה ב־{service} עם כרטיס ספרייה',
  'watchLic_subscription': 'צפייה ב־{service} במנוי',
+ 'watchLic_free-with-ads': 'צפייה חינם עם פרסומות ב־{service}',
  'watchLic_purchase-or-rent': 'קנייה או השכרה ב־{service}',
  licensedNote: 'רישום ברישיון שתנאי הגישה אליו לא תועדו כאן. זו אינה העלאה חינמית, והרישום אינו עדות לצפייה.',
  'licNote_library-card': 'רישום ב־{service}: אפשר לשאול אותו בחינם עם כרטיס של ספרייה ציבורית משתתפת, במסגרת המגבלה ' +
   'החודשית של הספרייה. זו אינה העלאה ציבורית חינמית, והרישום אינו עדות לצפייה.',
  'licNote_subscription': 'רישום ב־{service}, כלול במנוי ל־{service}. זו אינה העלאה חינמית, והרישום אינו עדות לצפייה.',
+ 'licNote_free-with-ads': 'רישום ב־{service}, חינם לצפייה עם פרסומות. זו אינה העלאה חינמית, והרישום אינו עדות לצפייה.',
  'licNote_purchase-or-rent': 'רישום בחנות {service}: קונים או שוכרים את התכנית עם חשבון. זו אינה העלאה חינמית, והרישום אינו ' +
   'עדות לצפייה.',
  howToTitle: 'איך צופים ב־{service}',
@@ -2517,6 +2554,11 @@ he: {
  sg_alt: 'תואם תווית חלופית',
  orSep: ' או ',
  moreLinks: 'ועוד {n}',
+ alsoOn: 'גם ב־{hosts}',
+ seasonPick: 'עונה',
+ seasonWhole: '{n} מתוך {exp} עם קישור שלם',
+ seasonsAllMatches: 'מוצגות התאמות מכל העונות.',
+ allSeasons: 'כל {n} העונות',
  sgOneOf: 'אחד מתוך',
  sgMoreTied: 'ועוד {n} באותה סבירות',
  possibleCopyOf: 'עותק אפשרי של'
@@ -2530,6 +2572,31 @@ const W = typeof window !== 'undefined' ? window : null;
 const root = document.documentElement;
 const payload = JSON.parse($('library-data').textContent);
 const records = Array.isArray(payload) ? payload : (payload.records || []);
+// Records from a file with defaults are embedded without the fields they share (payload.recordDefaults[r._d]): they are filled
+// back in here. A YouTube video or an Internet Archive file without a thumbnail gets the host's own, and an archive file
+// without a source page gets its item page.
+{
+ const defs = !Array.isArray(payload) && Array.isArray(payload.recordDefaults) ? payload.recordDefaults : [];
+ const own = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
+ // A record whose completenessStatus names a shared note does not take its file's default note: its own note, else the
+ // shared one, is shown.
+ const stdN = !Array.isArray(payload) && payload.meta && payload.meta.standardCompletenessNotes || {};
+ for (const r of records) {
+  if (!r || typeof r !== 'object' || !Number.isInteger(r._d) || !defs[r._d]) continue;
+  const d = defs[r._d], shared = typeof r.completenessStatus === 'string' && own(stdN, r.completenessStatus);
+  for (const k of Object.keys(d)) if (!own(r, k) && !(k === 'completenessNote' && shared)) r[k] = typeof d[k] === 'object' && d[k] ? JSON.parse(JSON.stringify(d[k])) : d[k];
+  let u = null; try { u = new URL(r.url); } catch { u = null; }
+  if (!u) continue;
+  const h = u.hostname.replace(/^www\./, ''), seg = u.pathname.split('/').filter(Boolean);
+  if (!r.thumbnailUrl && (h === 'youtube.com' || h === 'm.youtube.com') && /^[\w-]{11}$/.test(u.searchParams.get('v') || '')) {
+   r.thumbnailUrl = 'https://i.ytimg.com/vi/' + u.searchParams.get('v') + '/hqdefault.jpg';
+  }
+  if (h === 'archive.org' && seg[0] === 'details' && seg[1]) {
+   if (!r.thumbnailUrl) r.thumbnailUrl = 'https://archive.org/services/img/' + seg[1];
+   if (!r.sourceUrl && seg.length > 2) r.sourceUrl = 'https://archive.org/details/' + seg[1];
+  }
+ }
+}
 const meta = (!Array.isArray(payload) && payload.meta) || {};
 // payload.guide is optional: without data/episode-guide.json the app is a plain uploads library.
 const guideIn = !Array.isArray(payload) && payload.guide && typeof payload.guide === 'object' ? payload.guide : {};
@@ -2541,7 +2608,7 @@ const guide = {
 // payload.services is optional (data/licensed-services.json): what each licensed service needs and how to reach it, with
 // sources. Without it, licensed listings are labelled without their access terms.
 // Models, free first: the order of the access filters and the Watch tie-break between two licensed listings.
-const LIC_MODELS = ['library-card', 'subscription', 'purchase-or-rent'];
+const LIC_MODELS = ['library-card', 'subscription', 'free-with-ads', 'purchase-or-rent'];
 const servicesIn = !Array.isArray(payload) && payload.services && typeof payload.services === 'object' ? payload.services : {};
 const services = (Array.isArray(servicesIn.services) ? servicesIn.services : []).filter(s => s && typeof s === 'object' &&
  typeof s.name === 'string' && s.name && LIC_MODELS.includes(s.model) && Array.isArray(s.hosts) && s.hosts.length);
@@ -2578,11 +2645,7 @@ const ROLES = ['whole-candidate', 'alternate-edition', 'part', 'excerpt'];
 const KINDS = [['episode', 'kEpisode'], ['short-episode', 'kShort'], ['unverified', 'kUnverified'], ['clip', 'kClip'],
  ['collection', 'kCollection']];
 const GSTATUS = [['matched', 'gsMatched'], ['queue', 'gsQueue'], ['possible', 'gsPossible'], ['none', 'gsNone']];
-// Access ranking (spec §5): public Internet Archive and Dailymotion pages rank with public YouTube; other hosts
-// (Facebook, Kan, ok.ru, anything else) rank below them and above pages that need the Israel VPN. Licensed storefront
-// and library-streaming listings (access: licensed; hoopla with a library card, Apple TV or Prime Video to buy or rent)
-// rank below Hop pages and above uploads blocked outside Israel or unavailable in a check.
-const ACC_RANK = {played: 0, local: 1, vimeo: 2, public: 3, web: 4, hop: 5, licensed: 6, restricted: 7, unavailable: 8};
+// Access kinds and their marks. The order of links is the link order (tierOf, data/link-priority.json), not these.
 const ACC_SHAPE = {played: 'ok', local: 'ok', vimeo: 'ok', public: 'public', web: 'web', hop: 'vpn', licensed: 'lic',
  restricted: 'vpn', unavailable: 'bad'};
 const ACC_GROUP = {played: 'direct', local: 'direct', vimeo: 'direct', public: 'public', web: 'web', hop: 'vpn',
@@ -2591,7 +2654,7 @@ const ACC_GROUP = {played: 'direct', local: 'direct', vimeo: 'direct', public: '
 // Internet Archive file with a recorded check is listed with public pages, not under "Vimeo direct".
 const HOST_GROUP = k => (k === 'vimeo' ? 'direct' : PUBLIC_HOSTS.has(k) ? 'public' : k === 'hop' ? 'vpn' : 'web');
 const GROUP_SHAPE = {direct: 'ok', public: 'public', web: 'web', vpn: 'vpn', 'lic-library-card': 'lic', 'lic-subscription': 'lic',
- 'lic-purchase-or-rent': 'lic', 'lic-other': 'lic', unavailable: 'bad'};
+ 'lic-free-with-ads': 'lic', 'lic-purchase-or-rent': 'lic', 'lic-other': 'lic', unavailable: 'bad'};
 // Hosts are recognised by hostname or a parent domain, never by a substring of the whole URL.
 const HOST_DOMAINS = [
  ['vimeo', ['vimeo.com']], ['youtube', ['youtube.com', 'youtu.be', 'youtube-nocookie.com']],
@@ -2682,6 +2745,13 @@ function fmtN(n) {
  if (Number.isSafeInteger(x) && x >= 0) return String(x).replace(/\B(?=(\d{3})+$)/g, ',');
  if (!NUM_FMT.has(lang)) NUM_FMT.set(lang, new Intl.NumberFormat(lang === 'he' ? 'he-IL' : 'en-US'));
  return NUM_FMT.get(lang).format(x);
+}
+// An episode number as its production writes it: zero-padded to numberWidth digits ("Episode 0001"), and never grouped
+// ("1,234"); other productions' numbers as counts.
+function fmtId(p, n) {
+ const w = p && Number.isInteger(p.numberWidth) && p.numberWidth >= 1 && p.numberWidth <= 6 ? p.numberWidth : 0, x = Number(n);
+ if (!w || !Number.isSafeInteger(x) || x < 0) return fmtN(n);
+ return String(x).padStart(w, '0');
 }
 function collator() {
  if (!COLLATOR.has(lang)) COLLATOR.set(lang, new Intl.Collator(lang, {numeric: true}));
@@ -2914,7 +2984,6 @@ function viewed(a, r) {
  a.addEventListener('auxclick', ev => { if (ev && ev.button === 1) noteOpen(r); });
  return a;
 }
-const inSitting = r => sitting.includes(mapKey(r));
 // Where focus goes after a queue change removes the focused control (a removed row, an emptied queue): the first of these
 // keys that is drawn again.
 let focusAfter = [];
@@ -2960,7 +3029,7 @@ const byRank = (a, b) => prodRank(a) - prodRank(b) || (a.order ?? 99) - (b.order
 // A production without a name in either language falls back to its id rather than an empty heading.
 const prodName = p => (p ? pick(p.nameEn, p.nameHe) || String(p.id || '') : '');
 const epById = new Map(), epsByProd = new Map(prods.map(p => [p.id, []])), recLinks = new Map(), upsById = new Map();
-const possById = new Map(), matchedIds = new Set();
+const possById = new Map(), matchedIds = new Set(), CONTAINERS = ['compilation', 'listing'];
 // An explicit `part` is the displayed part number; without one, parts are numbered by their position.
 const partNum = v => (Number.isInteger(v) && v > 0 ? v : null);
 for (const e of guide.episodes) {
@@ -2968,12 +3037,14 @@ for (const e of guide.episodes) {
  epById.set(e.id, e);
  epsByProd.get(e.production).push(e);
  const all = (Array.isArray(e.uploads) ? e.uploads : []).filter(u => u && recById.has(u.recordId))
-  .map(u => ({r: recById.get(u.recordId), role: u.role, part: u.role === 'part' ? partNum(u.part) : null}));
+  .map(u => ({r: recById.get(u.recordId), role: u.role, part: u.role === 'part' ? partNum(u.part) : null,
+   // A copy inside a longer upload (a compilation) or an open listing, with what the link holds beyond this episode.
+   container: CONTAINERS.includes(u.container) ? u.container : null, extent: typeof u.extentNoteEn === 'string' ? u.extentNoteEn : ''}));
  const ups = all.filter(u => ROLES.includes(u.role)), poss = all.filter(u => u.role === 'possible');
  upsById.set(e.id, ups); possById.set(e.id, poss);
  for (const u of [...ups, ...poss]) {
   if (!recLinks.has(u.r.id)) recLinks.set(u.r.id, []);
-  recLinks.get(u.r.id).push({e, role: u.role});
+  recLinks.get(u.r.id).push({e, role: u.role, container: u.container});
   if (u.role !== 'possible') matchedIds.add(u.r.id);
  }
 }
@@ -3082,8 +3153,8 @@ const lenOk = (r, len) => {
 };
 const ownMapping = k => (Object.prototype.hasOwnProperty.call(mappings, k) ? mappings[k] : undefined);
 const localUrl = r => { const m = ownMapping(mapKey(r)) || ownMapping(r.url); return safeUrl(typeof m === 'string' ? m : m?.url); };
-const accCache = new Map(), bestCache = new Map(), destCache = new Map();
-function clearLinkCaches() { accCache.clear(); bestCache.clear(); destCache.clear(); }
+const accCache = new Map(), bestCache = new Map(), destCache = new Map(), rankCache = new Map();
+function clearLinkCaches() { accCache.clear(); bestCache.clear(); destCache.clear(); rankCache.clear(); }
 function destination(r) {
  if (destCache.has(r.id)) return destCache.get(r.id);
  const d = localUrl(r) || safeUrl(r.directUrl) || safeUrl(r.url) || safeUrl(r.sourceUrl);
@@ -3294,12 +3365,12 @@ function epTitle(e) {
  if (e.number == null) return t('untitled');
  if (numLabel(p)) return codeOf(p, e.season, e.number);
  const noun = t('noun_' + nounOf(p));
- return e.season != null ? t('untitledSE', {s: fmtN(e.season), noun, n: fmtN(e.number)}) : t('untitledN', {noun, n: fmtN(e.number)});
+ return e.season != null ? t('untitledSE', {s: fmtN(e.season), noun, n: fmtId(p, e.number)}) : t('untitledN', {noun, n: fmtId(p, e.number)});
 }
 function epAlt(e) { const alt = lang === 'he' ? e.titleEn : heTitle(e); return alt && alt !== epTitle(e) ? alt : ''; }
 function codeOf(p, season, n) {
  if (n == null) return '';
- return codeText(p, season, fmtN(n));
+ return codeText(p, season, fmtId(p, n));
 }
 // The code with an already formatted number part ("IETV no. 133 or 178", "No. 1, 2, 3").
 function codeText(p, season, n) {
@@ -3331,21 +3402,51 @@ function covLabel(e, long) {
  }
  return t('cov_' + c);
 }
-// Between two licensed listings of one role, the free one wins: library card, then subscription, then buy or rent (a
-// fraction, so it never changes the order of roles or access ranks).
-const licTie = (r, a) => { if (a !== 'licensed') return 0; const s = svcOf(r); return s ? LIC_MODELS.indexOf(s.model) * 0.25 : 0.75; };
-// One access-ranked link per episode: whole and alternate editions first, then parts (part 1), then excerpts.
-// Possible copies (identity unresolved) are never candidates.
+/* ================= link order ================= */
+// The order of an entry's copies, set by the user (data/link-priority.json): each link falls in one tier, and the tiers are
+// ranked by the file. Licensed listings go by their service (subscribed, library card, free with ads, or paid: buy, rent or
+// a subscription the user does not have); links that need the Israel VPN are 'vpn'; free streams limited to a region rank
+// with 'free-with-ads'; other links go by host. Links that failed a check come after every tier.
+const TIER_IDS = ['archive', 'youtube', 'subscribed', 'vimeo', 'other-free', 'vpn', 'library-card', 'free-with-ads', 'paid'];
+const TIER_RANK = (() => {
+ const lp = !Array.isArray(payload) && payload.linkPriority && Array.isArray(payload.linkPriority.tiers) ? payload.linkPriority.tiers : [];
+ return new Map([...new Set([...lp.filter(x => TIER_IDS.includes(x)), ...TIER_IDS])].map((k, i) => [k, i]));
+})();
+const FAILED_TIER = TIER_IDS.length;
+// A service the user subscribes to (subscribed: true in the services data) is offered like a free link.
+const subscribedSvc = s => !!s && s.model === 'subscription' && s.subscribed === true;
+function tierOf(r) {
+ const a = accessOf(r);
+ if (a === 'unavailable') return 'failed';
+ if (a === 'licensed') {
+  const s = svcOf(r); return subscribedSvc(s) ? 'subscribed' : s && ['library-card', 'free-with-ads'].includes(s.model) ? s.model : 'paid';
+ }
+ if (a === 'hop' || a === 'restricted') return 'vpn';
+ if (checkOf(r) === 'region-limited') return 'free-with-ads';
+ const k = hostKey(r);
+ return k === 'archive' || k === 'youtube' || k === 'vimeo' ? k : 'other-free';
+}
+const tierRank = r => { const k = tierOf(r); return k === 'failed' ? FAILED_TIER : TIER_RANK.get(k); };
+// The order of one episode's copies: usable before failed; whole and alternate copies, then parts, then excerpts, then possible
+// copies; then the tier; official before community; then the part number.
+const ROLE_CLASS = {'whole-candidate': 0, 'alternate-edition': 0, part: 1, excerpt: 2, possible: 3};
+// A copy of the episode alone comes before one inside a compilation, and that before a service's season or series listing.
+const CONT_CLASS = {compilation: 1, listing: 2};
+const contClass = r => Math.max(0, ...(recLinks.get(r.id) || []).map(l => (l.role === 'possible' ? 0 : CONT_CLASS[l.container] || 0)));
+function copyKey(r, role, partNo) {
+ const tr = tierRank(r);
+ return [tr === FAILED_TIER ? 1 : 0, ROLE_CLASS[role] ?? 3, contClass(r), tr, r.sourceType === 'official' ? 0 : 1, partNo || 0];
+}
+const cmpKeys = (x, y) => { for (let i = 0; i < x.length; i++) if (x[i] !== y[i]) return x[i] - y[i]; return 0; };
+// One link per episode, in that order (part 1 of the best parts). Possible copies (identity unresolved) are never candidates.
 function bestLink(e) {
  if (bestCache.has(e.id)) return bestCache.get(e.id);
- const ups = upsOf(e), parts = partsOf(e), order = new Map(parts.map((x, k) => [x.u, x]));
- let best = null, score = Infinity;
- for (const u of ups) {
+ const parts = partsOf(e), order = new Map(parts.map(x => [x.u, x]));
+ let best = null, bk = null;
+ for (const u of upsOf(e)) {
   if (!destination(u.r)) continue;
-  const a = accessOf(u.r), cls = u.role === 'part' ? 1 : u.role === 'excerpt' ? 2 : 0;
-  const s = (a === 'unavailable' ? 1000 : 0) + cls * 100 +
-   (u.role === 'part' ? parts.indexOf(order.get(u)) : ACC_RANK[a] * 10 + (u.role === 'alternate-edition' ? 1 : 0) + licTie(u.r, a));
-  if (s < score) { score = s; best = u; }
+  const px = order.get(u), k = copyKey(u.r, u.role, px ? px.no : 0);
+  if (!bk || cmpKeys(k, bk) < 0) { bk = k; best = u; }
  }
  const bp = best && order.get(best);
  const out = best ? {r: best.r, role: best.role, acc: accessOf(best.r), i: bp ? bp.no : 0, n: bp ? bp.of : 0} : null;
@@ -3363,6 +3464,8 @@ function watchText(b, short, listShort) {
  const q = [];
  if (b.role === 'part') q.push(b.n > 1 ? t(short ? 'twPart' : 'partOf', {i: fmtN(b.i), n: fmtN(b.n)}) : t('role_part'));
  else if (b.role === 'excerpt') q.push(t(short ? 'twExcerpt' : 'excerptQ'));
+ // A link that holds more than this episode says so: a compilation video, or a service's listing to pick the episode from.
+ const ck = contClass(b.r); if (ck) q.push(t((short ? 'tw' : '') + (ck === 2 ? 'listingQ' : 'compQ')));
  // A link that failed an availability check says so wherever it is offered (tiles and List rows have no access line).
  // The phone List label is the exception: at 320 px the table has no room for the word or the mark (the title column keeps
  // 96 px), so there the host word is struck through and muted, and the link's name still says it.
@@ -3385,6 +3488,90 @@ function watchLink(b, short, cls, title, withShort) {
 }
 // The record title is part of the link name, so a list of Watch links (cards, To find rows) can be told apart.
 const recWatch = (r, cls) => watchLink({r, role: 'whole-candidate', acc: accessOf(r)}, false, cls, recTitle(r));
+
+/* ================= entries: one per episode or video ================= */
+// What the viewing surfaces list (Browse, Starred, Home's shelves and Again, Surprise): one entry per episode or per video,
+// with every place it was found kept under it in link order. An episode entry holds the counted copies (whole, alternate
+// edition, parts) of one episode whose record is a counted copy of that episode alone; a record that is a counted copy of
+// several episodes (a compilation) is an entry of its own, so a star or an open never stands for two episodes. Every other
+// record is a video entry, joined by any record that is the same video on another page (one Vimeo video embedded on two Hop!
+// pages). Excerpts are other videos and possible copies are unresolved, so neither joins an episode entry. Research pages
+// (Videos to identify, Identified videos, Missing, record pages) stay per upload.
+const COUNTED = new Set(['whole-candidate', 'alternate-edition', 'part']);
+// The same video: the first host video key of the record's own link (a YouTube id, a Vimeo id, an Internet Archive file ...);
+// a generic page URL is no evidence of sameness.
+const vidKeyOf = r => { const k = videoRefs(safeUrl(r.directUrl) || safeUrl(r.url))[0] || ''; return k.startsWith('url:') ? '' : k; };
+const entries = [], entryOfRec = new Map(), entryById = new Map(), roleIn = new Map();
+{
+ const counted = r => (recLinks.get(r.id) || []).filter(l => COUNTED.has(l.role)).length;
+ const add = en => { entries.push(en); entryById.set(en.id, en); for (const r of en.members) entryOfRec.set(r.id, en); };
+ for (const p of prods) {
+  for (const e of epsByProd.get(p.id) || []) {
+   const mem = upsOf(e).filter(u => COUNTED.has(u.role) && counted(u.r) === 1);
+   for (const u of mem) roleIn.set(u.r.id, u.role);
+   if (mem.length) add({id: 'ep:' + e.id, key: 'ep:' + e.id, e, members: [...new Set(mem.map(u => u.r))]});
+  }
+ }
+ const byVid = new Map();
+ for (const en of entries) for (const r of en.members) { const v = vidKeyOf(r); if (v && !byVid.has(v)) byVid.set(v, r); }
+ for (const r of records) {
+  if (entryOfRec.has(r.id)) continue;
+  const v = vidKeyOf(r), twin = v ? byVid.get(v) : null;
+  if (twin) {
+   const en = entryOfRec.get(twin.id); en.members.push(r); entryOfRec.set(r.id, en);
+   if (roleIn.has(twin.id)) roleIn.set(r.id, roleIn.get(twin.id));
+   continue;
+  }
+  add({id: r.id, key: mapKey(r), e: null, members: [r]});
+  if (v) byVid.set(v, r);
+ }
+}
+// Identified videos lists uploads: each record as an entry of its own.
+let recEntryList = null;
+const recEntries = () => recEntryList || (recEntryList = records.map(r => ({id: r.id, key: mapKey(r), e: null, members: [r], rec: true})));
+const isEntry = x => !!x && Array.isArray(x.members);
+// A member's role: its role in the episode, else (a video entry) a whole copy of itself.
+const memberRole = (en, r) => (en.e ? roleIn.get(r.id) || 'whole-candidate' : 'whole-candidate');
+const memberPart = (en, r) => (en.e ? (partsOf(en.e).find(x => x.u.r === r) || null) : null);
+// Members in link order; recomputed when a pasted link changes a destination (clearLinkCaches).
+function ranked(en) {
+ if (en.members.length === 1) return en.members;
+ if (rankCache.has(en.id)) return rankCache.get(en.id);
+ const keyed = en.members.map(r => { const px = memberPart(en, r); return [r, copyKey(r, memberRole(en, r), px ? px.no : 0)]; });
+ keyed.sort((a, b) => cmpKeys(a[1], b[1]) || byId(a[0], b[0]));
+ const out = keyed.map(x => x[0]); rankCache.set(en.id, out); return out;
+}
+// The first member, in link order, that has a link and passes `ok` (every active filter together, so one copy satisfies them).
+const pickMember = (en, ok) => ranked(en).find(r => !!destination(r) && (!ok || ok(r))) || null;
+const shownMember = (en, ok) => pickMember(en, ok) || ranked(en).find(r => !ok || ok(r)) || ranked(en)[0];
+// The Watch link of one member: its role and part numbering in the episode.
+function entryB(en, r) {
+ const px = memberPart(en, r), role = en.e ? memberRole(en, r) : 'whole-candidate';
+ return {r, role, acc: accessOf(r), i: px ? px.no : 0, n: px ? px.of : 0};
+}
+const entryTitle = (en, r) => (en.e ? epTitle(en.e) : recTitle(r || ranked(en)[0]));
+const entryRoute = (en, r) => (en.e ? epRoute(en.e.id) : recRoute((r || ranked(en)[0]).id));
+// Stars: an entry is starred by its own key ('ep:<episode id>', or a video's record key) or by a star on any member (stars
+// made on an upload before entries existed, or on a record page). Unstarring clears both; other keys stay stored.
+const entryStarred = en => favorites.has(en.key) || en.members.some(r => favorites.has(mapKey(r)));
+const starOn = x => (isEntry(x) ? entryStarred(x) : favorites.has(mapKey(x)));
+function toggleStar(x) {
+ const had = starOn(x);
+ if (!isEntry(x)) { had ? favorites.delete(mapKey(x)) : favorites.add(mapKey(x)); return had; }
+ if (had) { favorites.delete(x.key); for (const r of x.members) favorites.delete(mapKey(r)); } else favorites.add(x.key);
+ return had;
+}
+// Opens: the sum over an entry's members, with the latest date.
+function entryOpens(en) {
+ let n = 0, last = '', r = null;
+ for (const m of en.members) {
+  const o = opened[mapKey(m)]; if (!o) continue;
+  n += o.n; if (!last || Date.parse(o.last) > Date.parse(last)) { last = o.last; r = m; }
+ }
+ return n ? {n, last, r} : null;
+}
+// The queue holds the exact links chosen (record keys), so a part stays that part; an entry is queued when a member is.
+const sittingOn = x => (isEntry(x) ? x.members.some(r => sitting.includes(mapKey(r))) : sitting.includes(mapKey(x)));
 // Licensed services: text pairs from data/licensed-services.json, in the interface language.
 const svcText = p => (p && typeof p === 'object' ? pick(typeof p.en === 'string' ? p.en : '', typeof p.he === 'string' ? p.he : '') : '');
 // In Hebrew, a short English name ("Westchester Library System") stays on one line, so its quotation marks stay beside it.
@@ -3455,7 +3642,8 @@ function numberTokens(e) {
  const p = prodById.get(e.production), n = e.number, s0 = e.season != null;
  if (!Number.isInteger(n)) return s0 ? ['season ' + e.season, 'עונה ' + e.season] : [];
  if (numLabel(p)) {
-  return [p.numberLabelEn, p.numberLabelHe].filter(x => typeof x === 'string').map(x => x + ' ' + n)
+  const ns = [...new Set([String(n), fmtId(p, n)])];
+  return [p.numberLabelEn, p.numberLabelHe].filter(x => typeof x === 'string').flatMap(x => ns.map(k => x + ' ' + k)).concat(ns)
    .concat('<' + n + '>', s0 ? ['season ' + e.season, 'עונה ' + e.season] : []);
  }
  const shown = [codeIn('en', e.season, n), codeIn('he', e.season, n)];
@@ -3483,6 +3671,7 @@ for (const p of prods) {
   if (k && !CODE_QUERIES.some(c => c.k === k)) CODE_QUERIES.push({k});
  }
 }
+const PLAIN_WORD_LABELS = new Set(['episode', 'פרק'].map(normalize));
 const PLAIN_CODE = /^(?:no|#|מס)\s*(\d+)$/, SE_CODE = [/^s\s*(\d+)\s*·\s*e\s*(\d+)$/, /^עונה\s*(\d+)\s*·\s*פרק\s*(\d+)$/];
 function codeQuery(q) {
  const s = normalize(q), m = s.match(/^<\s*(\d+)\s*>$/);
@@ -3519,8 +3708,12 @@ function epSearchWords(e) {
 }
 // Search words for a number: the production's own label ("מס׳ חינוכית 98"), else season and episode in Hebrew.
 function numberWords(p, season, n) {
- const label = p && (typeof p.numberLabelHe === 'string' && p.numberLabelHe.trim() || numLabel(p));
- if (label) return label + ' ' + (n ?? '');
+ // An English-language series searches with its English label and its written number ("Episode 0153").
+ const en = p && SERIES_INFO[p.series] && SERIES_INFO[p.series].searchLanguage === 'en';
+ const label = p && (en ? typeof p.numberLabelEn === 'string' && p.numberLabelEn.trim() :
+  typeof p.numberLabelHe === 'string' && p.numberLabelHe.trim() || numLabel(p));
+ if (label) return label + ' ' + (n == null ? '' : fmtId(p, n));
+ if (en) return season != null ? 'season ' + season + ' episode ' + n : 'episode ' + (n ?? '');
  return season != null ? 'עונה ' + season + ' פרק ' + n : 'פרק ' + (n ?? '');
 }
 function totalState(p) {
@@ -3536,9 +3729,19 @@ function deriveNumbering(eps) {
 // A season's strip covers first .. last: `firstNumber` (default 1) up to the highest known number, or up to
 // firstNumber + expectedEpisodes - 1 when that is higher. A number below firstNumber (the builder warns) widens the start
 // rather than disappearing. At most 400 cells.
+// excludedNumbers (season 45's repeat labels 4527-4551) are not episodes: no cell, gap or expected place.
 function makeGroup(def, season, eps) {
  const exp = def && Number.isInteger(def.expectedEpisodes) ? def.expectedEpisodes : null;
  const first0 = def && Number.isInteger(def.firstNumber) && def.firstNumber > 0 ? def.firstNumber : 1;
+ const excluded = new Set();
+ for (const x of def && Array.isArray(def.excludedNumbers) ? def.excludedNumbers : []) {
+  if (x && Number.isInteger(x.from) && Number.isInteger(x.to) && x.from <= x.to && x.to - x.from < 10000) {
+   for (let n = x.from; n <= x.to; n++) excluded.add(n);
+  }
+ }
+ // The last expected number: the exp-th number from firstNumber that is not excluded.
+ let expLast = 0;
+ if (exp) { let k = 0, n = first0 - 1; while (k < exp && n < first0 + exp + excluded.size) { n++; if (!excluded.has(n)) k++; } expLast = n; }
  const byNum = new Map(); let max = 0, min = Infinity;
  for (const e of eps) {
   if (!(Number.isInteger(e.number) && e.number > 0)) continue;
@@ -3547,11 +3750,13 @@ function makeGroup(def, season, eps) {
  }
  const numbering = byNum.size ? (def && NUMBERINGS.includes(def.numbering) ? def.numbering : deriveNumbering(eps)) : null;
  const first = byNum.size ? Math.min(first0, min) : first0;
- const last = byNum.size ? Math.min(first + 399, Math.max(max, exp ? first0 + exp - 1 : 0)) : first - 1;
- const len = byNum.size ? last - first + 1 : 0;
- let gaps = 0, expCells = 0;
- for (let n = first; n <= last; n++) if (!byNum.has(n)) { if (n <= max) gaps++; else expCells++; }
- return {def, season, eps, exp, byNum, max, first, last, numbering, len, gaps, expCells,
+ const last = byNum.size ? Math.min(first + 399 + excluded.size, Math.max(max, expLast)) : first - 1;
+ let len = 0, gaps = 0, expCells = 0;
+ for (let n = first; n <= last; n++) {
+  if (excluded.has(n)) continue;
+  len++; if (!byNum.has(n)) { if (n <= max) gaps++; else expCells++; }
+ }
+ return {def, season, eps, exp, byNum, max, first, last, numbering, len, gaps, expCells, excluded,
   slots: exp != null ? Math.max(0, exp - eps.length) : 0, unnumbered: eps.filter(e => !byNum.has(e.number))};
 }
 const modelCache = new Map();
@@ -3608,11 +3813,24 @@ function prodModel(p) {
 const seasonLabel = g => iso((g.def && pick(g.def.labelEn, g.def.labelHe)) ||
  (g.season != null ? t('seasonLbl') + ' ' + fmtN(g.season) : t('otherEpisodes')));
 const slotRoute = (p, g, n) => 'slot/' + encodeURIComponent(p.id) + '/' + (g.season ?? '-') + '/' + n;
+// A production with many seasons (Sesame Street has 56) shows one season at a time, chosen in a select on its own page; a
+// search or filter lists the matching episodes of every season. The season shown first is the one of its earliest episode
+// with a whole link that is not marked watched.
+const PAGED_SEASONS = 8;
+const paged = p => !!p && Array.isArray(p.seasons) && p.seasons.length > PAGED_SEASONS;
+function pageGroup(p, m) {
+ const want = state.prod === p.id ? state.g.season : null;
+ const g = want != null && m.groups.find(x => x.season === want);
+ if (g) return g;
+ const next = m.all.find(e => covOf(e) === 'whole-candidate' && !watched.has(e.id));
+ return (next && m.groups.find(x => x.season === (next.season ?? null))) || m.groups.find(x => x.eps.length) || m.groups[0];
+}
+const seasonRoute = (p, season) => prodRoute(p.id) + (paged(p) && season != null ? '?season=' + season : '');
 
 /* ================= state and routing ================= */
 const state = {
  view: 'guide', prod: '', epId: '', recId: '', slot: null,
- g: {q: '', cov: new Set(), fmt: new Set(), ev: new Set(), conf: new Set(), unwatched: false, layout: 'album', more: false},
+ g: {q: '', cov: new Set(), fmt: new Set(), ev: new Set(), conf: new Set(), unwatched: false, layout: 'album', more: false, season: null},
  u: {q: '', series: new Set(), kinds: new Set(), gs: new Set(), ag: new Set(), theme: '', character: '', starred: false, sort: 'series',
   spoken: new Set(), len: '', limit: 48},
  shuffle: new Map(), limits: new Map(), railOpen: false, filtersOpen: false, goalOpen: false, openTotals: new Set(), nextSkip: 0, mapOpen: '',
@@ -3642,6 +3860,7 @@ function queryString() {
   const g = state.g; add('q', g.q); add('cov', csv(g.cov)); add('fmt', csv(g.fmt)); add('ev', csv(g.ev)); add('conf', csv(g.conf));
   if (g.unwatched) add('mine', 'unwatched');
   if (g.layout !== 'album') add('layout', g.layout);
+  if (state.prod && g.season != null && paged(prodById.get(state.prod))) add('season', g.season);
  } else if (UVIEWS.includes(state.view)) {
   const u = state.u; add('q', u.q); add('series', csv(u.series)); add('kind', csv(u.kinds)); add('gs', csv(u.gs));
   add('ag', csv(u.ag)); add('spoken', csv(u.spoken)); add('len', u.len); add('theme', u.theme); add('character', u.character);
@@ -3694,7 +3913,7 @@ const setFrom = (set, v, allowed) => {
 function applyRoute(r) {
  if (r.view !== state.view && UVIEWS.includes(r.view)) state.u.limit = 48;
  state.view = r.view;
- if (r.view === 'guide') state.prod = r.arg;
+ if (r.view === 'guide') { if (r.arg !== state.prod) state.g.season = null; state.prod = r.arg; }
  if (r.view === 'episode') state.epId = r.arg;
  if (r.view === 'record') state.recId = r.arg;
  if (r.view === 'slot') state.slot = r.arg;
@@ -3708,6 +3927,9 @@ function applyRoute(r) {
   const g = state.g; g.q = q.q || ''; setFrom(g.cov, q.cov, COVS); setFrom(g.fmt, q.fmt, EP_FORMATS);
   setFrom(g.ev, q.ev, ['none', ...EVS]); setFrom(g.conf, q.conf, CONFS); g.unwatched = q.mine === 'unwatched';
   g.layout = ['album', 'numbers', 'list'].includes(q.layout) ? q.layout : 'album';
+  const sn = q.season !== undefined && /^\d+$/.test(q.season) ? Number(q.season) : null;
+  const sp = state.prod ? prodById.get(state.prod) : null;
+  g.season = sp && paged(sp) && (sp.seasons || []).some(x => x.season === sn) ? sn : null;
  }
  if (UVIEWS.includes(r.view)) {
   const u = state.u; u.q = q.q || ''; setFrom(u.series, q.series, Object.keys(SERIES)); setFrom(u.kinds, q.kind, KINDS.map(k => k[0]));
@@ -3735,7 +3957,7 @@ if (W && W.addEventListener) {
 
 /* ================= shell ================= */
 // Starred counts include only stars that match a record; unknown keys stay stored so backups round-trip.
-const starredCount = () => records.reduce((n, r) => n + (favorites.has(mapKey(r)) ? 1 : 0), 0);
+const starredCount = () => entries.reduce((n, en) => n + (entryStarred(en) ? 1 : 0), 0);
 // The Browse menu's pages and their counts. Identified and to-identify uploads add up to every upload; Missing episodes counts
 // the documented episodes without a whole copy (the guide's missing, parts-only and excerpt-only coverage). Guide data does not
 // change while the page is open, so the counts are computed once.
@@ -4005,12 +4227,13 @@ function statList(cls, c, slots, gaps, showZeroWhole) {
  return ul;
 }
 // Toggle buttons keep a stable name; aria-pressed carries the state.
+// x is an entry (Browse, Starred, Home, Surprise, the episode page) or an upload (record pages, an episode's upload rows).
 function starBtn(r, key) {
  const b = btn('star', '', () => {
-  const had = favorites.has(mapKey(r)); had ? favorites.delete(mapKey(r)) : favorites.add(mapKey(r));
+  const had = toggleStar(r);
   if (persist('sumsum-favorites', [...favorites])) toast(t(had ? 'unstarredToast' : 'starredToast'));
-  // The same video's other stars on screen (a Surprise pick that is also a Browse card) show the change too.
-  for (const n of focusables.values()) if (n._star && mapKey(n._star) === mapKey(r)) n.setAttribute('aria-pressed', String(!had));
+  // The same entry's or video's other stars on screen (a Surprise pick that is also a Browse card) show the change too.
+  for (const n of focusables.values()) if (n._star) n.setAttribute('aria-pressed', String(starOn(n._star)));
   const focusKey = activeKey(); renderTabs(); rebindOpener();
   if (UVIEWS.includes(state.view)) { starChanged(r, b); return; }
   // An open popover (a Surprise pick's star) stays open and is drawn again.
@@ -4020,8 +4243,8 @@ function starBtn(r, key) {
   const near = [sib[at + 1], sib[at - 1]].filter(x => x && x._starKey).map(x => x._starKey);
   mount(false); if (!restoreFocus(focusKey, ...near) && $('view-title')) $('view-title').focus();
  }, key);
- b._star = r; b.innerHTML = ICON.star; b.setAttribute('aria-pressed', String(favorites.has(mapKey(r))));
- b.setAttribute('aria-label', t('starAria', {title: recTitle(r)}));
+ b._star = r; b.innerHTML = ICON.star; b.setAttribute('aria-pressed', String(starOn(r)));
+ b.setAttribute('aria-label', t('starAria', {title: isEntry(r) ? entryTitle(r) : recTitle(r)}));
  return b;
 }
 function seenTag() { return el('span', 'tag t-seen', '✓ ' + t('seenBadge')); }
@@ -4050,8 +4273,11 @@ function epHits(e, Q) {
  if (Q.code) {
   const p = prodById.get(e.production);
   if (Q.code.plain) return !numLabel(p) && e.number === Q.code.n && (e.season ?? null) === Q.code.season;
-  return !!numLabel(p) && e.number === Q.code.n &&
+  if (numLabel(p)) return e.number === Q.code.n &&
    (!Q.code.label || [p.numberLabelEn, p.numberLabelHe].some(x => typeof x === 'string' && normalize(x) === Q.code.label));
+  // A label that is also the plain word other productions number by ("Episode 5", "פרק 5", Sesame Street's) finds their
+  // episodes by text, as before any production used it.
+  if (!PLAIN_WORD_LABELS.has(Q.code.label)) return false;
  }
  if (!Q.ts.length) return true;
  const s = epSearch(e); return Q.ts.every(x => s.includes(x));
@@ -4453,8 +4679,12 @@ function productionSection(p, Q, filtered) {
   }
   shownSlots = filtered ? 0 : m.slots; shownGaps = filtered ? 0 : m.inferredGaps;
  }
- const layout = g.layout, limitKey = 'p:' + (scoped ? 's:' : 'a:') + layout + ':' + p.id;
- const limit = state.limits.get(limitKey) ?? (layout === 'album' ? (scoped ? 96 : 12) : layout === 'list' ? 200 : Infinity);
+ const pg = paged(p), sel = pg ? pageGroup(p, m) : null;
+ if (pg && scoped) sec.append(seasonPicker(p, m, sel, filtered));
+ const layout = g.layout, limitKey = 'p:' + (scoped ? 's:' : 'a:') + layout + ':' + p.id + (pg && !filtered ? ':' + sel.season : '');
+ // One season of a paged production is shown whole on its own page.
+ const limit = state.limits.get(limitKey) ?? (pg && scoped && !filtered ? Infinity :
+  layout === 'album' ? (scoped ? 96 : 12) : layout === 'list' ? 200 : Infinity);
  let rendered = 0, table;
  const hidden = [];
  if (layout === 'list' && visible.size) {
@@ -4467,7 +4697,9 @@ function productionSection(p, Q, filtered) {
   thead.append(tr); table.append(thead); wrap.append(table); sec.append(wrap);
  }
  const headed = m.groups.length > 1 || m.groups.some(gr => gr.def && gr.season != null);
- for (const gr of m.groups) {
+ // A paged production draws the chosen season, or (filtered) the seasons with matches; strips only on its own page.
+ const shownGroups = pg && !filtered ? [sel] : m.groups;
+ for (const gr of shownGroups) {
   const eps = gr.eps.filter(e => visible.has(e.id));
   const showSlots = !filtered && gr.open > 0 && !gr.len;
   if (!eps.length && !showSlots && !(gr.len && !filtered)) continue;
@@ -4490,7 +4722,7 @@ function productionSection(p, Q, filtered) {
    if (gr.numbering) h.append(el('span', 'numtag n-' + gr.numbering, t('num_' + gr.numbering)));
    box.append(h);
   }
-  if (gr.len) {
+  if (gr.len && (!pg || (scoped && (!filtered || (layout === 'numbers' && eps.length))))) {
    box.append(strip(p, gr, filtered ? visible : null));
    if (gr.gaps) box.append(el('p', 'strip-note', t('numLong_' + gr.numbering)));
   }
@@ -4515,10 +4747,15 @@ function productionSection(p, Q, filtered) {
   if (showSlots) box.append(slotBlock(gr.open));
   sec.append(box);
  }
- if (!filtered && m.restSlots && layout !== 'list') sec.append(slotBlock(m.restSlots));
+ if (!filtered && m.restSlots && layout !== 'list' && !pg) sec.append(slotBlock(m.restSlots));
+ if (pg && !scoped && !filtered) {
+  const a = go(seasonRoute(p, sel.season), t('allSeasons', {n: fmtN(m.groups.length)}), 'linkbtn'); fk(a, 'seasons-' + p.id);
+  const pa = el('p', 'seasons-link'); pa.append(a); sec.append(pa);
+ }
  if (hidden.length) {
+  // The count is what the button reveals: the episodes of the groups drawn (one season of a paged production).
   const first = hidden[0], step = scoped && hidden.length > 96;
-  const more = btn('btn ghost show-more', step ? t('showMoreEps', {n: fmtN(96)}) : t('showAllEps', {n: fmtN(visible.size)}), () => {
+  const more = btn('btn ghost show-more', step ? t('showMoreEps', {n: fmtN(96)}) : t('showAllEps', {n: fmtN(rendered + hidden.length)}), () => {
    state.limits.set(limitKey, step ? limit + 96 : Infinity); G.focusAfter = (layout === 'list' ? 'row-' : 'ep-') + first.id;
    updateGuide();
   }, 'more-' + p.id);
@@ -4527,6 +4764,22 @@ function productionSection(p, Q, filtered) {
  if (qAll.length) sec.append(queueBlock(p, qAll, scoped));
  return {node: sec, slots: shownSlots, gaps: shownGaps};
 }
+// The season select of a paged production: each season with its years and how many of its episodes have a whole link.
+function seasonPicker(p, m, sel, filtered) {
+ const box = el('div', 'season-pick'); const lbl = el('label', 'fh', t('seasonPick')); lbl.setAttribute('for', 'season-pick');
+ const s = el('select'); s.setAttribute('id', 'season-pick'); fk(s, 'season-pick');
+ for (const gr of m.groups) {
+  const whole = gr.eps.filter(e => covOf(e) === 'whole-candidate').length;
+  s.add(new Option(seasonLabel(gr) + ' · ' + t('seasonWhole', {n: fmtN(whole), exp: fmtN(gr.exp ?? gr.eps.length)}), String(gr.season ?? '')));
+ }
+ s.value = String(sel.season ?? '');
+ s.addEventListener('change', ev => {
+  const v = ev.target.value; state.g.season = /^\d+$/.test(v) ? Number(v) : null; G.focusAfter = 'season-pick'; updateGuide();
+ });
+ box.append(lbl, s);
+ if (filtered) box.append(el('p', 'note', t('seasonsAllMatches')));
+ return box;
+}
 function strip(p, g, visibleSet) {
  const ul = el('ul', 'strip' + (g.numbering !== 'documented' ? ' inferred' : ''));
  ul.setAttribute('aria-label', g.def || g.season != null ? t('stripLabel', {season: seasonLabel(g)}) : t('stripLabelPlain'));
@@ -4534,16 +4787,17 @@ function strip(p, g, visibleSet) {
  // A production with its own number label names its cells by that label ("IETV no. 98: ...").
  const labelled = !!numLabel(p), gapKey = (g.numbering === 'documented' ? 'cellGapDoc' : 'cellGapInf') + (labelled ? 'L' : '');
  for (let n = g.first; n <= g.last; n++) {
+  if (g.excluded.has(n)) continue;
   const eps = g.byNum.get(n); let a, label;
   if (eps) {
-   const e = eps[0]; label = t('cellEp', {code: epCode(e) || fmtN(n), title: epTitle(e), cov: covLabel(e, true)});
-   a = go(epRoute(e.id), fmtN(n), 'cell cov-' + COV_CLASS[covOf(e)]);
+   const e = eps[0]; label = t('cellEp', {code: epCode(e) || fmtId(p, n), title: epTitle(e), cov: covLabel(e, true)});
+   a = go(epRoute(e.id), fmtId(p, n), 'cell cov-' + COV_CLASS[covOf(e)]);
    if (visibleSet && !eps.some(x => visibleSet.has(x.id))) a.className += ' dim';
   } else if (n <= g.max) {
-   label = t(gapKey, {n: fmtN(n), code: codeOf(p, g.season, n)});
-   a = go(slotRoute(p, g, n), fmtN(n), 'cell gap'); if (visibleSet) a.className += ' dim';
+   label = t(gapKey, {n: fmtId(p, n), code: codeOf(p, g.season, n)});
+   a = go(slotRoute(p, g, n), fmtId(p, n), 'cell gap'); if (visibleSet) a.className += ' dim';
   } else {
-   label = labelled ? t('cellExpL', {code: codeOf(p, g.season, n)}) : t('cellExp', {n: fmtN(n)});
+   label = labelled ? t('cellExpL', {code: codeOf(p, g.season, n)}) : t('cellExp', {n: fmtId(p, n)});
    a = go(slotRoute(p, g, n), '?', 'cell exp'); if (visibleSet) a.className += ' dim';
   }
   a.setAttribute('aria-label', label); a.setAttribute('title', label); a.tabIndex = cells.length ? -1 : 0;
@@ -4577,14 +4831,15 @@ function epThumbRecord(e) {
  const u = upsOf(e).find(x => x.r.thumbnailUrl); return u ? u.r : null;
 }
 function numberArt(e, cls, muted) {
- const art = el('span', cls); const bn = el('span', 'bignum' + (muted ? ' muted' : ''), e.number != null ? fmtN(e.number) : '?');
+ const p = prodById.get(e.production);
+ const art = el('span', cls); const bn = el('span', 'bignum' + (muted ? ' muted' : ''), e.number != null ? fmtId(p, e.number) : '?');
  bn.setAttribute('aria-hidden', 'true'); art.append(bn); return art;
 }
 function tile(e, p) {
  const li = el('li'), cov = covOf(e), card = el('div', 'tile cov-' + COV_CLASS[cov]);
  const art = numberArt(e, 'art', cov !== 'missing'), tr = epThumbRecord(e);
  const img = tr && imgEl(tr.thumbnailUrl, 320, 180); if (img) art.append(img);
- if (e.number != null) { const n = el('span', 'num'); n.setAttribute('aria-hidden', 'true'); n.textContent = fmtN(e.number); art.append(n); }
+ if (e.number != null) { const n = el('span', 'num'); n.setAttribute('aria-hidden', 'true'); n.textContent = fmtId(p, e.number); art.append(n); }
  if (watched.has(e.id)) { const w = el('span', 'seen', '✓'); w.setAttribute('aria-hidden', 'true'); art.append(w); }
  const body = el('span', 'tile-body');
  const a = titleDir(go(epRoute(e.id), epTitle(e), 'tile-title'), e, n => { n.setAttribute('dir', 'auto'); return n; }); fk(a, 'ep-' + e.id);
@@ -4623,7 +4878,7 @@ function linksSummary(e) {
 }
 function epRow(e, p) {
  const tr = el('tr'), b = bestLink(e);
- tr.append(el('td', 'c-no', e.number != null ? fmtN(e.number) : '–'));
+ tr.append(el('td', 'c-no', e.number != null ? fmtId(p, e.number) : '–'));
  const tt = el('td', 'c-title'); const a = titleDir(go(epRoute(e.id), epTitle(e)), e); fk(a, 'row-' + e.id);
  tt.append(a);
  const alt = epAlt(e); if (alt) tt.append(auto('span', 'alt', alt));
@@ -4667,7 +4922,7 @@ VIEWS.episode = function mountEpisode(v) {
  const e = epById.get(state.epId), p = prodById.get(e.production), f = fmtOf(p), cov = covOf(e);
  setTitle(epTitle(e) + ' · ' + prodName(p));
  const sib = epsByProd.get(e.production) || [], i = sib.indexOf(e);
- const c = crumbs([go('guide', t('guideTitle')), go(prodRoute(p.id), prodName(p))]);
+ const c = crumbs([go('guide', t('guideTitle')), go(seasonRoute(p, e.season ?? null), prodName(p))]);
  const pager = el('span', 'pager');
  if (i > 0) {
   const a = go(epRoute(sib[i - 1].id), (lang === 'he' ? '→ ' : '← ') + t('prevEp'), 'btn ghost');
@@ -4701,7 +4956,12 @@ VIEWS.episode = function mountEpisode(v) {
  if (watched.has(e.id)) tags.append(seenTag());
  info.append(tags);
  const prim = el('div', 'primary');
- if (b) prim.append(fk(ticket(viewed(watchLink(b, false, 'btn big', epTitle(e)), b.r), b.r), 'ep-watch'), queueBtn(b.r, 'ep-q'));
+ // The episode's entry (its counted copies) is queued and starred as one; an episode with excerpts only queues the excerpt.
+ // The queue and star act on what the Watch button opens: the episode's entry, or, when that copy is outside it (a
+ // compilation, or a usable excerpt when every whole copy failed), that copy's own entry.
+ const een = entryById.get('ep:' + e.id), wen = b && (een && een.members.includes(b.r) ? een : entryOfRec.get(b.r.id));
+ if (b) prim.append(fk(ticket(viewed(watchLink(b, false, 'btn big', epTitle(e)), b.r), b.r), 'ep-watch'), wen ? queueBtn(wen, 'ep-q', b.r) : queueBtn(b.r, 'ep-q'));
+ if (wen || een) prim.append(starBtn(wen || een, 'ep-star'));
  if (cov !== 'whole-candidate') prim.append(ext(ytSearchUrl(p, epSearchWords(e)), t('searchYoutube'), b ? 'btn ghost big' : 'btn big', 'search'));
  // Personal, beside the decision: separate from coverage and evidence; not offered without a link to watch.
  if (upsOf(e).length) {
@@ -4725,6 +4985,7 @@ VIEWS.episode = function mountEpisode(v) {
  const grid = el('div', 'detail-grid'), main = el('div'), aside = el('aside');
  // The Watch link's service explains how to reach it (hoopla: which library cards work).
  const hb = b && b.acc === 'licensed' ? howToBox(svcOf(b.r)) : null; if (hb) main.append(hb);
+ const ab = aboutEpisode(e, p); if (ab) main.append(ab);
  const note = pick(e.noteEn, e.noteHe);
  if (note) { const c2 = el('p', 'callout'); c2.append(el('strong', '', t('researchNote') + ': '), noteOf('span', '', e.noteEn, e.noteHe)); main.append(c2); }
  main.append(el('h2', 'sec-h', t('epUploads')));
@@ -4736,7 +4997,10 @@ VIEWS.episode = function mountEpisode(v) {
  // Parts are listed by their displayed number (explicit `part`, else position) and labelled "Part 2 of 3".
  const parts = partsOf(e), explicit = parts.some(x => x.u.part != null);
  for (const role of ROLES) {
-  const us = role === 'part' ? parts.map(x => x.u) : ups.filter(u => u.role === role), rs = us.map(u => u.r); if (!rs.length) continue;
+  // Each role's copies in link order (parts by number); the first whole copy is the one the Watch button opens.
+  const us = role === 'part' ? parts.map(x => x.u) : ups.filter(u => u.role === role)
+   .sort((x, y) => cmpKeys(copyKey(x.r, x.role, 0), copyKey(y.r, y.role, 0)) || byId(x.r, y.r)), rs = us.map(u => u.r);
+  if (!rs.length) continue;
   const h3 = el('h3', 'sec-h'); h3.append(txt(t('rolePl_' + role) + ' '), el('small', '', fmtN(rs.length)));
   if (role === 'part' || role === 'excerpt') {
    const tot = rs.reduce((s, r) => s + (Number(r.durationSeconds) || 0), 0);
@@ -4745,14 +5009,14 @@ VIEWS.episode = function mountEpisode(v) {
   main.append(h3); const ul = el('ul', 'urows'), src = evSource(e);
   us.forEach((u, k) => {
    const no = role === 'part' && (rs.length > 1 || (explicit && parts[k].of > 1)) ? parts[k] : null;
-   ul.append(uploadRow(u.r, role, no ? no.no : 0, no ? no.of : 0, src && src.r.id === u.r.id ? src.level : ''));
+   ul.append(uploadRow(u.r, role, no ? no.no : 0, no ? no.of : 0, src && src.r.id === u.r.id ? src.level : '', u));
   });
   main.append(ul);
  }
  // Possible copies: probably this episode, identity unresolved. Listed apart; they never count.
  if (poss.length) {
   const h3 = el('h3', 'sec-h'); h3.append(txt(t('rolePl_possible') + ' '), el('small', '', fmtN(poss.length)));
-  const ul = el('ul', 'urows possible'); for (const u of poss) ul.append(uploadRow(u.r, 'possible', 0, 0, ''));
+  const ul = el('ul', 'urows possible'); for (const u of poss) ul.append(uploadRow(u.r, 'possible', 0, 0, '', u));
   main.append(h3, el('p', 'note', t('possibleHelp')), ul);
  }
  if (ups.length > 1) main.append(compareTable(ups));
@@ -4766,6 +5030,43 @@ VIEWS.episode = function mountEpisode(v) {
  aside.append(identityCard(e, p));
  grid.append(main, aside); v.append(grid);
 };
+// What happens in the episode, quoted from a named source (Muppet Wiki, under its CC BY-SA licence), then its sponsors, word on
+// the street and guest stars. The quoted text stays English in both languages; only the labels are translated.
+const listText = xs => (lang === 'he' ? xs.join(', ') : xs.length > 1 ? xs.slice(0, -1).join(', ') + ' and ' + xs.at(-1) : xs[0] || '');
+const textList = v => strList(v).filter(x => x.trim());
+function aboutEpisode(e, p) {
+ const sum = typeof e.summaryEn === 'string' ? e.summaryEn.trim() : '', sp = e.sponsors && typeof e.sponsors === 'object' ? e.sponsors : {};
+ const letters = textList(sp.letters), numbers = textList(sp.numbers), guests = textList(e.guestStars);
+ const word = typeof e.wordOnTheStreet === 'string' ? e.wordOnTheStreet.trim() : '';
+ if (!sum && !letters.length && !numbers.length && !guests.length && !word) return null;
+ const sec = el('section', 'ep-about'); sec.setAttribute('aria-labelledby', 'about-h');
+ const h = el('h2', 'sec-h', t('aboutEpisode')); h.setAttribute('id', 'about-h'); sec.append(h);
+ if (sum) {
+  sec.append(en('p', 'ep-summary', sum));
+  const src = e.summarySource && typeof e.summarySource === 'object' ? e.summarySource : {};
+  // Without its own url, the page is the episode source named like the summary's source ("Muppet Wiki, ..."), never another.
+  const site = typeof src.label === 'string' ? src.label.split(',')[0].trim() : '';
+  const page = safeUrl(src.url) ? src.url : ((e.sources || []).find(x => x && safeUrl(x.url) && site && typeof x.label === 'string' &&
+   x.label.startsWith(site)) || {}).url;
+  const rev = Number.isInteger(src.revisionId) && page ? page + (page.includes('?') ? '&' : '?') + 'oldid=' + src.revisionId : page;
+  const at = el('p', 'note ep-attrib'), name = srcText(typeof src.label === 'string' ? src.label : '');
+  at.append(tWith('summaryFrom', 'src', rev ? ext(rev, name) : name));
+  if (/muppet\.fandom\.com/.test(page || '')) at.append(txt(' · '), ext('https://www.fandom.com/licensing', 'CC BY-SA'));
+  sec.append(at);
+ }
+ const rows = [];
+ if (letters.length || numbers.length) {
+  const ls = letters.length ? t(letters.length > 1 ? 'sponsorLetters' : 'sponsorLetter', {x: listText(letters)}) : '';
+  const ns = numbers.length ? t(numbers.length > 1 ? 'sponsorNumbers' : 'sponsorNumber', {x: listText(numbers)}) : '';
+  rows.push([t('broughtBy'), ltrIn(ls && ns ? t('sponsorBoth', {a: ls, b: ns}) : ls || ns)]);
+ }
+ if (word) rows.push([t('wordStreet'), en('span', '', word)]);
+ if (guests.length) rows.push([t('guestStars'), en('span', '', guests.join(', '))]);
+ if (rows.length) sec.append(facts(rows));
+ return sec;
+}
+// Sponsor text mixes Hebrew labels with Latin letters: a dir=auto span keeps each run in order.
+const ltrIn = s => { const x = el('span', '', s); x.setAttribute('dir', 'auto'); return x; };
 // The parts as a train: one car per numbered part, in order from the inline start, each opening its part. A car you have opened
 // is marked "Opened" (yours, not evidence); a part that needs a VPN or a card, or failed a check, keeps that shape.
 function partsTrain(e) {
@@ -4831,7 +5132,7 @@ function storyFact(e) {
 function identityCard(e, p) {
  const id = el('section', 'card'); id.append(el('h2', '', t('identityTitle')));
  id.append(facts([[t('production'), prodName(p)], [t('seasonLbl'), e.season != null ? fmtN(e.season) : ''],
-  [t('numberLbl'), e.number != null ? (numLabel(p) ? epCode(e) : fmtN(e.number)) : ''],
+  [t('numberLbl'), e.number != null ? (numLabel(p) ? epCode(e) : fmtId(p, e.number)) : ''],
   [t('confidence'), CONFS.includes(e.confidence) ? t('conf_' + e.confidence) : ''],
   // With a story name from another source, the Hebrew title is named for what it is: the verbatim catalogue title.
   [t(storyOf(e) ? 'catTitle' : 'hebTitle'), e.titleHe ? auto('span', '', e.titleHe) : ''], [t('storyName'), storyFact(e)],
@@ -4867,7 +5168,7 @@ function identityCard(e, p) {
  }
  return id;
 }
-function uploadRow(r, role, partNo, partCount, epCheck) {
+function uploadRow(r, role, partNo, partCount, epCheck, link) {
  const li = el('li', 'urow ser-' + r.series);
  const art = thumb(bigThumb(r.thumbnailUrl), 336, 189); const d = duration(r.durationSeconds); if (d) art.append(ltr(d, 'u-dur'));
  art.append(el('span', 'u-host', hostLabel(r)));
@@ -4881,7 +5182,10 @@ function uploadRow(r, role, partNo, partCount, epCheck) {
  const m = el('p', 'urow-meta'); m.append(el('span', '', t('role_' + role))); if (r.uploader) m.append(bdi(r.uploader));
  m.append(el('span', '', t(r.sourceType === 'official' ? 'official' : 'community')), el('span', '', t('upCheck', {level: t('ev_' + recEv(r))})));
  if (epCheck) m.append(el('span', '', t('upEpCheck', {level: t('ev_' + epCheck)})));
- body.append(m, accessLine(r));
+ if (link && link.container) m.append(el('span', 'u-cont', t('container_' + link.container)));
+ body.append(m);
+ if (link && link.extent) body.append(en('p', 'note', link.extent));
+ body.append(accessLine(r));
  const act = el('div', 'urow-actions');
  // A possible copy's own link is secondary: its identity is unresolved.
  const wcls = role === 'possible' ? 'btn ghost' : 'btn';
@@ -4920,7 +5224,7 @@ function compareTable(ups) {
 function slotInfo(s) {
  const p = prodById.get(s && s.prod); if (!p || !Number.isInteger(s.n)) return null;
  const g = prodModel(p).groups.find(x => (x.season ?? null) === (s.season ?? null));
- if (!g || !g.len || s.n < g.first || s.n > g.last || g.byNum.has(s.n)) return null;
+ if (!g || !g.len || s.n < g.first || s.n > g.last || g.byNum.has(s.n) || g.excluded.has(s.n)) return null;
  return {p, g, n: s.n, gap: s.n <= g.max};
 }
 VIEWS.slot = function mountSlot(v) {
@@ -4930,11 +5234,11 @@ VIEWS.slot = function mountSlot(v) {
  // production with its own number label names the slot by it ("Season 2, IETV no. 98").
  const code = numLabel(p) ? codeOf(p, g.season, n) : '', s = g.season != null ? fmtN(g.season) : '';
  const title = code ? (gap ? (s ? t('slotTitleSL', {s, code}) : code) : s ? t('slotExpTitleSL', {s, code}) : t('slotExpTitleL', {code})) :
-  gap ? (s ? t('untitledSE', {s, noun: t('noun_' + nounOf(p)), n: fmtN(n)}) : t('slotTitleN', {n: fmtN(n)})) :
-  s ? t('slotExpTitleS', {s, n: fmtN(n)}) : t('slotExpTitle', {n: fmtN(n)});
+  gap ? (s ? t('untitledSE', {s, noun: t('noun_' + nounOf(p)), n: fmtId(p, n)}) : t('slotTitleN', {n: fmtId(p, n)})) :
+  s ? t('slotExpTitleS', {s, n: fmtId(p, n)}) : t('slotExpTitle', {n: fmtId(p, n)});
  setTitle(title + ' · ' + prodName(p));
- v.append(crumbs([go('guide', t('guideTitle')), go(prodRoute(p.id), prodName(p))]));
- const hero = el('div', 'hero'); const art = numberArt({number: gap ? n : null}, 'u-art ph gapph', true);
+ v.append(crumbs([go('guide', t('guideTitle')), go(seasonRoute(p, g.season), prodName(p))]));
+ const hero = el('div', 'hero'); const art = numberArt({number: gap ? n : null, production: p.id}, 'u-art ph gapph', true);
  const info2 = el('div'); info2.append(el('p', 'kicker', [prodName(p), t('slotKicker')].join(' · ')), h1(title));
  const tags = el('div', 'head-tags'); const tg = el('span', 'tag');
  tg.append(glyph(gap ? 'gap' : 'slot'), txt(t(gap ? 'cov_gap' : 'cov_slot'))); tags.append(tg);
@@ -5105,6 +5409,7 @@ VIEWS.record = function mountRecord(v) {
  }
  const std = meta.standardCompletenessNotes, stdNote = std && typeof r.completenessStatus === 'string' &&
   Object.prototype.hasOwnProperty.call(std, r.completenessStatus) ? std[r.completenessStatus] : '';
+ // The record's own note, else the shared note its status names (the file's default note is not filled in for it).
  line(t('completeness'), r.completenessNote || stdNote);
  line(t('notes'), r.notes);
  const desc = r.descriptionHe || r.description;
@@ -5205,7 +5510,8 @@ function resetUploadFilters() {
  const u = state.u; u.q = ''; u.series.clear(); u.kinds.clear(); u.gs.clear(); u.ag.clear(); u.theme = ''; u.character = '';
  u.spoken.clear(); u.len = ''; u.starred = false; u.limit = 48;
 }
-function uMatch(r, Q, omit) {
+// A record passes the filters (all but the starred flag, which belongs to the entry).
+function recMatch(r, Q, omit) {
  const u = state.u;
  if (identifiedMode() && awaitingId(r)) return false;
  if (omit !== 'series' && u.series.size && !u.series.has(r.series)) return false;
@@ -5216,8 +5522,14 @@ function uMatch(r, Q, omit) {
  if (omit !== 'len' && !lenOk(r, u.len)) return false;
  if (omit !== 'theme' && u.theme && !(r.themes || []).some(v => tagKey(v) === u.theme)) return false;
  if (omit !== 'character' && u.character && !(r.characters || []).some(v => tagKey(v) === u.character)) return false;
- if (omit !== 'starred' && (u.starred || starredMode()) && !favorites.has(mapKey(r))) return false;
  return recHits(r, Q);
+}
+// An entry passes when one member passes every filter together (and `also`), so the card can show that member.
+const listEntries = () => (identifiedMode() ? recEntries() : entries);
+function entryMatch(en, Q, omit, also) {
+ const u = state.u;
+ if (omit !== 'starred' && (u.starred || starredMode()) && !entryStarred(en)) return false;
+ return en.members.some(r => recMatch(r, Q, omit) && (!also || also(r)));
 }
 // In Starred every card is starred: a "Starred only" flag carried over from Browse is neither counted nor written to the
 // hash there (it has no chip in that view).
@@ -5279,20 +5591,28 @@ function facetGroup(titleKey, id, entries, help) {
  if (help) { const p = el('p', 'fhelp', help); p.setAttribute('id', id + '-help'); g.append(p); }
  return g;
 }
+// Counts entries: an entry counts once under each value its passing members have.
 function countBy(Q, omit, fn) {
  const m = new Map(); let total = 0;
- for (const r of records) if (uMatch(r, Q, omit)) { total++; const k = fn(r); m.set(k, (m.get(k) || 0) + 1); }
+ for (const en of listEntries()) {
+  if (omit !== 'starred' && (state.u.starred || starredMode()) && !entryStarred(en)) continue;
+  const ks = new Set(); for (const r of en.members) if (recMatch(r, Q, omit)) ks.add(fn(r));
+  if (!ks.size) continue; total++; for (const k of ks) m.set(k, (m.get(k) || 0) + 1);
+ }
  return {m, total};
 }
 // Theme and character selects keep every option, with zero counts, so a selected option never disappears.
 function selectGroup(id, titleKey, allKey, field, Q) {
  const g = el('div', 'fgroup'); const lbl = el('label', 'fh', t(titleKey)); lbl.setAttribute('for', id); g.append(lbl);
  const sel = el('select'); sel.setAttribute('id', id); fk(sel, 'u-' + id);
- const counts = new Map(), seen = new Map(); let total = 0;
- for (const r of records) {
-  for (const v of r[field] || []) { const k = tagKey(v); if (k && !seen.has(k)) seen.set(k, v); }
-  if (!uMatch(r, Q, id)) continue; total++;
-  for (const k of new Set((r[field] || []).map(tagKey))) counts.set(k, (counts.get(k) || 0) + 1);
+ const seen = new Map();
+ for (const r of records) for (const v of r[field] || []) { const k = tagKey(v); if (k && !seen.has(k)) seen.set(k, v); }
+ // An entry counts once under each tag of its passing members.
+ const counts = new Map(); let total = 0;
+ for (const en of listEntries()) {
+  if ((state.u.starred || starredMode()) && !entryStarred(en)) continue;
+  const pass = en.members.filter(r => recMatch(r, Q, id)); if (!pass.length) continue; total++;
+  for (const k of new Set(pass.flatMap(r => (r[field] || []).map(tagKey)))) counts.set(k, (counts.get(k) || 0) + 1);
  }
  sel.add(new Option(t(allKey) + ' · ' + fmtN(total), ''));
  for (const [k, v] of [...seen].sort((a, b) => collator().compare(tagName(a[1]), tagName(b[1])))) {
@@ -5304,17 +5624,21 @@ function selectGroup(id, titleKey, allKey, field, Q) {
 // Spoken: a record with two recorded languages counts under each, so the chips can add up to more than the total.
 function spokenGroup(Q) {
  const u = state.u, m = new Map(); let total = 0;
- for (const r of records) { if (!uMatch(r, Q, 'spoken')) continue; total++; for (const g of spokenOf(r)) m.set(g, (m.get(g) || 0) + 1); }
+ for (const en of listEntries()) {
+  if ((u.starred || starredMode()) && !entryStarred(en)) continue;
+  const gs = new Set(); for (const r of en.members) if (recMatch(r, Q, 'spoken')) for (const g of spokenOf(r)) gs.add(g);
+  if (!gs.size) continue; total++; for (const g of gs) m.set(g, (m.get(g) || 0) + 1);
+ }
  const set = k => () => { u.spoken.has(k) ? u.spoken.delete(k) : u.spoken.add(k); u.limit = 48; updateUploads(); };
  return facetGroup('fSpoken', 'spoken', [chip(t('allLanguages'), total, !u.spoken.size, () => { u.spoken.clear(); u.limit = 48; updateUploads(); }, 'fsp-all'),
   ...SPOKEN.map(([k, label]) => chip(t(label), m.get(k) || 0, u.spoken.has(k), set(k), 'fsp-' + k))], t('spokenHelp'));
 }
 // Length: one choice at a time (the steps nest), each counted as if chosen.
 function lengthGroup(Q) {
- const u = state.u, rs = records.filter(r => uMatch(r, Q, 'len'));
+ const u = state.u, rs = listEntries().filter(en => entryMatch(en, Q, 'len'));
  const pickLen = k => () => { u.len = k; u.limit = 48; updateUploads(); };
  return facetGroup('fLength', 'len', ['', ...LENS].map(k => chip(k ? t('lenUpTo', {n: fmtN(Number(k))}) : t('lenAny'),
-  k ? rs.filter(r => lenOk(r, k)).length : rs.length, u.len === k, pickLen(k), 'fl-' + (k || 'any'))));
+  k ? rs.filter(en => entryMatch(en, Q, 'len', r => lenOk(r, k))).length : rs.length, u.len === k, pickLen(k), 'fl-' + (k || 'any'))));
 }
 // Facet groups, the Filters toggle label and the removable filter chips.
 function renderFacets(Q) {
@@ -5338,7 +5662,7 @@ function renderFacets(Q) {
   selectGroup('theme', 'fTheme', 'allThemes', 'themes', Q), selectGroup('character', 'fCharacter', 'allCharacters', 'characters', Q));
  const extra = el('div', 'fgroup');
  if (!starredMode()) {
-  const starredN = records.filter(r => favorites.has(mapKey(r)) && uMatch(r, Q, 'starred')).length;
+  const starredN = listEntries().filter(en => entryStarred(en) && entryMatch(en, Q, 'starred')).length;
   extra.append(chip([icon('star'), t('starredOnly')], starredN, u.starred, () => { u.starred = !u.starred; u.limit = 48; updateUploads(); }, 'f-starred'));
  }
  const n = activeFilterCount();
@@ -5364,11 +5688,14 @@ function updateUploads() {
  renderFacets(Q);
  U.banner.replaceChildren();
  if (Q.vid) U.banner.append(urlBanner(Q.vid));
- const list = records.filter(r => uMatch(r, Q, ''));
+ const list = listEntries().filter(en => entryMatch(en, Q, ''));
  const so = Object.keys(SERIES), ko = KINDS.map(k => k[0]), coll = collator();
  const secs = r => { const s = Number(r.durationSeconds); return Number.isFinite(s) && s > 0 ? s : -1; };
+ // Each card shows the first member, in link order, that passes every filter.
+ U.pick = new Map(list.map(en => [en.id, shownMember(en, r => recMatch(r, Q, ''))]));
  // Sort keys are computed once per update; one cached collator per language compares titles.
- const sk = new Map(list.map(r => [r, {s: secs(r), so: so.indexOf(r.series), ko: ko.indexOf(kindOf(r)), title: recTitle(r)}]));
+ const sk = new Map(list.map(en => { const r = U.pick.get(en.id);
+  return [en, {s: secs(r), so: so.indexOf(r.series), ko: ko.indexOf(kindOf(r)), title: entryTitle(en, r)}]; }));
  list.sort((a, b) => {
   const x = sk.get(a), y = sk.get(b);
   if (u.sort === 'longest') { const d = y.s - x.s; if (d) return d; }
@@ -5384,14 +5711,14 @@ function updateUploads() {
 }
 function appendCards(rs) {
  const frag = document.createDocumentFragment();
- for (const r of rs) { const li = uploadCard(r); U.items.set(r.id, li); U.shownIds.push(r.id); frag.append(li); }
+ for (const en of rs) { const li = uploadCard(en, U.pick.get(en.id)); U.items.set(en.id, li); U.shownIds.push(en.id); frag.append(li); }
  U.grid.append(frag);
 }
 // Oofnik's bin, drawn in CSS (no artwork), beside an empty result.
 function binArt() { const b = el('span', 'bin'); b.setAttribute('aria-hidden', 'true'); b.append(el('i'), el('i')); return b; }
 function renderCount() {
  const starredN = starredMode() ? starredCount() : 0;
- const total = starredMode() ? starredN : identifiedMode() ? menuCounts().identified : records.length;
+ const total = starredMode() ? starredN : identifiedMode() ? menuCounts().identified : entries.length;
  const parts = t('countUploads', {n: '\u0000', total: fmtN(total)}).split('\u0000');
  U.count.replaceChildren(txt(parts[0]), el('strong', '', fmtN(U.list.length)), txt(parts[1] || ''));
  U.empty.hidden = U.list.length !== 0;
@@ -5406,7 +5733,7 @@ function renderCount() {
   ['theme', 'fTheme', () => u.theme, () => { u.theme = ''; }], ['character', 'fCharacter', () => u.character, () => { u.character = ''; }]];
  for (const [omit, key, on, clear] of groups) {
   if (!on()) continue;
-  const n = records.reduce((c, r) => c + (uMatch(r, Q, omit) ? 1 : 0), 0); if (!n) continue;
+  const n = listEntries().reduce((c, en) => c + (entryMatch(en, Q, omit) ? 1 : 0), 0); if (!n) continue;
   relax.append(btn('btn ghost', t('relaxFilter', {name: t(key), n: fmtN(n)}), () => { clear(); u.limit = 48; updateUploads(); restoreFocus('u-count'); },
    'relax-' + omit));
  }
@@ -5428,7 +5755,7 @@ function showMoreUploads() {
 // A star toggle in the list updates in place: the button, the counts that depend on stars, and (in Starred or under
 // "Starred only") the card that no longer belongs. Focus then moves to the next card, else the previous one, else the count.
 function starChanged(r, b) {
- const key = activeKey(), on = favorites.has(mapKey(r));
+ const key = activeKey(), on = starOn(r);
  b.setAttribute('aria-pressed', String(on));
  renderFacets(parseQuery(state.u.q));
  const li = U.items && U.items.get(r.id);
@@ -5451,38 +5778,39 @@ function linkGroup(links) {
  const {e, role} = links[0], p = prodById.get(e.production), pos = role === 'possible';
  const same = links.filter(l => l.role === role && l.e.production === e.production && (l.e.season ?? null) === (e.season ?? null));
  if (same.length > 1 && same.every(l => Number.isInteger(l.e.number))) {
-  return {text: codeText(p, e.season ?? null, same.map(l => fmtN(l.e.number)).join(pos ? t('orSep') : ', ')),
+  return {text: codeText(p, e.season ?? null, same.map(l => fmtId(p, l.e.number)).join(pos ? t('orSep') : ', ')),
    rest: links.length - same.length};
  }
  if (same.length > 1 && pos) return {text: same.map(l => epCode(l.e) || epTitle(l.e)).join(t('orSep')), rest: links.length - same.length};
  return {text: epCode(e) || epTitle(e), rest: links.length - 1};
 }
-function uploadCard(r) {
+// A Browse card: the entry, shown through its member r (the first in link order that passes the filters). An episode entry is
+// headed by the episode and opens its page; its other copies are named on one line ("Also on YouTube, Vimeo").
+function alsoLine(en, r) {
+ const hosts = [...new Set(ranked(en).filter(m => m !== r).map(hostLabel))].filter(h => h !== hostLabel(r));
+ if (!hosts.length) return null;
+ const p = el('p', 'u-also'); p.append(txt(t('alsoOn', {hosts: hosts.join(', ')}))); return p;
+}
+function uploadCard(en, r) {
+ r = r || shownMember(en);
  const li = el('li'); const card = el('article', 'ucard ser-' + r.series);
  const art = thumb(r.thumbnailUrl, 320, 180); const d = duration(r.durationSeconds); if (d) art.append(ltr(d, 'u-dur'));
  art.append(el('span', 'u-host', hostLabel(r)));
  const body = el('div', 'u-body');
  body.append(el('p', 'u-kicker', [pick(...(SERIES[r.series] || [r.series])), pick(r.subseriesEn, r.subseriesHe)].filter(Boolean).join(' · ')));
- const h = el('h3', 'u-title'); const a = titleDir(go(recRoute(r.id), recTitle(r)), r); fk(a, 'card-' + r.id);
+ const h = el('h3', 'u-title'); const a = titleDir(go(entryRoute(en, r), entryTitle(en, r)), en.e || r); fk(a, 'card-' + en.id);
  h.append(a); body.append(h);
- const pub = publishedTitle(r);
+ const pub = en.e ? '' : publishedTitle(r);
  if (pub && normalize(pub) !== normalize(recTitle(r))) { const p = auto('p', 'u-pub', pub); p.setAttribute('title', pub); body.append(p); }
  const by = el('p', 'u-by'); if (r.uploader) by.append(bdi(r.uploader), txt(' · '));
  by.append(txt(t(r.sourceType === 'official' ? 'official' : 'community'))); body.append(by);
  const tags = el('div', 'u-tags'); tags.append(el('span', 'tag', t('k1_' + kindOf(r))));
- const links = recLinks.get(r.id);
- if (links) {
-  const {e, role} = links[0], pos = role === 'possible', g = linkGroup(links);
-  const tg = el('span', 'tag ' + (pos ? 't-possible' : 't-' + COV_CLASS[covOf(e)]));
-  if (!pos) tg.append(glyph(covOf(e)));
-  tg.append(bdi(g.text), txt(' · ' + t('role_' + role)));
-  if (g.rest) tg.append(txt(' ' + t('moreLinks', {n: fmtN(g.rest)})));
-  if (links.length > 1) tg.setAttribute('title', links.map(l => (epCode(l.e) || epTitle(l.e)) + ' · ' + t('role_' + l.role)).join('; '));
-  tags.append(tg);
- } else if (queueOf.has(r.id)) tags.append(el('span', 'tag t-queue', t('gsQueue')));
+ const lt = linkTag(r, true); if (lt) tags.append(lt); else if (queueOf.has(r.id)) tags.append(el('span', 'tag t-queue', t('gsQueue')));
  body.append(tags, accessLine(r));
- const act = el('div', 'u-actions'); if (destination(r)) act.append(viewed(recWatch(r, 'btn'), r));
- act.append(queueBtn(r, 'qa-' + r.id), starBtn(r, 'star-' + r.id));
+ const al = alsoLine(en, r); if (al) body.append(al);
+ const act = el('div', 'u-actions');
+ if (destination(r)) act.append(viewed(watchLink(entryB(en, r), false, 'btn', entryTitle(en, r)), r));
+ act.append(queueBtn(en, 'qa-' + en.id, r), starBtn(en, 'star-' + en.id));
  card.append(art, body, act); li.append(card); return li;
 }
 
@@ -5613,21 +5941,28 @@ VIEWS.todo = function mountTodo(v) {
 };
 // "269 or more" is a translated string: a bare '+' after the digits is a neutral that moves before them in Hebrew.
 const openCount = (n, open) => (open ? t('countOpen', {n: fmtN(n)}) : fmtN(n));
+// A production with many seasons (Sesame Street) is one group per season, each folded to its heading and count until opened.
 function epGroups(sid, eps, watchIt) {
- const by = new Map(); for (const e of eps) { if (!by.has(e.production)) by.set(e.production, []); by.get(e.production).push(e); }
- return groupRows(sid, [...by].map(([pid, list]) => [prodById.get(pid), list.map(e => ['td-' + e.id, () => todoEpRow(e, watchIt)])]));
+ const by = new Map();
+ for (const e of eps) {
+  const p = prodById.get(e.production), k = paged(p) ? e.production + ':' + (e.season ?? '') : e.production;
+  if (!by.has(k)) by.set(k, {p, season: paged(p) ? e.season : undefined, list: []});
+  by.get(k).list.push(e);
+ }
+ return groupRows(sid, [...by.values()].map(({p, season, list}) => [p, list.map(e => ['td-' + e.id, () => todoEpRow(e, watchIt)]), season]));
 }
 // Rows are [focus key, builder] pairs: only the rows shown (25 per group) are built, so the cost follows the budget,
 // not the size of the queue. Each group is headed by its production and count. "Show all" moves focus to the first newly
 // revealed row.
 function groupRows(sid, groups) {
  const out = [];
- for (const [p, rows] of groups) {
+ for (const [p, rows, season] of groups) {
   if (!p || !rows.length) continue;
-  const h = el('li', 'tgroup');
-  h.append(el('span', '', prodName(p)), el('span', 'fmt fmt-' + fmtOf(p), t('fs_' + fmtOf(p))), el('span', 'tcount', fmtN(rows.length)));
+  const h = el('li', 'tgroup'), folded = season !== undefined;
+  h.append(el('span', '', prodName(p) + (folded && season != null ? ' · ' + t('seasonLbl') + ' ' + fmtN(season) : '')),
+   el('span', 'fmt fmt-' + fmtOf(p), t('fs_' + fmtOf(p))), el('span', 'tcount', fmtN(rows.length)));
   out.push(h);
-  const key = sid + ':' + p.id, limit = state.limits.get(key) ?? 25;
+  const key = sid + ':' + p.id + (folded ? ':' + season : ''), limit = state.limits.get(key) ?? (folded ? 0 : 25);
   out.push(...rows.slice(0, limit).map(([, make]) => make()));
   if (rows.length > limit) {
    const li = el('li'); li.style.padding = '8px 0'; const next = rows[limit][0];
@@ -5815,9 +6150,11 @@ const prefs = {spoken: 'all', len: ''};
 }
 const prefOk = r => (prefs.spoken === 'all' || spokenOf(r).includes(prefs.spoken)) && lenOk(r, prefs.len);
 // Videos offered without being asked for (Up next, the generated shelves, Surprise): not marked as needing a VPN, a library
-// card or a purchase, not failed or region-limited in a check. Nothing says they play: most links are not test-played.
+// card or a purchase, not failed or region-limited in a check. A service the user subscribes to is offered like a free link.
+// Nothing says they play: most links are not test-played.
 const PICK_ACC = new Set(['played', 'local', 'vimeo', 'public']);
-const offerable = r => !!destination(r) && PICK_ACC.has(accessOf(r)) && checkOf(r) !== 'region-limited';
+const offerable = r => !!destination(r) && checkOf(r) !== 'region-limited' &&
+ (PICK_ACC.has(accessOf(r)) || (accessOf(r) === 'licensed' && subscribedSvc(svcOf(r))));
 const pickable = r => offerable(r) && prefOk(r);
 const recByKey = new Map(records.map(r => [mapKey(r), r]));
 // Random choices (Surprise, shelf shuffles). data-start-seed makes them repeatable for the checks.
@@ -5835,6 +6172,8 @@ const watchedRec = r => {
  const ls = recLinks.get(r.id);
  return !!ls && ls.length === 1 && (ls[0].role === 'whole-candidate' || ls[0].role === 'alternate-edition') && watched.has(ls[0].e.id);
 };
+// An episode entry shows its episode's Watched mark; a video entry, its record's.
+const watchedEntry = (en, r) => (en.e ? watched.has(en.e.id) : watchedRec(r));
 // A Watch link drawn as a ticket: the stub shows the length; the link's name is unchanged.
 function ticket(a, r) {
  a.className += ' ticket';
@@ -5842,34 +6181,56 @@ function ticket(a, r) {
  if (d) { const s = el('span', 'stub'); s.setAttribute('aria-hidden', 'true'); s.append(ltr(d)); a.append(s); }
  return a;
 }
-const recWatchB = r => ({r, role: 'whole-candidate', acc: accessOf(r), i: 0, n: 0});
 // Up next: the next unwatched core Rechov Sumsum episode with a whole copy among the offered videos. The copy is chosen among
 // the episode's offered whole and alternate copies, best access first, so a copy that is not offered never hides one that is.
 function nextCopy(e) {
- let best = null, score = Infinity;
+ let best = null, bk = null;
  for (const u of upsOf(e)) {
   if ((u.role !== 'whole-candidate' && u.role !== 'alternate-edition') || !pickable(u.r)) continue;
-  const s = ACC_RANK[accessOf(u.r)] * 10 + (u.role === 'alternate-edition' ? 1 : 0);
-  if (s < score) { score = s; best = u; }
+  const k = copyKey(u.r, u.role, 0);
+  if (!bk || cmpKeys(k, bk) < 0) { bk = k; best = u; }
  }
  return best ? {r: best.r, role: best.role, acc: accessOf(best.r), i: 0, n: 0} : null;
 }
-function nextCands() {
+// Up next walks one family's core episodes: Rechov Sumsum (the goal series) or Sesame Street, chosen with the switch on its
+// card and stored as sumsum-upnext. Without a stored choice, English Spoken picks Sesame Street; anything else, Rechov Sumsum.
+const UPNEXT_FAMS = [FAMILY_OF[[...GOAL_SERIES][0]], 'sesame-street']
+ .filter((f, i, a) => f && a.indexOf(f) === i && prods.some(p => upNextCore(p, f) && (epsByProd.get(p.id) || []).length));
+function upNextCore(p, f) { return f === FAMILY_OF[[...GOAL_SERIES][0]] ? isCoreRechov(p) : fmtOf(p) === 'core' && famOf(p) === f; }
+const upNextFam = () => {
+ const s = readStored('sumsum-upnext', ''); if (UPNEXT_FAMS.includes(s)) return s;
+ return UPNEXT_FAMS[prefs.spoken === 'en' && UPNEXT_FAMS.length > 1 ? 1 : 0] || '';
+};
+function famCands(f) {
  const out = [];
- for (const p of prods) {
-  if (!isCoreRechov(p)) continue;
+ for (const p of [...prods].sort(byRank)) {
+  if (!upNextCore(p, f)) continue;
   for (const e of epsByProd.get(p.id) || []) {
    if (covOf(e) !== 'whole-candidate' || watched.has(e.id)) continue;
    const b = nextCopy(e); if (b) out.push({e, b});
   }
  }
- if (out.length) return out;
- // No core episode fits the preferences: any offered video that does.
- return records.filter(pickable).map(r => ({e: null, b: recWatchB(r)}));
+ return out;
 }
-// Opened videos, last opened first. Keys that match no record stay stored but are not shown.
-const againList = () => Object.keys(opened).map(k => [recByKey.get(k), opened[k]]).filter(([r]) => r)
- .sort((a, b) => Date.parse(b[1].last) - Date.parse(a[1].last));
+function nextCands() {
+ // The chosen family first; when nothing in it qualifies, the other family's (out.fam names the family shown).
+ const f = upNextFam();
+ for (const g of [f, ...UPNEXT_FAMS.filter(x => x !== f)]) { const out = g ? famCands(g) : []; if (out.length) return Object.assign(out, {fam: g}); }
+ // No core episode fits the preferences: any offered entry that does, through its first offered member.
+ return entries.map(en => [en, pickMember(en, pickable)]).filter(([, r]) => r).map(([en, r]) => ({e: en.e, b: entryB(en, r)}));
+}
+// Opened entries, last opened first, each with its opens summed and the member opened last. Keys that match no record stay
+// stored but are not shown.
+function againList() {
+ const seen = new Set(), out = [];
+ for (const k of Object.keys(opened)) {
+  const r = recByKey.get(k), en = r && entryOfRec.get(r.id); if (!en || seen.has(en)) continue;
+  seen.add(en); const o = entryOpens(en); if (o) out.push([en, o]);
+ }
+ return out.sort((a, b) => Date.parse(b[1].last) - Date.parse(a[1].last));
+}
+// The member Again reopens: the one opened last while it still has a link, else the entry's first.
+const againMember = (en, o) => (o.r && destination(o.r) ? o.r : pickMember(en));
 // "Nothing fits": the preference that empties a list, with a one-tap way back.
 function prefClears(cls) {
  const box = el('div', cls || 'relax');
@@ -5895,7 +6256,7 @@ function prefGroup(k, labelKey, opts) {
 }
 // The card used on Home's shelves, in Again and in Surprise: picture, title, production and type, where it plays, then the
 // Watch ticket, "+" (queue) and the star.
-function linkTag(r) {
+function linkTag(r, withTip) {
  const links = recLinks.get(r.id);
  if (!links) return null;
  const {e, role} = links[0], pos = role === 'possible', g = linkGroup(links);
@@ -5903,38 +6264,45 @@ function linkTag(r) {
  if (!pos) tg.append(glyph(covOf(e)));
  tg.append(bdi(g.text), txt(' · ' + t('role_' + role)));
  if (g.rest) tg.append(txt(' ' + t('moreLinks', {n: fmtN(g.rest)})));
+ if (withTip && links.length > 1) tg.setAttribute('title', links.map(l => (epCode(l.e) || epTitle(l.e)) + ' · ' + t('role_' + l.role)).join('; '));
  return tg;
 }
-function opensSticker(r) {
- const o = opened[mapKey(r)]; if (!o) return null;
+function opensSticker(en) {
+ const o = entryOpens(en); if (!o) return null;
  const s = el('span', 'sticker s-n'); s.append(ltr('×' + fmtN(o.n)), sr(' ' + t('openedN', {n: fmtN(o.n)}))); return s;
 }
-function queueBtn(r, key) {
- const on = inSitting(r);
+// x is an entry or an upload. Adding an entry queues the link `pick` (the member its card shows); removing it takes every
+// member out of the queue.
+function queueBtn(x, key, pick) {
+ const on = sittingOn(x);
  const b = btn('qadd', '', () => {
-  const k = mapKey(r), was = inSitting(r);
-  setSitting(was ? sitting.filter(x => x !== k) : [...sitting, k]);
+  const was = sittingOn(x), ks = isEntry(x) ? x.members.map(mapKey) : [mapKey(x)];
+  const add = mapKey(isEntry(x) ? pick || pickMember(x) || ranked(x)[0] : x);
+  setSitting(was ? sitting.filter(k => !ks.includes(k)) : [...sitting, add]);
   toast(t(was ? 'queueRemoved' : 'queueAdded'));
  }, key);
- b._rec = r; b.setAttribute('aria-pressed', String(on)); b.setAttribute('aria-label', t('queueAdd', {title: recTitle(r)}));
+ b._rec = x; b.setAttribute('aria-pressed', String(on));
+ b.setAttribute('aria-label', t('queueAdd', {title: isEntry(x) ? entryTitle(x, pick) : recTitle(x)}));
  const m = el('span', 'qmark', on ? '✓' : '+'); m.setAttribute('aria-hidden', 'true'); b._mark = m; b.append(m);
  return b;
 }
-function homeCard(r, prefix) {
- const li = el('li'), card = el('article', 'hcard ser-' + r.series);
+// An entry, shown through its first member (in link order) that passes `ok` (the shelf's or Surprise's offer), else its first.
+function homeCard(en, prefix, ok) {
+ const r = shownMember(en, ok), li = el('li'), card = el('article', 'hcard ser-' + r.series), title = entryTitle(en, r);
  const art = thumb(r.thumbnailUrl, 320, 180); const d = duration(r.durationSeconds); if (d) art.append(ltr(d, 'u-dur'));
- const st = opensSticker(r); if (st) art.append(st);
- if (watchedRec(r)) { const w = el('span', 'sticker s-seen', '✓'); w.setAttribute('aria-hidden', 'true'); art.append(w); }
+ const st = opensSticker(en); if (st) art.append(st);
+ const seen = watchedEntry(en, r);
+ if (seen) { const w = el('span', 'sticker s-seen', '✓'); w.setAttribute('aria-hidden', 'true'); art.append(w); }
  const body = el('div', 'h-body');
- const h = el('h3', 'h-title'); const a = titleDir(go(recRoute(r.id), recTitle(r)), r); fk(a, prefix + 'card-' + r.id); h.append(a);
+ const h = el('h3', 'h-title'); const a = titleDir(go(entryRoute(en, r), title), en.e || r); fk(a, prefix + 'card-' + en.id); h.append(a);
  body.append(h, el('p', 'h-meta', [pick(...(SERIES[r.series] || [r.series])), t('k1_' + kindOf(r))].join(' · ')));
  const tg = linkTag(r); if (tg) { const tags = el('div', 'u-tags'); tags.append(tg); body.append(tags); }
- if (watchedRec(r)) body.append(seenTag());
+ if (seen) body.append(seenTag());
  body.append(accessLine(r));
  const act = el('div', 'h-act');
- if (destination(r)) act.append(fk(ticket(viewed(watchLink(recWatchB(r), true, 'btn', recTitle(r)), r), r), prefix + 'w-' + r.id));
- const sb = starBtn(r, prefix + 'star-' + r.id); sb._li = li; li._starKey = prefix + 'star-' + r.id;
- act.append(queueBtn(r, prefix + 'q-' + r.id), sb);
+ if (destination(r)) act.append(fk(ticket(viewed(watchLink(entryB(en, r), true, 'btn', title), r), r), prefix + 'w-' + en.id));
+ const sb = starBtn(en, prefix + 'star-' + en.id); sb._li = li; li._starKey = prefix + 'star-' + en.id;
+ act.append(queueBtn(en, prefix + 'q-' + en.id, r), sb);
  card.append(art, body, act); li.append(card); return li;
 }
 // A shelf keeps the order its shuffle button gave it until the next press, so re-rendering (a star, the queue) never moves
@@ -5948,7 +6316,7 @@ function shuffleIds(list) {
  const a = list.map(r => r.id); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rand() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
  return a;
 }
-function shelf(id, title, items, see, max = 12) {
+function shelf(id, title, items, see, max = 12, ok) {
  if (!items.length) return null;
  const sec = el('section', 'shelf'); sec.setAttribute('aria-labelledby', 'sh-' + id);
  const head = el('div', 'shelf-head'); const h = el('h2', '', title); h.setAttribute('id', 'sh-' + id); head.append(h);
@@ -5959,7 +6327,7 @@ function shelf(id, title, items, see, max = 12) {
  }
  if (see) { const a = go(see[0], t('seeAll', {n: fmtN(see[1])}), 'see-all'); fk(a, 'see-' + id); head.append(a); }
  const ul = el('ul', 'shelf-row');
- for (const r of shuffled(items, state.shuffle.get(id)).slice(0, max)) ul.append(homeCard(r, 's' + id + '-'));
+ for (const en of shuffled(items, state.shuffle.get(id)).slice(0, max)) ul.append(homeCard(en, 's' + id + '-', ok));
  sec.append(head, ul, el('div', 'ledge')); return sec;
 }
 // The Browse query a Home link opens: its own filter plus the Home preferences, written out.
@@ -5967,21 +6335,45 @@ const prefQuery = extra => {
  const q = [...extra]; if (prefs.spoken !== 'all') q.push('spoken=' + prefs.spoken); if (prefs.len) q.push('len=' + prefs.len);
  return 'browse' + (q.length ? '?' + q.join('&') : '');
 };
-// The characters with the most videos (editorial tags), each with a picture from a video tagged with that character alone.
-let stoopCache = null;
-function stoopChars() {
- if (stoopCache) return stoopCache;
+// The characters with the most entries (editorial tags on their members) in the Spoken language, each with a picture from a
+// video tagged with that character alone. Under All, the Hebrew and English rankings take turns, so the thousands of English
+// Sesame Street videos never push Kippi and Oofnik off the row.
+const stoopCache = new Map();
+const hasChar = (r, k) => (r.characters || []).some(v => tagKey(v) === k);
+// Home's two language sides: English-only videos, and everything else (Hebrew, mixed or unrecorded).
+const sideOf = r => (spokenOf(r).includes('en') && !spokenOf(r).includes('he') ? 'en' : 'he');
+// Ranked by a side (under All) or by the Spoken language itself.
+function charRank(g, side) {
  const m = new Map();
- for (const r of records) {
-  const ks = [...new Set((r.characters || []).map(tagKey).filter(Boolean))];
-  for (const k of ks) {
-   if (!m.has(k)) m.set(k, {k, raw: (r.characters || []).find(v => tagKey(v) === k), n: 0, pic: null, solo: false});
-   const c = m.get(k); c.n++;
-   if (r.thumbnailUrl && (!c.pic || (!c.solo && ks.length === 1))) { c.pic = r.thumbnailUrl; c.solo = ks.length === 1; }
+ for (const en of entries) {
+  const counted = new Set();
+  for (const r of en.members) {
+   if (side ? sideOf(r) !== g : !spokenOf(r).includes(g)) continue;
+   const ks = [...new Set((r.characters || []).map(tagKey).filter(Boolean))];
+   for (const k of ks) {
+    if (!m.has(k)) m.set(k, {k, raw: (r.characters || []).find(v => tagKey(v) === k), n: 0, pic: null, solo: false});
+    const c = m.get(k); if (!counted.has(k)) { c.n++; counted.add(k); }
+    if (r.thumbnailUrl && (!c.pic || (!c.solo && ks.length === 1))) { c.pic = r.thumbnailUrl; c.solo = ks.length === 1; }
+   }
   }
  }
- stoopCache = [...m.values()].sort((a, b) => b.n - a.n || a.k.localeCompare(b.k)).slice(0, 12);
- return stoopCache;
+ return [...m.values()].sort((a, b) => b.n - a.n || a.k.localeCompare(b.k));
+}
+// Lists taking turns, first list first, each item once (by `key`), up to `max`.
+function alternate(lists, key, max) {
+ const out = [], seen = new Set();
+ for (let i = 0; out.length < max && lists.some(l => i < l.length); i++) {
+  for (const l of lists) {
+   const x = l[i]; if (!x || seen.has(key(x)) || out.length >= max) continue;
+   seen.add(key(x)); out.push(x);
+  }
+ }
+ return out;
+}
+function stoopChars() {
+ const sp = prefs.spoken;
+ if (!stoopCache.has(sp)) stoopCache.set(sp, sp === 'all' ? alternate([charRank('he', true), charRank('en', true)], c => c.k, 12) : charRank(sp).slice(0, 12));
+ return stoopCache.get(sp);
 }
 function stoop() {
  const cs = stoopChars(); if (!cs.length) return null;
@@ -5989,7 +6381,7 @@ function stoop() {
  const h = el('h2', 'sr-only', t('characters')); h.setAttribute('id', 'stoop-h');
  const ul = el('ul', 'tokens');
  for (const c of cs) {
-  const n = records.reduce((s, r) => s + ((r.characters || []).some(v => tagKey(v) === c.k) && prefOk(r) ? 1 : 0), 0);
+  const n = entries.reduce((s, en) => s + (en.members.some(r => hasChar(r, c.k) && prefOk(r)) ? 1 : 0), 0);
   const a = go(prefQuery(['character=' + encodeURIComponent(c.k)]), '', 'tok'); fk(a, 'tok-' + c.k);
   const face = el('span', 'face' + (/kippi/.test(c.k) ? ' quills' : /oofnik/.test(c.k) ? ' bin-face' : ''));
   face.setAttribute('aria-hidden', 'true'); const img = imgEl(c.pic, 96, 96); if (img) face.append(img);
@@ -6002,20 +6394,39 @@ function stoop() {
  }
  sec.append(h, ul, el('div', 'stoop-step')); return sec;
 }
+// The family switch on the Up next card: two small buttons, the chosen one pressed.
+// The pressed button is the family shown; when the chosen family has nothing to offer, a line says so.
+function famSwitch(shown) {
+ if (UPNEXT_FAMS.length < 2) return null;
+ const box = el('div', 'seg-toggle fam-switch'); box.setAttribute('role', 'group'); box.setAttribute('aria-label', t('upNextFrom'));
+ const cur = shown || upNextFam();
+ for (const f of UPNEXT_FAMS) {
+  const fam = FAMILIES.find(x => x.id === f) || {};
+  const b = btn('', pick(fam.en, fam.he) || f, () => {
+   persist('sumsum-upnext', f); state.nextSkip = 0; mount(false); restoreFocus('next-fam-' + f);
+  }, 'next-fam-' + f);
+  b.setAttribute('aria-pressed', String(f === cur)); box.append(b);
+ }
+ return box;
+}
 function heroNext() {
  const cands = nextCands(), sec = el('section', 'next'); sec.setAttribute('aria-labelledby', 'next-h');
  const h = el('h2', 'kicker', t('nextTitle')); h.setAttribute('id', 'next-h');
+ const fs = famSwitch(cands.fam), chosen = upNextFam();
+ const famName = f => { const x = FAMILIES.find(y => y.id === f) || {}; return pick(x.en, x.he) || f; };
+ const fallback = cands.fam && cands.fam !== chosen ? el('p', 'note fam-none', t('upNextNone', {name: famName(chosen)})) : null;
  if (!cands.length) {
-  sec.className += ' none'; sec.append(h, el('p', '', t('nothingFits')), prefClears()); return sec;
+  sec.className += ' none'; sec.append(h); if (fs) sec.append(fs); sec.append(el('p', '', t('nothingFits')), prefClears()); return sec;
  }
  const n = cands.length, {e, b} = cands[((state.nextSkip % n) + n) % n], r = b.r, p = e && prodById.get(e.production);
  const art = el('span', 'u-art'); const img = imgEl(bigThumb(r.thumbnailUrl), 640, 360); if (img) art.append(img);
  const d = duration(r.durationSeconds); if (d) art.append(ltr(d, 'u-dur'));
- if (e && e.number != null) { const pl = el('span', 'plaque', fmtN(e.number)); pl.setAttribute('aria-hidden', 'true'); art.append(pl); }
+ if (e && e.number != null) { const pl = el('span', 'plaque', fmtId(p, e.number)); pl.setAttribute('aria-hidden', 'true'); art.append(pl); }
  const body = el('div', 'next-body');
  const tt = el('p', 'next-title');
  const a = e ? titleDir(go(epRoute(e.id), epTitle(e)), e) : titleDir(go(recRoute(r.id), recTitle(r)), r); fk(a, 'next-ep'); tt.append(a);
- body.append(h, tt, el('p', 'note', e ? [prodName(p), epCode(e)].filter(Boolean).join(' · ') :
+ body.append(h); if (fs) body.append(fs); if (fallback) body.append(fallback);
+ body.append(tt, el('p', 'note', e ? [prodName(p), epCode(e)].filter(Boolean).join(' · ') :
   [pick(...(SERIES[r.series] || [r.series])), t('k1_' + kindOf(r))].join(' · ')), accessLine(r));
  const title = e ? epTitle(e) : recTitle(r);
  const actions = el('div', 'next-act');
@@ -6024,15 +6435,16 @@ function heroNext() {
   actions.append(btn('btn ghost', t('previous'), () => { state.nextSkip--; mount(false); restoreFocus('next-prev'); }, 'next-prev'),
    btn('btn ghost', t('nextSkip'), () => { state.nextSkip++; mount(false); restoreFocus('next-skip'); }, 'next-skip'));
  }
- actions.append(queueBtn(r, 'next-q'));
+ const cur = entryOfRec.get(r.id);
+ actions.append(queueBtn(cur, 'next-q', r));
  body.append(actions);
- // The last video opened, one tap away: babies like the same thing again.
- const last = againList()[0];
- if (last && mapKey(last[0]) !== mapKey(r) && destination(last[0])) {
-  const ag = el('p', 'again-hero');
-  const aw = viewed(watchLink(recWatchB(last[0]), true, 'btn ghost', recTitle(last[0])), last[0]);
-  aw.prepend(el('span', 'again-lbl', t('againShort') + ' · ')); ag.append(fk(ticket(aw, last[0]), 'again-hero'));
-  ag.append(partLang(el('span', 'again-title', recTitle(last[0])), recTitle(last[0])));
+ // The last entry opened, one tap away: babies like the same thing again.
+ const last = againList()[0], lr = last && againMember(last[0], last[1]);
+ if (last && last[0] !== cur && lr) {
+  const ag = el('p', 'again-hero'), lt = entryTitle(last[0], lr);
+  const aw = viewed(watchLink(entryB(last[0], lr), true, 'btn ghost', lt), lr);
+  aw.prepend(el('span', 'again-lbl', t('againShort') + ' · ')); ag.append(fk(ticket(aw, lr), 'again-hero'));
+  ag.append(partLang(el('span', 'again-title', lt), lt));
   body.append(ag);
  }
  sec.append(art, body); sec.setAttribute('title', t('nextHelp'));
@@ -6041,6 +6453,8 @@ function heroNext() {
 // The queue: open the videos one after another, each in a new tab. "Open next" is a real link to the first; after its click
 // the item leaves the queue (deferred, so the link still navigates).
 const queueItems = () => sitting.map(k => recByKey.get(k)).filter(Boolean);
+// A queued link is named by its entry (the episode), and opens as that member (a part stays that part).
+const queued = r => { const en = entryOfRec.get(r.id); return {en, b: entryB(en, r), title: entryTitle(en, r)}; };
 let lastCleared = [];
 function queueCard(where) {
  const sec = el('section', 'card qcard'); sec.setAttribute('aria-labelledby', where + '-qh');
@@ -6063,8 +6477,11 @@ function queueCard(where) {
  items.forEach((r, i) => {
   const li = el('li', 'srow'), k = mapKey(r);
   const th = el('span', 'sthumb'); const img = imgEl(r.thumbnailUrl, 112, 63); if (img) th.append(img);
-  const tx = el('span', 'stext'); const a = titleDir(go(recRoute(r.id), recTitle(r)), r); fk(a, where + '-qt-' + r.id);
-  tx.append(a, el('span', 'note', [duration(r.durationSeconds), hostLabel(r)].filter(Boolean).join(' · ')));
+  const {en, b, title: qt} = queued(r);
+  const tx = el('span', 'stext'); const a = titleDir(go(entryRoute(en, r), qt), en.e || r);
+  fk(a, where + '-qt-' + r.id);
+  tx.append(a, el('span', 'note', [b.role === 'part' && b.n > 1 ? t('partOf', {i: fmtN(b.i), n: fmtN(b.n)}) : '',
+   duration(r.durationSeconds), hostLabel(r)].filter(Boolean).join(' · ')));
   const ctl = el('span', 'qctl');
   const move = (d2, lbl, sym, key) => {
    const b = btn('qbtn', sym, () => {
@@ -6085,7 +6502,7 @@ function queueCard(where) {
  sec.append(ol);
  const act = el('div', 'qact'), first = items[0];
  if (destination(first)) {
-  const open = viewed(watchLink(recWatchB(first), true, 'btn', recTitle(first)), first);
+  const fq = queued(first), open = viewed(watchLink(fq.b, true, 'btn', fq.title), first);
   open.prepend(el('span', 'open-lbl', t('openNext') + ' · '));
   const after = [where + '-open', qh];
   open.addEventListener('click', ev => { if (!ev || !(ev.button > 0)) setSitting(sitting.filter(x => x !== mapKey(first)), after); });
@@ -6102,13 +6519,13 @@ function againCard() {
  const sec = el('section', 'card again'); sec.setAttribute('aria-labelledby', 'again-h');
  const h = el('h2', '', t('again')); h.setAttribute('id', 'again-h'); sec.append(h);
  const ul = el('ul', 'alist');
- for (const [r, o] of list) {
-  const li = el('li', 'arow');
+ for (const [en, o] of list) {
+  const r = againMember(en, o) || o.r, title = entryTitle(en, r), li = el('li', 'arow');
   const th = el('span', 'sthumb'); const img = imgEl(r.thumbnailUrl, 112, 63); if (img) th.append(img);
-  const tx = el('span', 'stext'); const a = titleDir(go(recRoute(r.id), recTitle(r)), r); fk(a, 'ag-t-' + r.id);
+  const tx = el('span', 'stext'); const a = titleDir(go(entryRoute(en, r), title), en.e || r); fk(a, 'ag-t-' + en.id);
   const nn = el('span', 'note'); nn.append(ltr('×' + fmtN(o.n)), sr(' ' + t('openedN', {n: fmtN(o.n)})));
   tx.append(a, nn); li.append(th, tx);
-  if (destination(r)) li.append(fk(ticket(viewed(watchLink(recWatchB(r), true, 'btn', recTitle(r)), r), r), 'ag-w-' + r.id));
+  if (destination(r)) li.append(fk(ticket(viewed(watchLink(entryB(en, r), true, 'btn', title), r), r), 'ag-w-' + en.id));
   ul.append(li);
  }
  sec.append(ul); return sec;
@@ -6137,11 +6554,14 @@ VIEWS.home = function mountHome(v) {
  side.append(queueCard('home')); const ag = againCard(); if (ag) side.append(ag);
  top.append(heroNext(), side); v.append(top);
  const st = stoop(); if (st) v.append(st);
- const starredRecs = records.filter(r => favorites.has(mapKey(r)));
- const s1 = shelf('starred', t('navStarred'), starredRecs, ['starred', starredRecs.length]); if (s1) v.append(s1);
- const music = records.filter(r => (r.themes || []).some(x => tagKey(x) === MUSIC));
- const musicOk = music.filter(pickable);
- const s2 = shelf('music', t('shelfMusic'), musicOk, [prefQuery(['theme=' + encodeURIComponent(MUSIC)]), music.filter(prefOk).length]);
+ const starredEns = entries.filter(entryStarred);
+ const s1 = shelf('starred', t('navStarred'), starredEns, ['starred', starredEns.length]); if (s1) v.append(s1);
+ const isMusic = r => (r.themes || []).some(x => tagKey(x) === MUSIC), musicPick = r => isMusic(r) && pickable(r);
+ // Under All, Hebrew and English songs take turns, as on the character row.
+ const musicAll = entries.filter(en => en.members.some(musicPick)), sideSongs = g => musicAll.filter(en => sideOf(shownMember(en, musicPick)) === g);
+ const musicOk = prefs.spoken === 'all' ? alternate([sideSongs('he'), sideSongs('en')], en => en.id, Infinity) : musicAll;
+ const s2 = shelf('music', t('shelfMusic'), musicOk, [prefQuery(['theme=' + encodeURIComponent(MUSIC)]),
+  entries.filter(en => en.members.some(r => isMusic(r) && prefOk(r))).length], 12, musicPick);
  if (s2) v.append(s2);
  v.append(prodDoors());
 };
@@ -6152,7 +6572,14 @@ VIEWS.home = function mountHome(v) {
 const pops = {open: '', opener: null};
 const surprise = {hist: [], pos: -1, pool: [], face: 0};
 const DIE = ['א', 'ב', 'ג', 'ד', 'ה', 'ו'];
-function surprisePool() { return UVIEWS.includes(state.view) && U.list ? U.list.filter(offerable) : records.filter(pickable); }
+// On Browse and Starred the pick is a listed entry through a member that passes the filters and is offered.
+function surpriseOk() {
+ if (!(UVIEWS.includes(state.view) && U.list)) return pickable;
+ const Q = parseQuery(state.u.q); return r => offerable(r) && recMatch(r, Q, '');
+}
+function surprisePool() {
+ const ok = surpriseOk(); return (UVIEWS.includes(state.view) && U.list ? U.list : entries).filter(en => pickMember(en, ok));
+}
 function rollSurprise() {
  // The list may have changed since the last pick (a pick unstarred on Starred): picks come from what is there now.
  surprise.pool = surprisePool();
@@ -6183,7 +6610,7 @@ function renderSurprise() {
   body.append(el('p', '', t(UVIEWS.includes(state.view) ? 'surpriseNoneHere' : 'nothingFits')));
   if (!UVIEWS.includes(state.view)) body.append(prefClears());
  } else {
-  const ul = el('ul', 'pick'); ul.append(homeCard(r, 'sp-')); body.append(ul);
+  const ul = el('ul', 'pick'); ul.append(homeCard(r, 'sp-', surpriseOk())); body.append(ul);
   const act = el('div', 'pop-act');
   if (surprise.pos > 0) act.append(btn('btn ghost', t('previous'), () => { surprise.pos--; renderSurprise(); restoreFocus('sp-prev', 'sp-another', 'surprise-h'); }, 'sp-prev'));
   if (surprise.pool.length > 1 || (surprise.pool.length === 1 && surprise.pool[0] !== r)) act.append(btn('btn', t('another'), () => { rollSurprise(); renderSurprise(); restoreFocus('sp-another', 'sp-prev', 'surprise-h'); }, 'sp-another'));
@@ -6234,13 +6661,13 @@ function renderQueueUi() {
  // The bar's room at the bottom of the page (CSS: [data-qbar]).
  root.setAttribute('data-qbar', items.length ? 'on' : 'off');
  if (!items.length) return;
- const r = items[0], th = el('span', 'sthumb'); const img = imgEl(r.thumbnailUrl, 112, 63); if (img) th.append(img);
- const tx = el('span', 'stext'); tx.append(el('span', 'qb-k', t('nextInQueue', {n: fmtN(items.length)})), partLang(el('span', 'qb-t', recTitle(r)), recTitle(r)));
+ const r = items[0], q = queued(r), th = el('span', 'sthumb'); const img = imgEl(r.thumbnailUrl, 112, 63); if (img) th.append(img);
+ const tx = el('span', 'stext'); tx.append(el('span', 'qb-k', t('nextInQueue', {n: fmtN(items.length)})), partLang(el('span', 'qb-t', q.title), q.title));
  const more = btn('qbar-more', '', () => openPop('queue', more), 'qbar-more'); more.setAttribute('aria-label', t('queueN', {n: fmtN(items.length)}));
  more.append(th, tx);
  bar.append(more);
  if (destination(r)) {
-  const open = viewed(watchLink(recWatchB(r), true, 'btn', recTitle(r)), r);
+  const open = viewed(watchLink(q.b, true, 'btn', q.title), r);
   open.prepend(el('span', 'open-lbl', t('openNext') + ' · '));
   // When the last one goes, so does the bar: focus moves to the masthead's queue button.
   const after = ['qbar-open', 'queue-btn'];
@@ -6271,7 +6698,7 @@ function redraw(k, after, all) {
  if (pops.open === 'surprise') renderSurprise();
  for (const n of focusables.values()) {
   if (n.isConnected === false) continue;
-  if (n._rec) { const on = inSitting(n._rec); n.setAttribute('aria-pressed', String(on)); n._mark.textContent = on ? '✓' : '+'; }
+  if (n._rec) { const on = sittingOn(n._rec); n.setAttribute('aria-pressed', String(on)); n._mark.textContent = on ? '✓' : '+'; }
   if (n._car) markCar(n, n._car);
  }
  // A redrawn nav or queue bar replaces the button that opened the popover: the new one takes its place.

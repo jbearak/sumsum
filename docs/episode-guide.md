@@ -1,6 +1,6 @@
 # Editing the episode guide
 
-Read this before editing `data/episode-guide.json`, a record's `production` or `guideEpisodeId`, or `data/licensed-services.json`. The evidence and counting rules in [AGENTS.md](../AGENTS.md#evidence-and-episode-counts) apply throughout. `validate_guide()` in `scripts/build-library.py` is the authoritative list of the guide's required fields and allowed values, as `validate_services()` is for the services file; [files-and-build.md](files-and-build.md#building) summarises what the builder refuses and what it only warns about.
+Read this before editing `data/episode-guide.json` or a guide part (`data/guide-*.json`), a record's `production` or `guideEpisodeId`, or `data/licensed-services.json`. The evidence and counting rules in [AGENTS.md](../AGENTS.md#evidence-and-episode-counts) apply throughout. `validate_guide()` in `scripts/build-library.py` is the authoritative list of the guide's required fields and allowed values, as `validate_services()` is for the services file; [files-and-build.md](files-and-build.md#building) summarises what the builder refuses and what it only warns about.
 
 ## Episode identity and titles
 
@@ -14,9 +14,20 @@ Read this before editing `data/episode-guide.json`, a record's `production` or `
 - Uploader and archive season/episode labels, such as archive.org "S2E58", are alternate labels. Put them in `altLabels`, never in `number`. Each entry is `{labelEn, labelHe?, sourceLabel, url?}`; `sourceLabel` names who uses the label.
 - The exception is a production without a documented numbering, when a label is the only evidence of an episode: the label may supply its `number`, with `confidence: "uploader-label"`. Hop!'s post titles and old site codes number some 2006 and 2009 episodes this way. A label on an episode documented by its title, such as the community "episode 30" for Karambula, still goes in `altLabels`.
 
+- The importer writes `data/guide-sesame-street.json` (US Sesame Street), so edit `scripts/import-sesame-street.py` or its inputs, not that file, and re-run it. Its numbers are Sesame Workshop's and Muppet Wiki's production numbers (`Episode 0001`).
+
+## Episode details and numbering
+
+- `numberWidth` (production, 1–6): numbers are shown zero-padded to that many digits, without thousands separators (Sesame Street's `0001`). Search matches the padded and the plain number.
+- `excludedNumbers` (season): `[{from, to, sourceLabel, noteEn?}]`, numbers inside a season's range that are not episodes (Sesame Street season 45's repeat labels, 4527–4551). The strip, its slots, the range warning and the Missing page skip them; the builder refuses an episode on an excluded number.
+- `summaryEn` is quoted verbatim from the source named in `summarySource` `{label, url?, revisionId?}`; without a `url`, the page is the episode source whose label starts with the summary source's site ("Muppet Wiki, Episode 0001" for "Muppet Wiki, first scene"), and there is no link if none matches; the importer always keeps the summary's own `url`. The episode page shows it with a link to that revision and, for Muppet Wiki, its CC BY-SA licence ([data/ATTRIBUTION.md](../data/ATTRIBUTION.md)). It is the source's opening one or two sentences, verbatim; never compose or reword one.
+- `sponsors` `{letters, numbers}` (short strings, not both empty), `wordOnTheStreet` and `guestStars` (a non-empty list of names) are shown under "About this episode".
+- A production with more than eight seasons is shown one season at a time ([library-ui.md](library-ui.md#views-and-routes)).
+
 ## Uploads, coverage and evidence
 
 - To link an upload, add `{recordId, role}` to the episode's `uploads`, with `part` for numbered parts. Set the record's `production` and `guideEpisodeId` to match.
+- An upload may say what its link holds beyond this episode: `container` is `compilation` (one video with several programmes) or `listing` (a service's season or series page), with an optional `extentNoteEn` saying what it covers. Its row is labelled "In a compilation" or "Open listing"; the role still decides how it counts.
 - Roles are `whole-candidate`, `alternate-edition`, `part`, `excerpt` and `possible`. A `part` splits the programme itself; numbered parts of one story or segment are `excerpt`s.
 - A `possible` copy is probably the episode but unresolved. It never counts toward coverage, the totals or the Watch button. It may stay in its production's `unidentified` queue, because its identity is unresolved.
 - `coverage` is `whole-candidate`, `parts-only`, `excerpt-only` or `missing`, and must agree with the upload roles.
@@ -35,6 +46,7 @@ Record each production total in `totalsEvidence`, including conflicting claims. 
 - Each licensed record is matched to a service in `data/licensed-services.json` by its link's hostname. The library names that service and what it needs on every Watch label, access line, filter and note.
 - hoopla is free with a card from a participating public library. You sign in to hoopla with the card, and each library sets a small monthly borrowing limit; where a library's own pages disagree (Queens: 5 or 10 a month), say so rather than pick one. Anyone who lives, works, goes to school or owns property in New York State can apply online for a free Queens Public Library eCard. Westchester County cards work too, by choosing "Westchester Library System" in hoopla rather than the member library's name. New York Public Library and Brooklyn Public Library cards do not work (the user's observation, 2026-10-18).
 - Apple TV and Prime Video sell or rent each programme with an account.
+- A service's `model` is `library-card`, `subscription`, `free-with-ads` or `purchase-or-rent`. Mark a subscription the user already has `subscribed: true`. The builder refuses the flag on any other model, and the library offers those listings like free links. The link order ranks every model ([library-ui.md](library-ui.md#entries-and-link-order)).
 - The how-to box shows the steps' prose, so the builder ties the structured facts to it. A step (or the headline) that states a library's facts lists it in `libraries` with `participates` (whether its cards work), and names it, its member examples and its hoopla choice in both languages. Every entry in a library-card service's `libraries` is listed by a step, `lookupUrl` is the link of a step, and no `checkedAt` is after the build date.
 - Library rules, fees and limits change. Give every new fact in `data/licensed-services.json` its source and check date, and record an unconfirmed lead as a lead, not a fact. Open questions are in [TODO.md](../TODO.md#completeness-and-playback-checks).
 

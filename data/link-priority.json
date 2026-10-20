@@ -1,0 +1,4 @@
+{
+  "note": "The order in which an entry's copies are offered, highest first: the Watch button opens the first usable copy, and an episode's other copies are listed in this order. Set by the user on 2026-10-19. Every tier is listed exactly once; links that failed a check always come last. archive: archive.org. youtube: YouTube. subscribed: services the user subscribes to (licensed-services.json, subscribed: true). vimeo: Vimeo, including the direct links found on Hop! pages. other-free: every other free host. vpn: links that need the Israel VPN. library-card: services free with a library card. free-with-ads: free services with advertising, and free streams limited to a region. paid: purchase, rental and subscriptions the user does not have. See docs/library-ui.md#link-order.",
+  "tiers": ["archive", "youtube", "subscribed", "vimeo", "other-free", "vpn", "library-card", "free-with-ads", "paid"]
+}

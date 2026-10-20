@@ -3,14 +3,16 @@
   "families": [
     {"id": "rechov", "en": "Rechov Sumsum", "he": "רחוב סומסום"},
     {"id": "elmo", "en": "Elmo's talk show", "he": "תכנית האירוח של אלמו"},
-    {"id": "shalom", "en": "Shalom Sesame", "he": "שלום סומסום"}
+    {"id": "shalom", "en": "Shalom Sesame", "he": "שלום סומסום"},
+    {"id": "sesame-street", "en": "Sesame Street", "he": "רחוב סומסום האמריקאי"}
   ],
   "series": [
     {"id": "modern", "en": "Modern Rechov Sumsum", "he": "רחוב סומסום החדש", "family": "rechov", "searchPrefix": "רחוב סומסום", "searchLanguage": "he"},
     {"id": "classic", "en": "Classic Rechov Sumsum", "he": "רחוב סומסום הקלאסי", "family": "rechov", "searchPrefix": "רחוב סומסום", "searchLanguage": "he"},
     {"id": "shalom-classic", "en": "Classic Shalom Sesame", "he": "שלום סומסום הקלאסי", "family": "shalom", "searchPrefix": "Shalom Sesame", "searchLanguage": "en"},
     {"id": "shalom-modern", "en": "Modern Shalom Sesame", "he": "שלום סומסום החדש", "family": "shalom", "searchPrefix": "Shalom Sesame", "searchLanguage": "en"},
-    {"id": "elmo", "en": "Elmo's talk show", "he": "תכנית האירוח של אלמו", "family": "elmo", "searchPrefix": "תכנית האירוח של אלמו", "searchLanguage": "he"}
+    {"id": "elmo", "en": "Elmo's talk show", "he": "תכנית האירוח של אלמו", "family": "elmo", "searchPrefix": "תכנית האירוח של אלמו", "searchLanguage": "he"},
+    {"id": "sesame-street", "en": "Sesame Street", "he": "רחוב סומסום האמריקאי", "family": "sesame-street", "searchPrefix": "Sesame Street", "searchLanguage": "en"}
   ],
   "goal": [
     {"series": "classic", "en": "Classic, 1983–1998", "he": "הקלאסי, 1983–1998"},

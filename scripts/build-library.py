@@ -9,6 +9,7 @@ it licensed listings are labelled without their access terms.
 No dependencies or network access are required.
 """
 import argparse
+import copy
 import datetime as dt
 import hashlib
 import json
@@ -40,6 +41,7 @@ TOTAL_CONFIDENCES = {"primary", "secondary", "conflicting", "annual-accounting-o
 # 'possible': a copy that probably is this episode but whose identity is unresolved. It never counts toward coverage,
 # evidence or the episode's Watch link.
 ROLES = {"whole-candidate", "alternate-edition", "part", "excerpt", "possible"}
+CONTAINERS = {"compilation", "listing"}
 COUNTED_ROLES = ROLES - {"possible"}
 COVERAGES = {"whole-candidate", "parts-only", "excerpt-only", "missing"}
 EVIDENCE = ["metadata-checked", "playback-started", "complete-playback-reviewed", "reference-compared"]
@@ -237,6 +239,49 @@ def editorial_he_unlettered(obj):
     """A valid titleHeEditorial with no Hebrew letter (a Latin or digits-only value is probably not a translation)."""
     value = obj.get(EDITORIAL_HE)
     return isinstance(value, str) and bool(value.strip()) and not HEBREW_LETTER_RE.search(value)
+
+
+# Record-file defaults ({"defaults": {...}, "records": [...]}): fields many records share are written once. The builder
+# validates every record with its defaults filled in, and embeds the record without the fields equal to them, with "_d", the
+# index of its defaults in payload.recordDefaults; the app fills them back in at start.
+DEFAULTABLE = {"series", "production", "language", "sourceType", "notes", "verification", "verifiedAt", "tagEvidence",
+               "completenessNote", "availabilityCheck", "matchConfidence"}
+
+
+def file_defaults(data, name):
+    d = data.get("defaults") if isinstance(data, dict) else None
+    if d is None:
+        return None
+    if not isinstance(d, dict) or not d:
+        raise ValueError(f"{name}: defaults must be a non-empty object")
+    unknown = sorted(set(d) - DEFAULTABLE)
+    if unknown:
+        raise ValueError(f"{name}: defaults may set only {sorted(DEFAULTABLE)}, not {unknown[0]!r}")
+    return d
+
+
+# Set on a record whose completenessNote came from its file's defaults rather than its own entry; never embedded.
+INHERITED_NOTE = "_inheritedNote"
+
+
+def compact_record(r, table, shared=None):
+    inherited = r.get(INHERITED_NOTE) is True
+    r = {f: v for f, v in r.items() if f != INHERITED_NOTE}
+    # A record whose completenessStatus names a shared note shows that note unless it states its own: a note inherited from
+    # a file's defaults is dropped (whether or not the merged record kept its defaults index), and its own note is kept even
+    # when it equals the default.
+    is_shared = bool(shared) and isinstance(r.get("completenessStatus"), str) and r["completenessStatus"] in shared
+    if is_shared and inherited:
+        r.pop("completenessNote", None)
+    k = r.get("_d")
+    if k is None:
+        return r
+    d = table[k]
+    if is_shared and "completenessNote" in r:
+        out = compact_record({f: v for f, v in r.items() if f != "completenessNote"}, table)
+        return {**out, "completenessNote": r["completenessNote"]}
+    # The app reads absent themes and characters as empty.
+    return {f: v for f, v in r.items() if not (f in d and d[f] == v) and not (f in ("themes", "characters") and v == [])}
 
 
 def merge_records(existing, incoming):
@@ -472,6 +517,10 @@ def validate_guide(guide, records, source, series):
         for k in ("numberLabelEn", "numberLabelHe"):
             if isinstance(p.get(k), str) and not p[k].strip():
                 err(f"{where}: {k} must not be empty (omit it for season and episode codes)")
+        # numberWidth: episode numbers are shown zero-padded to this many digits (Sesame Street's "Episode 0001").
+        width = p.get("numberWidth")
+        if width is not None and not (is_int(width) and 1 <= width <= 6):
+            err(f"{where}: numberWidth must be an integer from 1 to 6, got {width!r}")
         if not enum_ok(p.get("series"), series):
             err(f"{where}: unknown series {p.get('series')!r} (series are listed in data/series.json)")
         if not enum_ok(p.get("format"), FORMATS):
@@ -530,6 +579,22 @@ def validate_guide(guide, records, source, series):
             first = s.get("firstNumber")
             if first is not None and not (is_int(first) and first >= 1):
                 err(f"{sw}: firstNumber must be a positive integer (the season's first episode number), got {first!r}")
+            # excludedNumbers: numbers inside the season's range that are not episodes (season 45's repeat labels), with a
+            # source; the strip, its slots and the Missing page skip them.
+            excl = s.get("excludedNumbers")
+            if excl is not None:
+                if not isinstance(excl, list):
+                    err(f"{sw}: excludedNumbers must be an array of {{from, to, sourceLabel, noteEn?}}")
+                    excl = []
+                for k, x in enumerate(excl, 1):
+                    xw = f"{sw}, excludedNumbers {k}"
+                    if not isinstance(x, dict) or not (is_int(x.get("from")) and is_int(x.get("to")) and 1 <= x["from"] <= x["to"]):
+                        err(f"{xw}: expected {{from, to}} with 1 <= from <= to")
+                        continue
+                    if not (isinstance(x.get("sourceLabel"), str) and x["sourceLabel"].strip()):
+                        err(f"{xw}: sourceLabel required (who says these are not episodes)")
+                    for problem in text_problems(x, ("noteEn", "noteHe", "sourceLabel"), xw):
+                        err(problem)
     episodes, linked, possible, slot_owner, outside = {}, {}, {}, {}, {}
     alt_legacy, story_notes, editorial_notes = [], [], []
     # Declared numbering ranges per (production, season), for the firstNumber range warning.
@@ -540,8 +605,20 @@ def validate_guide(guide, records, source, series):
             if isinstance(s, dict) and (s.get("season") is None or is_int(s.get("season"))) and \
                     is_int(s.get("firstNumber")) and s["firstNumber"] >= 1:
                 exp = s.get("expectedEpisodes") if is_int(s.get("expectedEpisodes")) else None
-                ranges[(pid, s.get("season"))] = (s["firstNumber"], s["firstNumber"] + exp - 1 if exp else None)
+                excl = s.get("excludedNumbers") if isinstance(s.get("excludedNumbers"), list) else []
+                skip = sum(x["to"] - x["from"] + 1 for x in excl
+                           if isinstance(x, dict) and is_int(x.get("from")) and is_int(x.get("to")))
+                ranges[(pid, s.get("season"))] = (s["firstNumber"], s["firstNumber"] + exp - 1 + skip if exp else None)
     out_of_range = []
+    excluded = {}
+    for pid, p in productions.items():
+        for s in p.get("seasons") if isinstance(p.get("seasons"), list) else []:
+            # A malformed season key is reported above; it must not reach the dict as a key.
+            if isinstance(s, dict) and isinstance(s.get("excludedNumbers"), list) and (s.get("season") is None or is_int(s.get("season"))):
+                for x in s["excludedNumbers"]:
+                    if isinstance(x, dict) and is_int(x.get("from")) and is_int(x.get("to")):
+                        for n in range(x["from"], min(x["to"], x["from"] + 10000) + 1):
+                            excluded[(pid, s.get("season"), n)] = True
     # Declared season keys per production; episodes outside them are counted against the declared seasons' totals.
     season_defs = {}
     for pid, p in productions.items():
@@ -574,8 +651,31 @@ def validate_guide(guide, records, source, series):
             err(f"{where}: season must be an integer or null")
         if not enum_ok(e.get("confidence"), CONFIDENCES):
             err(f"{where}: confidence must be one of {sorted(CONFIDENCES)}")
-        for problem in text_problems(e, ("titleEn", "titleHe", "noteEn", "noteHe", "airDate"), where):
+        for problem in text_problems(e, ("titleEn", "titleHe", "noteEn", "noteHe", "airDate", "summaryEn", "wordOnTheStreet"), where):
             err(problem)
+        if prod and is_int(number) and (season is None or is_int(season)) and excluded.get((prod["id"], season, number)):
+            err(f"{where}: number {number} is listed in its season's excludedNumbers (not an episode)")
+        # A summary is quoted from a named source: summarySource {label, url?, revisionId?}.
+        summary_src = e.get("summarySource")
+        if e.get("summaryEn") is not None and not (isinstance(summary_src, dict) and isinstance(summary_src.get("label"), str)
+                                                   and summary_src["label"].strip()):
+            err(f"{where}: summaryEn needs summarySource with a label naming where it is quoted from")
+        if summary_src is not None:
+            if not isinstance(summary_src, dict):
+                err(f"{where}: summarySource must be an object {{label, url?, revisionId?}}")
+            elif e.get("summaryEn") is None:
+                err(f"{where}: summarySource without summaryEn")
+            elif summary_src.get("url") is not None and not valid_url(summary_src["url"]):
+                err(f"{where}: summarySource url must be a public http(s) URL ({url_problem(summary_src['url'])})")
+        sponsors = e.get("sponsors")
+        if sponsors is not None and not (isinstance(sponsors, dict) and set(sponsors) <= {"letters", "numbers"} and
+                                         all(isinstance(sponsors.get(k, []), list) and all(isinstance(v, str) and v.strip() and len(v) <= 12
+                                             for v in sponsors.get(k, [])) for k in ("letters", "numbers"))
+                                         and (sponsors.get("letters") or sponsors.get("numbers"))):
+            err(f"{where}: sponsors must be {{letters: [...], numbers: [...]}} with short strings, not both empty")
+        guests = e.get("guestStars")
+        if guests is not None and not (isinstance(guests, list) and guests and all(isinstance(g, str) and g.strip() for g in guests)):
+            err(f"{where}: guestStars must be a non-empty array of names")
         # storyHe: a Hebrew story name quoted verbatim from another source (an archive file label) for an episode whose
         # catalogue title has none. Only the story name is quoted: the label's season and episode prefix, and an uploader's
         # trailing year or "(לא מלא)" note about the file, are not part of it and stay in the episode's altLabels.
@@ -668,6 +768,11 @@ def validate_guide(guide, records, source, series):
                 continue
             if rid in seen:
                 err(f"{where}: record {rid!r} is linked twice")
+            # container: the destination holds more than this episode (a 'compilation' video, a service's 'listing' page).
+            if u.get("container") is not None and not enum_ok(u.get("container"), CONTAINERS):
+                err(f"{where}: upload {rid!r}: container must be one of {sorted(CONTAINERS)}, got {u.get('container')!r}")
+            for problem in text_problems(u, ("extentNoteEn",), f"{where}: upload {rid!r}"):
+                err(problem)
             part = u.get("part")
             if part is not None:
                 if not (is_int(part) and part >= 1):
@@ -706,9 +811,11 @@ def validate_guide(guide, records, source, series):
             if key in slot_owner:
                 warnings.append(f"{where}: shares season {season!r}, number {number} with {slot_owner[key]!r}")
             slot_owner.setdefault(key, eid)
-    for rid, eids in linked.items():
-        if len(eids) > 1:
-            warnings.append(f"record {rid!r} is linked to several episodes: {', '.join(eids)}")
+    several = [(rid, eids) for rid, eids in linked.items() if len(eids) > 1]
+    if several:
+        warnings.append(f"{len(several)} records are linked to several episodes (compilations, listings, shared tapes): " +
+                        "; ".join(f"{rid}: {', '.join(eids[:4])}" + (" ..." if len(eids) > 4 else "") for rid, eids in several[:3]) +
+                        (" ..." if len(several) > 3 else ""))
     for rid, eids in possible.items():
         if rid in linked:
             warnings.append(f"record {rid!r} is a possible copy of {', '.join(eids)} and is also linked to {', '.join(linked[rid])}")
@@ -798,22 +905,48 @@ def guide_counts(guide, goal_series):
     }
 
 
-def load_guide(path, records, explicit, series):
+def load_guide(path, records, explicit, series, parts=()):
+    """The guide, and with the default guide its parts (data/guide-*.json, in name order): each part adds productions,
+    episodes and queues, and the merged guide is validated as one, so a duplicate id across parts is refused."""
     if not path.exists():
         if explicit:
             raise ValueError(f"Guide file not found: {path}")
         return None, None, []
-    raw = path.read_bytes()
-    try:
-        text = raw.decode("utf-8")
-    except UnicodeDecodeError as error:
-        raise ValueError(f"{path.name}: invalid JSON: {error}") from None
-    guide = parse_json(text, path.name)
-    check_unicode(guide, path.name)
-    warnings = validate_guide(guide, records, path.name, series)
+    digest = hashlib.sha256()
+    guide = None
+    for part in [path, *parts]:
+        raw = part.read_bytes()
+        digest.update(part.name.encode("utf-8") + b"\0" + raw)
+        try:
+            text = raw.decode("utf-8")
+        except UnicodeDecodeError as error:
+            raise ValueError(f"{part.name}: invalid JSON: {error}") from None
+        data = parse_json(text, part.name)
+        check_unicode(data, part.name)
+        if not isinstance(data, dict):
+            raise ValueError(f"{part.name}: expected an object with productions, episodes and unidentified")
+        # With parts to merge, every file (the base too) must have the merged keys' types before merging; a guide alone
+        # is checked by validate_guide().
+        for key, kind in (("productions", list), ("episodes", list), ("unidentified", dict)):
+            if parts and not isinstance(data.get(key, kind()), kind):
+                raise ValueError(f"{part.name}: {key} must be {'an array' if kind is list else 'an object'}")
+        if guide is None:
+            guide = data
+            continue
+        for key, kind in (("productions", list), ("episodes", list), ("unidentified", dict)):
+            value = data.get(key, kind())
+            if kind is list:
+                guide[key] = [*guide.get(key, []), *value]
+            else:
+                clash = sorted(set(value) & set(guide.get(key, {})))
+                if clash:
+                    raise ValueError(f"{part.name}: unidentified[{clash[0]!r}] is already in an earlier guide file")
+                guide[key] = {**guide.get(key, {}), **value}
+    name = path.name if not parts else path.name + " + " + ", ".join(x.name for x in parts)
+    warnings = validate_guide(guide, records, name, series)
     guide = {**guide, "productions": guide.get("productions", []), "episodes": guide.get("episodes", []),
              "unidentified": guide.get("unidentified", {})}
-    return guide, hashlib.sha256(raw).hexdigest(), warnings
+    return guide, digest.hexdigest(), warnings
 
 
 # The series registry (data/series.json): the guide rail's families, the series every record and production names, and
@@ -919,8 +1052,9 @@ def load_vocabulary(path):
 # Licensed services (data/licensed-services.json): how each licensed service is reached, with sourced facts. A record with
 # access 'licensed' is matched to a service by its link's hostname. 'library-card': free with a participating public
 # library's card (hoopla); 'purchase-or-rent': bought or rented with an account (Apple TV, Prime Video); 'subscription':
-# included with a paid subscription.
-SERVICE_MODELS = ("library-card", "purchase-or-rent", "subscription")
+# included with a paid subscription ('subscribed': true marks one the user already has, offered like a free link);
+# 'free-with-ads': free to watch with advertising (Tubi).
+SERVICE_MODELS = ("library-card", "subscription", "free-with-ads", "purchase-or-rent")
 SOURCE_KINDS = {"library-page", "service-page", "secondary", "user-observation"}
 SLUG_RE = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 HOST_RE = re.compile(r"^(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,}$")
@@ -951,6 +1085,22 @@ def _day_ok(value):
         return False
 
 
+# Link priority (data/link-priority.json): the order in which an entry's copies are offered, highest first. Every tier is
+# listed exactly once; links that failed a check always come last, after every tier. The app classifies each link into one
+# tier: licensed listings by their service (subscribed, library-card, free-with-ads, or paid: purchase, rental or a
+# subscription the user does not have), links needing the Israel VPN as vpn, region-limited free streams as free-with-ads,
+# and other links by host (archive.org, YouTube, Vimeo, or other-free for every other host).
+LINK_TIERS = ("archive", "youtube", "subscribed", "vimeo", "other-free", "vpn", "library-card", "free-with-ads", "paid")
+
+
+def load_link_priority(path):
+    data = load_table(path)
+    tiers = data.get("tiers") if isinstance(data, dict) else None
+    if not isinstance(tiers, list) or sorted(map(str, tiers)) != sorted(LINK_TIERS) or len(tiers) != len(LINK_TIERS):
+        raise ValueError(f"{path.name}: tiers must list each of {list(LINK_TIERS)} exactly once, got {tiers!r}")
+    return {"tiers": tiers}
+
+
 def validate_services(data, name):
     """Refuse a malformed licensed-services file with a located message; return the hostname -> service id map."""
     if not isinstance(data, dict) or not isinstance(data.get("services"), list) or not data["services"]:
@@ -977,6 +1127,8 @@ def validate_services(data, name):
             raise ValueError(f"{where}: name must be a non-empty string")
         if not enum_ok(s.get("model"), SERVICE_MODELS):
             raise ValueError(f"{where}: model must be one of {list(SERVICE_MODELS)}, got {s.get('model')!r}")
+        if s.get("subscribed") is not None and (s["subscribed"] is not True or s["model"] != "subscription"):
+            raise ValueError(f"{where}: subscribed may only be true, on a subscription service")
         if not isinstance(s.get("hosts"), list) or not s["hosts"]:
             raise ValueError(f"{where}: hosts must be a non-empty list of hostnames")
         for h in s["hosts"]:
@@ -1039,9 +1191,14 @@ def validate_services(data, name):
                     raise ValueError(problem)
                 link_problem(step.get("link"), at)
                 cited(step.get("sources"), at)
-        if s["model"] == "library-card":
+        if s["model"] == "library-card" and how is None and s.get("libraries") is None:
+            # A library-card service described only by its own library lookup (Kanopy): no how-to box, so no library facts to
+            # tie to it; its summary says what was not checked.
+            if not valid_url(s.get("lookupUrl")):
+                raise ValueError(f"{where}: a library-card service needs howTo, or at least a valid lookupUrl ({url_problem(s.get('lookupUrl'))})")
+        elif s["model"] == "library-card":
             if how is None:
-                raise ValueError(f"{where}: a library-card service needs howTo")
+                raise ValueError(f"{where}: a library-card service with libraries needs howTo")
             if not valid_url(s.get("lookupUrl")):
                 raise ValueError(f"{where}: a library-card service needs a valid lookupUrl ({url_problem(s.get('lookupUrl'))})")
             libs = s.get("libraries")
@@ -1223,8 +1380,12 @@ def main():
     parser.add_argument("inputs", nargs="*", type=Path)
     parser.add_argument("--output", type=Path, default=ROOT / "index.html")
     parser.add_argument("--guide", type=Path, help="episode guide JSON (default: data/episode-guide.json if it exists)")
+    parser.add_argument("--guide-part", type=Path, action="append", default=None,
+                        help="a guide part to merge into --guide (repeatable; default: data/guide-*.json with the default guide)")
     parser.add_argument("--series", type=Path, default=ROOT / "data/series.json", help="series registry JSON")
     parser.add_argument("--vocabulary", type=Path, default=ROOT / "data/vocabulary.json", help="tag vocabulary JSON")
+    parser.add_argument("--link-priority", type=Path, default=ROOT / "data/link-priority.json",
+                        help="link priority JSON (the order of an entry's copies)")
     parser.add_argument("--services", type=Path,
                         help="licensed services JSON (default: data/licensed-services.json if it exists)")
     args = parser.parse_args()
@@ -1234,9 +1395,12 @@ def main():
     series_ids = {s["id"] for s in registry["series"]}
     vocabulary_path = args.vocabulary if args.vocabulary.is_absolute() else ROOT / args.vocabulary
     vocabulary = load_vocabulary(vocabulary_path)
+    priority_path = args.link_priority if args.link_priority.is_absolute() else ROOT / args.link_priority
+    link_priority = load_link_priority(priority_path)
     records = []
     seen = {}
     origin = {}  # record id -> (url, "file, entry n") of its first occurrence, for duplicate-id errors
+    default_table, standard_notes = [], {}
     entries = {}  # url key -> [("file, entry n", fields present)] for each entry merged into that upload
     notices = []
     for path in inputs:
@@ -1249,11 +1413,29 @@ def main():
         items = data.get("records", []) if isinstance(data, dict) else data
         if not isinstance(items, list):
             raise ValueError(f"Expected a record array in {path}")
+        defaults = file_defaults(data, path.name)
+        if defaults is not None:
+            default_table.append(defaults)
+        # completenessNotes: {status code: note}, the note of each record whose completenessStatus names it and that has no
+        # completenessNote of its own (meta.standardCompletenessNotes; the record page shows it).
+        table = data.get("completenessNotes") if isinstance(data, dict) else None
+        if table is not None:
+            if not isinstance(table, dict) or not all(isinstance(k, str) and isinstance(v, str) and v.strip() for k, v in table.items()):
+                raise ValueError(f"{path.name}: completenessNotes must map status codes to non-empty notes")
+            for code, note in table.items():
+                if code in standard_notes and standard_notes[code] != note:
+                    raise ValueError(f"{path.name}: completenessNotes {code!r} differs from the same code in an earlier file")
+                standard_notes[code] = note
         for offset, raw in enumerate(items, 1):
             if not isinstance(raw, dict):
                 raise ValueError(f"{path.name}, entry {offset}: expected an object")
             check_unicode(raw, f"{path.name}, entry {offset}")
-            r = dict(raw)
+            for reserved in ("_d", INHERITED_NOTE):
+                if reserved in raw:
+                    raise ValueError(f"{path.name}, entry {offset}: {reserved} is reserved (the builder sets it)")
+            r = {**copy.deepcopy(defaults), **raw, "_d": len(default_table) - 1} if defaults is not None else dict(raw)
+            if defaults is not None and "completenessNote" in defaults and "completenessNote" not in raw:
+                r[INHERITED_NOTE] = True
             # Any public http(s) page is accepted (YouTube, Vimeo, Hop, Internet Archive, Dailymotion,
             # Facebook, Kan, ok.ru and others); hosts are recognised later by hostname.
             r["url"] = r.get("url") or r.get("sourceUrl") or r.get("directUrl")
@@ -1286,7 +1468,16 @@ def main():
             # Which entry holds each field, so a refusal after merging names the entries involved.
             entries.setdefault(key, []).append((where, {f for f, v in r.items() if v not in (None, "", [], {})}))
             if key in seen:
-                merge_records(seen[key], r)
+                # Completeness notes: a note an entry states itself replaces one the kept record only inherited from its file's
+                # defaults; an inherited note fills an empty one and stays marked as inherited.
+                ex, inherited = seen[key], r.pop(INHERITED_NOTE, False) is True
+                if "completenessNote" in r and not inherited and ex.get(INHERITED_NOTE):
+                    ex["completenessNote"] = r["completenessNote"]
+                    ex.pop(INHERITED_NOTE)
+                had_note = bool(ex.get("completenessNote"))
+                merge_records(ex, r)
+                if inherited and not had_note and ex.get("completenessNote"):
+                    ex[INHERITED_NOTE] = True
                 continue
             # One id must name one upload: links, playback evidence, favorites and guide references are keyed by id.
             if r["id"] in origin and url_key(origin[r["id"]][0]) != key:
@@ -1327,7 +1518,14 @@ def main():
     guide_path = args.guide or ROOT / "data/episode-guide.json"
     if not guide_path.is_absolute():
         guide_path = ROOT / guide_path
-    guide, guide_sha, guide_warnings = load_guide(guide_path, records, explicit=args.guide is not None,
+    # Guide parts join the default guide only: an explicit --guide is the whole guide (fixtures and tests).
+    guide_parts = sorted((ROOT / "data").glob("guide-*.json")) if args.guide is None else []
+    if args.guide_part is not None:
+        guide_parts = [x if x.is_absolute() else ROOT / x for x in args.guide_part]
+        for x in guide_parts:
+            if not x.exists():
+                raise ValueError(f"Guide part not found: {x}")
+    guide, guide_sha, guide_warnings = load_guide(guide_path, records, explicit=args.guide is not None, parts=guide_parts,
                                                    series=series_ids)
     services_path = args.services or ROOT / "data/licensed-services.json"
     if not services_path.is_absolute():
@@ -1341,9 +1539,11 @@ def main():
         "inputFiles": [p.name for p in inputs],
         "seriesFile": series_path.name,
         "vocabularyFile": vocabulary_path.name,
+        "linkPriorityFile": priority_path.name,
+        **({"standardCompletenessNotes": standard_notes} if standard_notes else {}),
     }
     if guide is not None:
-        meta.update({"guideFile": guide_path.name, "guideSha256": guide_sha, "guideCounts": guide_counts(guide, {g["series"] for g in registry["goal"]})})
+        meta.update({"guideFile": guide_path.name, "guideParts": [x.name for x in guide_parts], "guideSha256": guide_sha, "guideCounts": guide_counts(guide, {g["series"] for g in registry["goal"]})})
     else:
         notices.append(f"No episode guide ({guide_path.name} not found): embedded an empty guide; the app opens on All uploads.")
     if services is not None:
@@ -1351,7 +1551,8 @@ def main():
     else:
         notices.append(f"No licensed services file ({services_path.name} not found): licensed listings are labelled without "
                        "their access terms.")
-    payload = {"meta": meta, "series": registry, "vocabulary": vocabulary, "records": records, "guide": guide if guide is not None else EMPTY_GUIDE}
+    payload = {"meta": meta, "series": registry, "vocabulary": vocabulary, "linkPriority": link_priority,
+               "recordDefaults": default_table, "records": [compact_record(r, default_table, standard_notes) for r in records], "guide": guide if guide is not None else EMPTY_GUIDE}
     if services is not None:
         payload["services"] = services
     # Escape HTML-significant characters inside the script data block. JSON strings

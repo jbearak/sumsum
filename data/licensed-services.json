@@ -1,6 +1,6 @@
 {
   "format": "sumsum-licensed-services-v1",
-  "checkedAt": "2026-10-18",
+  "checkedAt": "2026-10-19",
   "about": "How each licensed service in the library is reached. A record with access \"licensed\" is matched to a service by the hostname of its link. A licensed listing is not a free public upload and not playback evidence. Every step and library entry names its sources by id; each source records the page, the date it was read and what it said. Library rules, fees and borrowing limits change, so the dates matter. Pages read with WebFetch or curl, without signing in.",
   "services": [
     {
@@ -330,7 +330,8 @@
       "id": "apple-tv",
       "name": "Apple TV",
       "hosts": [
-        "tv.apple.com"
+        "tv.apple.com",
+        "itunes.apple.com"
       ],
       "model": "purchase-or-rent",
       "summary": {
@@ -345,6 +346,14 @@
           "url": "https://tv.apple.com/us/movie/shalom-sesame---welcome-to-israel/umc.cmc.2mg7y4zqbxrjsi0gjab3ocffq",
           "checkedAt": "2026-10-17",
           "finding": "The nine public Apple TV listings in the library, read with curl on 2026-10-17 (HTTP 200), are rent-or-buy pages on the US store (studio Sesame Workshop). Each record's availabilityCheck holds its own result."
+        },
+        {
+          "id": "apple-sesame-street",
+          "kind": "service-page",
+          "title": "Apple TV Store / iTunes catalogue (public pages)",
+          "url": "https://itunes.apple.com/us/tv-show/sesame-street/id215219706",
+          "checkedAt": "2026-10-19",
+          "finding": "Selections from seasons 35 through 53, all 26 season 45 half-hour edits, all 35 season 54 listings, Classics volumes 1 and 2, Extra Episodes and themed episode collections. Season 53 has 18 purchase listings; ordinary selection bundles usually have 12. Apple TV search pages also aggregate outside services and are not evidence of purchases."
         }
       ]
     },
@@ -367,6 +376,216 @@
           "url": "https://www.primevideo.com/detail/Shalom-Sesame---Welcome-to-Israel/0HOJE0VM8TD71OMAZE4ZT476IN",
           "checkedAt": "2026-10-17",
           "finding": "The ten public Prime Video listings in the library, read with curl on 2026-10-17 (HTTP 200), offer the programmes to rent or buy; the Sesame Street From Around the World season page shows purchase options for single episodes and the season. Each record's availabilityCheck holds its own result."
+        },
+        {
+          "id": "prime-sesame-street",
+          "kind": "service-page",
+          "title": "Prime Video purchases (public pages)",
+          "url": "https://www.primevideo.com/detail/0GE1MBDVIBDPUJO5IR37FVP19E",
+          "checkedAt": "2026-10-19",
+          "finding": "Separate purchase products list seasons 35 through 54, including selections and some expanded bundles, plus Classics volumes 1 and 2. Season 54 reports 35 episodes but public HTML exposes its first 24; season 45 reports 26 with first 24 exposed. Per-title mappings are retained, without inferring the omitted tails."
+        }
+      ]
+    },
+    {
+      "id": "hbo-max",
+      "name": "HBO Max",
+      "hosts": [
+        "hbomax.com",
+        "max.com"
+      ],
+      "model": "subscription",
+      "subscribed": true,
+      "summary": {
+        "en": "Included with an HBO Max subscription, which you have. HBO Max lists 560 Sesame Street episodes: selections from seasons 1, 5 and 7, and seasons 39 to 55.",
+        "he": "כלול במנוי ל־HBO Max, שיש לך. ב־HBO Max רשומים 560 פרקים של רחוב סומסום: מבחר מעונות 1, 5 ו־7, ועונות 39 עד 55."
+      },
+      "sources": [
+        {
+          "id": "hbo-max-pages",
+          "kind": "service-page",
+          "title": "HBO Max (public pages)",
+          "url": "https://www.hbomax.com/show/f175ce7b-ab72-4ac9-a029-c8c29bd17b7c",
+          "checkedAt": "2026-10-19",
+          "finding": "560 listed episodes across service seasons 1, 5, 7 and 39 through 55. Seasons 1, 5 and 7 are selections, not complete production seasons. All 560 listings mapped by title or plot."
+        },
+        {
+          "id": "user-subscribes",
+          "kind": "user-observation",
+          "title": "The user's subscriptions",
+          "checkedAt": "2026-10-19",
+          "finding": "The user subscribes to HBO Max, Netflix and Hulu and asked the library to treat them as available, with no setting (2026-10-19)."
+        }
+      ]
+    },
+    {
+      "id": "netflix",
+      "name": "Netflix",
+      "hosts": [
+        "netflix.com"
+      ],
+      "model": "subscription",
+      "subscribed": true,
+      "summary": {
+        "en": "Included with a Netflix subscription, which you have. Netflix has season 56 and its own Classics and Selects collections.",
+        "he": "כלול במנוי ל־Netflix, שיש לך. ב־Netflix יש את עונה 56 ואת אוספי Classics ו־Selects שלו."
+      },
+      "sources": [
+        {
+          "id": "netflix-pages",
+          "kind": "service-page",
+          "title": "Netflix (public pages)",
+          "url": "https://www.netflix.com/title/83075543",
+          "checkedAt": "2026-10-19",
+          "finding": "Season 56, all 13 episodes in three Netflix volumes. Separate 2026 Sesame Street Classics collection has ten observed episodes from production seasons 9, 12, 15, 17, 19, 25, 29. Separate Sesame Street Selects has ten directly observed cards from seasons 42 through 44; Muppet Wiki lists 17 entries through season 46, seven not directly confirmed in the public rendered page."
+        },
+        {
+          "id": "user-subscribes",
+          "kind": "user-observation",
+          "title": "The user's subscriptions",
+          "checkedAt": "2026-10-19",
+          "finding": "The user subscribes to HBO Max, Netflix and Hulu and asked the library to treat them as available, with no setting (2026-10-19)."
+        }
+      ]
+    },
+    {
+      "id": "hulu",
+      "name": "Hulu",
+      "hosts": [
+        "hulu.com"
+      ],
+      "model": "subscription",
+      "subscribed": true,
+      "summary": {
+        "en": "Listed on Hulu, which you subscribe to. Hulu lists the same episodes as HBO Max; some may need the HBO Max add-on, which was not checked.",
+        "he": "רשום ב־Hulu, שיש לך מנוי אליו. ב־Hulu רשומים אותם פרקים כמו ב־HBO Max; ייתכן שחלקם דורשים את התוספת של HBO Max, וזה לא נבדק."
+      },
+      "sources": [
+        {
+          "id": "hulu-pages",
+          "kind": "service-page",
+          "title": "Hulu public catalogue (public pages)",
+          "url": "https://www.hulu.com/series/sesame-street-3c0bf4eb-2d7a-4b7c-a9a4-668427a22aba?tab=episodes",
+          "checkedAt": "2026-10-19",
+          "finding": "Public catalogue lists 560 episodes across seasons 1, 5, 7 and 39 through 55. Titles and descriptions correspond to HBO Max listings. Whether a given title requires the HBO Max add-on was not established without login; do not label it included in base Hulu."
+        },
+        {
+          "id": "user-subscribes",
+          "kind": "user-observation",
+          "title": "The user's subscriptions",
+          "checkedAt": "2026-10-19",
+          "finding": "The user subscribes to HBO Max, Netflix and Hulu and asked the library to treat them as available, with no setting (2026-10-19)."
+        }
+      ]
+    },
+    {
+      "id": "tubi",
+      "name": "Tubi",
+      "hosts": [
+        "tubitv.com"
+      ],
+      "model": "free-with-ads",
+      "summary": {
+        "en": "Free to watch with ads on Tubi in the US. Tubi rotates a selection of episodes from seasons 1 to 48.",
+        "he": "צפייה חינם עם פרסומות ב־Tubi בארצות הברית. Tubi מחליף מבחר פרקים מעונות 1 עד 48."
+      },
+      "sources": [
+        {
+          "id": "tubi-pages",
+          "kind": "service-page",
+          "title": "Tubi (public pages)",
+          "url": "https://tubitv.com/series/0300019823/sesame-street",
+          "checkedAt": "2026-10-19",
+          "finding": "251 episode URLs across service seasons 1 through 48. 249 resolved listing rows map to 249 distinct production numbers; two items remain possible because the published title/description conflicts with an explicit mislabelled-file identification in Muppet Wiki. The original announcement described 250 episodes through season 38 and quarterly rotation; current pages include later seasonal selections."
+        }
+      ]
+    },
+    {
+      "id": "roku-channel",
+      "name": "The Roku Channel",
+      "hosts": [
+        "therokuchannel.roku.com"
+      ],
+      "model": "free-with-ads",
+      "summary": {
+        "en": "Free with ads on The Roku Channel in the US, for the episodes it offers free; its free catalogue was not recovered.",
+        "he": "חינם עם פרסומות ב־The Roku Channel בארצות הברית, לפרקים שהוא מציע בחינם; הקטלוג החינמי שלו לא אותר."
+      },
+      "sources": [
+        {
+          "id": "roku-pages",
+          "kind": "service-page",
+          "title": "The Roku Channel (public pages)",
+          "url": "https://therokuchannel.roku.com/details/1d780381051a509ea75a04e61ef34564/sesame-street/season-55",
+          "checkedAt": "2026-10-19",
+          "finding": "JustWatch reports nine seasons under a free-with-ads offer. Roku indexes individual episode listings including season 43 episode 10, while its season 55 page displays See plans. A complete current free catalogue and exact entitlement were not recovered. One episode-number match is kept as possible and excluded from confirmed whole counts."
+        }
+      ]
+    },
+    {
+      "id": "kanopy",
+      "name": "Kanopy",
+      "hosts": [
+        "kanopy.com"
+      ],
+      "model": "library-card",
+      "lookupUrl": "https://www.kanopy.com/en/welcome",
+      "summary": {
+        "en": "Free with a card from a library that subscribes to Kanopy. Which libraries do, and their limits, were not checked; Kanopy's site looks up your library.",
+        "he": "חינם עם כרטיס של ספרייה שמנויה ל־Kanopy. אילו ספריות מנויות ומה המגבלות שלהן לא נבדק; האתר של Kanopy מאתר את הספרייה שלך."
+      },
+      "sources": [
+        {
+          "id": "kanopy-pages",
+          "kind": "service-page",
+          "title": "Kanopy Kids (public pages)",
+          "url": "https://www.kanopy.com/en/product/sesame-street-season-40",
+          "checkedAt": "2026-10-19",
+          "finding": "Season 40 public indexed product page lists twelve selected full episodes, all mapped. A current Douglas County Libraries catalogue record also links season 39, but its exact present episode selection was not confirmed. Library-card sign-in required; no library entitlements tested."
+        }
+      ]
+    },
+    {
+      "id": "google-tv",
+      "name": "Google TV",
+      "hosts": [
+        "play.google.com"
+      ],
+      "model": "purchase-or-rent",
+      "summary": {
+        "en": "Buy each episode or season on Google TV (Google Play) in the US, with a Google account.",
+        "he": "קונים כל פרק או עונה ב־Google TV (Google Play) בארצות הברית, עם חשבון Google."
+      },
+      "sources": [
+        {
+          "id": "google-pages",
+          "kind": "service-page",
+          "title": "Google TV / Google Play purchase catalogue (public pages)",
+          "url": "https://play.google.com/store/tv/show?id=ITDfEdutt9o&hl=en_US&gl=US",
+          "checkedAt": "2026-10-19",
+          "finding": "Public purchase catalogue lists selections from seasons 40 through 54, themed full-episode collections, Meet Rudy and Classics volume 2. Regular seasons usually contain 12 listings; season 45 has 26, season 53 has 18 and season 54 has 35. Legacy public prices/listings were checked; completion of a new transaction was not tested."
+        }
+      ]
+    },
+    {
+      "id": "youtube-purchase",
+      "name": "YouTube (purchase)",
+      "hosts": [
+        "youtube.com"
+      ],
+      "model": "purchase-or-rent",
+      "summary": {
+        "en": "Buy on YouTube's Movies & TV store in the US. Only listings marked as purchases are here; free YouTube uploads are not.",
+        "he": "קנייה בחנות הסרטים והטלוויזיה של YouTube בארצות הברית. רק רישומים שסומנו כקנייה נכללים כאן; העלאות חינמיות ל־YouTube לא."
+      },
+      "sources": [
+        {
+          "id": "youtube-purchase-pages",
+          "kind": "service-page",
+          "title": "YouTube Movies & TV purchases (public pages)",
+          "url": "https://www.youtube.com/feed/storefront",
+          "checkedAt": "2026-10-19",
+          "finding": "178 eleven-character purchase-associated YouTube identifiers were confirmed through oEmbed. They represent older seasonal selections, themed episode collections and Classics volume 2. Newer Google purchase products with .P identifiers are retained under Google; no actual YouTube asset ID was recovered for them. The oEmbed check identifies metadata, not current free-versus-paid entitlement or playback."
         }
       ]
     }

@@ -1,6 +1,6 @@
 # Rechov Sumsum video index
 
-This is an index of Rechov Sumsum, Shalom Sesame and Elmo's Israeli talk show videos, and of where you can watch them. Rechov Sumsum, רחוב סומסום, is the Israeli Sesame Street, mostly in Hebrew. The index covers the classic Israeli Educational Television series and the later seasons made with the Israeli children's channel Hop!. Shalom Sesame is a separate show: two English-language series about Israel and Jewish life. Elmo's talk show is תכנית האירוח של אלמו.
+This is an index of Rechov Sumsum, Shalom Sesame, Elmo's Israeli talk show and US Sesame Street videos, and of where you can watch them. Rechov Sumsum, רחוב סומסום, is the Israeli Sesame Street, mostly in Hebrew. The index covers the classic Israeli Educational Television series and the later seasons made with the Israeli children's channel Hop!. Shalom Sesame is a separate show: two English-language series about Israel and Jewish life. Elmo's talk show is תכנית האירוח של אלמו. US Sesame Street is covered from its first episode in 1969, all 4,744 aired episodes, one season at a time in the guide.
 
 It stores links and metadata only. There is no video in this repository.
 
@@ -16,7 +16,7 @@ git clone https://github.com/jbearak/sumsum.git
 
 The interface is in English. The English/עברית switch at the top of the page changes it to Hebrew, laid out right to left.
 
-Home opens on the next episode to watch, a queue for the current sitting, the videos opened recently, the characters and a shelf of songs. Its Spoken and Length choices narrow what it offers. Surprise me picks a video at random. The Episode guide goes through each series episode by episode. Browse lists every video, clips and songs included, with filters for series, type, spoken language, length, where it plays, theme and character. Videos open on their original site in a new tab.
+Home opens on the next episode to watch (from Rechov Sumsum or Sesame Street, with a switch between them), a queue for the current sitting, the videos opened recently, the characters and a shelf of songs. Its Spoken and Length choices narrow what it offers. Surprise me picks a video at random. The Episode guide goes through each series episode by episode. Browse lists every video, clips and songs included, with filters for series, type, spoken language, length, where it plays, theme and character. Videos open on their original site in a new tab.
 
 What the index has not found is listed under "Not found" at the bottom of the page.
 
@@ -27,9 +27,10 @@ Each episode's coverage label (Whole link, Parts only, Excerpts only or Missing)
 - Free uploads on YouTube, archive.org, Vimeo, Dailymotion and other sites. Most of these links have not been checked by playing them. The library marks the links that failed when checked, including some blocked outside Israel, and any free broadcaster stream that plays only inside its service area.
 - Hop!'s official pages. They show their player only to a connection from Israel, for example through a VPN. The library also gives the direct Vimeo link found on each page. These links open on Vimeo without an Israeli connection, but most have not yet been checked by playing them.
 - hoopla, a streaming service that is free with a card from a participating public library. You sign in to hoopla with the card. Anyone 12 or older who lives, works, goes to school or owns property in New York State can apply online for a free Queens Public Library eCard. If hoopla does not accept the eCard, get a free regular card at any Queens branch with photo ID and proof of address. Westchester County library cards work too; in hoopla, choose "Westchester Library System" rather than your own library's name. New York Public Library and Brooklyn Public Library cards do not work. Elsewhere, look up your own library in hoopla. Each library sets a small monthly borrowing limit (Queens: 5 or 10 titles; its pages disagree).
-- Apple TV's US store and Prime Video, where you buy or rent each programme with an account.
+- Apple TV's US store, Prime Video, Google TV and YouTube purchases, where you buy or rent each programme with an account.
+- For Sesame Street, HBO Max, Netflix and Hulu (subscriptions the maintainer has, so the index offers them like free links), Kanopy (library card), and Tubi and The Roku Channel (free with ads).
 
-hoopla, Apple TV and Prime Video are library or paid services, not free uploads. So far their listings are mostly the 2010 Shalom Sesame series, so use the "Where it plays" filter in Browse to see what a service has before you sign up. Library rules, fees and limits change. The "How to watch on hoopla" box on hoopla listings gives every fact's source and the date it was checked.
+Library and paid services are not free uploads. Their Israeli and Shalom Sesame listings are mostly the 2010 Shalom Sesame series, so use the "Where it plays" filter in Browse to see what a service has before you sign up. Library rules, fees and limits change. The "How to watch on hoopla" box on hoopla listings gives every fact's source and the date it was checked.
 
 ## Your stars and marks
 
@@ -48,6 +49,6 @@ python3 scripts/build-library.py
 node scripts/check-library.cjs
 ```
 
-Both scripts use only the standard libraries of Python 3 and Node.js. Commit the rebuilt `index.html` with your changes. Add links with their source, and never add video files.
+Both scripts use only the standard libraries of Python 3 and Node.js. The Sesame Street data files are written by `scripts/import-sesame-street.py`. Episode summaries quoted from Muppet Wiki are under CC BY-SA ([data/ATTRIBUTION.md](data/ATTRIBUTION.md)). Commit the rebuilt `index.html` with your changes. Add links with their source, and never add video files.
 
 This is a personal viewing index. Rights to the programmes stay with their owners.

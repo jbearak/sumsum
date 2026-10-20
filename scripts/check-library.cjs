@@ -18,7 +18,7 @@ const {boot, readLibrary} = require('./dom-double.cjs');
 const htmlPath = path.resolve(process.argv[2] || path.join(__dirname, '..', 'index.html'));
 const {appSource} = readLibrary(htmlPath);
 const passed = [];
-const ok = label => passed.push(label);
+const ok = label => { passed.push(label); if (process.env.CHECK_TRACE) { if (global.gc) global.gc(); } if (process.env.CHECK_TRACE) console.error('ok ' + passed.length + ' ' + label.slice(0, 90) + ' ' + Math.round(process.memoryUsage().heapUsed / 1e6) + 'MB'); };
 
 // ---------------------------------------------------------------- string table (EN/HE)
 const strStart = appSource.indexOf('/* strings:begin */'), strEnd = appSource.indexOf('/* strings:end */');
@@ -52,19 +52,44 @@ const NUMBERINGS = ['documented', 'provisional', 'inferred', 'uploader'];
 const DOMAINS = {vimeo: ['vimeo.com'], youtube: ['youtube.com', 'youtu.be', 'youtube-nocookie.com'], hop: ['hop.co.il'],
   archive: ['archive.org'], dailymotion: ['dailymotion.com', 'dai.ly'], facebook: ['facebook.com', 'fb.watch'],
   kan: ['kan.org.il'], okru: ['ok.ru']};
-// Licensed storefront and library listings rank below Hop pages and above uploads blocked or unavailable in a check.
-const RANK = {played: 0, local: 1, vimeo: 2, public: 3, web: 4, hop: 5, licensed: 6, restricted: 7, unavailable: 8};
 const GROUP = {played: 'direct', local: 'direct', vimeo: 'direct', public: 'public', web: 'web', hop: 'vpn', licensed: 'lic-other',
   restricted: 'vpn', unavailable: 'unavailable'};
 // Licensed services (payload.services, from data/licensed-services.json): a licensed record is matched to a service by its
 // link's hostname or a parent domain. The models, free first, order the access filters and break Watch ties.
-const LIC_MODELS = ['library-card', 'subscription', 'purchase-or-rent'];
+const LIC_MODELS = ['library-card', 'subscription', 'free-with-ads', 'purchase-or-rent'];
 let SVC = [];
 // Set from each booted payload by model(), so the expectations follow the variant under test (services removed, fixtures).
 const useServices = payload => {
   const list = payload && payload.services && Array.isArray(payload.services.services) ? payload.services.services : [];
   SVC = list.filter(x => x && typeof x.name === 'string' && x.name && LIC_MODELS.includes(x.model) && Array.isArray(x.hosts) && x.hosts.length);
+  const lp = payload && payload.linkPriority && Array.isArray(payload.linkPriority.tiers) ? payload.linkPriority.tiers : [];
+  TIER_ORDER = [...new Set([...lp.filter(x => TIERS.includes(x)), ...TIERS])];
 };
+// The link order the user set (data/link-priority.json): every link falls in one tier; links that failed a check come after
+// every tier. Licensed listings go by their service, links needing the Israel VPN are 'vpn', region-limited free streams rank
+// with 'free-with-ads', and every other link goes by its host.
+const TIERS = ['archive', 'youtube', 'subscribed', 'vimeo', 'other-free', 'vpn', 'library-card', 'free-with-ads', 'paid'];
+let TIER_ORDER = TIERS;
+const subscribed = x => !!x && x.model === 'subscription' && x.subscribed === true;
+function expectTier(r, local = '') {
+  const a = expectAccess(r, local);
+  if (a === 'unavailable') return 'failed';
+  if (a === 'licensed') { const x = expectSvc(r, local); return subscribed(x) ? 'subscribed' : x && ['library-card', 'free-with-ads'].includes(x.model) ? x.model : 'paid'; }
+  if (a === 'hop' || a === 'restricted') return 'vpn';
+  if (checkOf(r) === 'region-limited') return 'free-with-ads';
+  const k = hostKind(expectDest(r, local));
+  return ['archive', 'youtube', 'vimeo'].includes(k) ? k : 'other-free';
+}
+const tierNo = (r, local = '') => { const k = expectTier(r, local); return k === 'failed' ? TIERS.length : TIER_ORDER.indexOf(k); };
+// An episode's copies: usable before failed; whole and alternate, then parts, then excerpts; then the tier; official first;
+// then the part number.
+const ROLE_CLASS = {'whole-candidate': 0, 'alternate-edition': 0, part: 1, excerpt: 2, possible: 3};
+// Within a role class, a copy of the episode alone, then one inside a compilation, then a service listing (each record's worst
+// counted link; model() fills CONT for its payload's records).
+const CONT = new WeakMap(), CONT_CLASS = {compilation: 1, listing: 2};
+const copyKey = (r, role, partNo, local = '') => [tierNo(r, local) === TIERS.length ? 1 : 0, ROLE_CLASS[role] ?? 3, CONT.get(r) || 0,
+  tierNo(r, local), r.sourceType === 'official' ? 0 : 1, partNo || 0];
+const cmpKeys = (x, y) => { for (let i = 0; i < x.length; i++) if (x[i] !== y[i]) return x[i] - y[i]; return 0; };
 const svcOfUrl = url => { const h = hostname(url); return (h && SVC.find(x => x.hosts.some(d => h === d || h.endsWith('.' + d)))) || null; };
 const EP_FORMATS = ['core', 'short-series', 'talk-show', 'home-video', 'related-series'];
 const safe = v => {
@@ -106,15 +131,17 @@ function expectAccess(r, local = '') {
 const expectDest = (r, local = '') => local || safe(r.directUrl) || safe(r.url) || safe(r.sourceUrl);
 // Videos the library offers unasked (Up next, Home's generated shelves, Surprise): not marked as needing a VPN, a card or a
 // purchase, and not failed or region-limited in a check.
+// A service the user subscribes to (subscribed: true) is offered like a free link.
 const OFFER_RANK = {played: 0, local: 1, vimeo: 2, public: 3};
-const offerable = (r, local = '') => !!expectDest(r, local) && expectAccess(r, local) in OFFER_RANK && checkOf(r) !== 'region-limited';
+const offerable = (r, local = '') => !!expectDest(r, local) && checkOf(r) !== 'region-limited' &&
+  (expectAccess(r, local) in OFFER_RANK || (expectAccess(r, local) === 'licensed' && subscribed(expectSvc(r, local))));
 // Up next's copy of an episode: its best offered whole or alternate copy (best access, then whole before alternate).
 function nextCopyM(M, e, local = () => '') {
   let best = null, score = Infinity;
   for (const u of M.ups.get(e.id) || []) {
     if (!['whole-candidate', 'alternate-edition'].includes(u.role) || !offerable(u.r, local(u.r))) continue;
-    const sc = OFFER_RANK[expectAccess(u.r, local(u.r))] * 10 + (u.role === 'alternate-edition' ? 1 : 0);
-    if (sc < score) { score = sc; best = u; }
+    const sc = copyKey(u.r, u.role, 0, local(u.r));
+    if (score === Infinity || cmpKeys(sc, score) < 0) { score = sc; best = u; }
   }
   return best;
 }
@@ -181,6 +208,7 @@ function expectWatchShort(b, lang, list = false) {
   const base = b.acc === 'licensed' ? expectLicWatch(b.r, lang, true) : tr(lang, 'tw_' + hostKind(expectDest(b.r)));
   const q = b.role === 'part' ? [b.n > 1 ? tr(lang, 'twPart', {i: b.i.toLocaleString(), n: b.n.toLocaleString()}) : tr(lang, 'role_part')] :
     b.role === 'excerpt' ? [tr(lang, 'twExcerpt')] : [];
+  const ck = CONT.get(b.r) || 0; if (ck) q.push(tr(lang, ck === 2 ? 'twlistingQ' : 'twcompQ'));
   if (b.acc === 'unavailable' && !list) q.push(tr(lang, 'tw_unavailable'));
   return [base, ...q].join(' · ');
 }
@@ -191,6 +219,7 @@ const expectWatchBase = (r, lang, local = '') => (expectAccess(r, local) === 'li
 function expectWatchLong(b, lang, local = '') {
   const q = b.role === 'part' ? [b.n > 1 ? tr(lang, 'partOf', {i: b.i.toLocaleString(), n: b.n.toLocaleString()}) : tr(lang, 'role_part')] :
     b.role === 'excerpt' ? [tr(lang, 'excerptQ')] : [];
+  const ck = CONT.get(b.r) || 0; if (ck) q.push(tr(lang, ck === 2 ? 'listingQ' : 'compQ'));
   if (b.acc === 'unavailable') q.push(tr(lang, 'unavailableQ'));
   return [expectWatchBase(b.r, lang, local), ...q].join(' · ');
 }
@@ -217,6 +246,10 @@ function model(payload) {
   const posInt = v => (Number.isInteger(v) && v > 0 ? v : null);
   const ups = new Map(eps.map(e => [e.id, (e.uploads || []).filter(u => recById.has(u.recordId) && ROLES.includes(u.role))
     .map(u => ({r: recById.get(u.recordId), role: u.role, part: u.role === 'part' ? posInt(u.part) : null}))]));
+  for (const e of eps) for (const u of e.uploads || []) {
+    const r = recById.get(u.recordId), c = CONT_CLASS[u.container] || 0;
+    if (r && ROLES.includes(u.role) && c > (CONT.get(r) || 0)) CONT.set(r, c);
+  }
   const poss = new Map(eps.map(e => [e.id, (e.uploads || []).filter(u => recById.has(u.recordId) && u.role === 'possible')
     .map(u => ({r: recById.get(u.recordId), role: 'possible'}))]));
   const linked = new Set([...ups.values()].flat().map(u => u.r.id));
@@ -269,17 +302,15 @@ function model(payload) {
     return EVS[best];
   };
   const evSource = e => { const d = evDetail(e); return d && EVS.indexOf(ev(e)) === d.k ? d : null; };
+  // The Watch link: the first copy in link order (copyKey), part 1 of the best parts.
   const best = (e, locals = {}) => {
-    const u = ups.get(e.id), parts = partsOf(e), rank = new Map(parts.map((x, k) => [x.u, k]));
-    let pickU = null, score = Infinity;
+    const u = ups.get(e.id), parts = partsOf(e);
+    let pickU = null, score = null;
     for (const x of u) {
       const loc = locals[x.r.id] || '';
       if (!expectDest(x.r, loc)) continue;
-      const a = expectAccess(x.r, loc), cls = x.role === 'part' ? 1 : x.role === 'excerpt' ? 2 : 0;
-      // Between licensed listings of one role, the free model wins (library card, subscription, buy or rent).
-      const sv = a === 'licensed' ? expectSvc(x.r, loc) : null, tie = a !== 'licensed' ? 0 : sv ? LIC_MODELS.indexOf(sv.model) * 0.25 : 0.75;
-      const s = (a === 'unavailable' ? 1000 : 0) + cls * 100 + (x.role === 'part' ? rank.get(x) : RANK[a] * 10 + (x.role === 'alternate-edition' ? 1 : 0) + tie);
-      if (s < score) { score = s; pickU = x; }
+      const px = parts.find(y => y.u === x), s = copyKey(x.r, x.role, px ? px.no : 0, loc);
+      if (!score || cmpKeys(s, score) < 0) { score = s; pickU = x; }
     }
     const bp = pickU && parts.find(x => x.u === pickU);
     return pickU && {r: pickU.r, role: pickU.role, acc: expectAccess(pickU.r, locals[pickU.r.id] || ''), i: bp ? bp.no : 0, n: bp ? bp.of : 0};
@@ -290,10 +321,13 @@ function model(payload) {
     return lang === 'he' ? he || en : en || he;
   };
   const fmtNum = (n, lang) => Number(n).toLocaleString(lang === 'he' ? 'he-IL' : 'en-US');
+  // An episode number as its production writes it: zero-padded to numberWidth digits, never grouped.
+  const fmtId = (p, n, lang) => (p && Number.isInteger(p.numberWidth) && p.numberWidth >= 1 && p.numberWidth <= 6 ?
+    String(n).padStart(p.numberWidth, '0') : fmtNum(n, lang));
   const codeOf = (p, season, n, lang = 'en') => {
     if (n == null) return '';
-    if (label(p, lang)) return tr(lang, 'codeLabel', {label: label(p, lang), n: fmtNum(n, lang)});
-    return season != null ? tr(lang, 'codeSE', {s: fmtNum(season, lang), n: fmtNum(n, lang)}) : tr(lang, 'codeN', {n: fmtNum(n, lang)});
+    if (label(p, lang)) return tr(lang, 'codeLabel', {label: label(p, lang), n: fmtId(p, n, lang)});
+    return season != null ? tr(lang, 'codeSE', {s: fmtNum(season, lang), n: fmtId(p, n, lang)}) : tr(lang, 'codeN', {n: fmtId(p, n, lang)});
   };
   const code = (e, lang = 'en') => codeOf(prodById.get(e.production), e.season, e.number, lang);
   // The code with an already formatted number part ("IETV no. 133 or 178").
@@ -308,7 +342,7 @@ function model(payload) {
     if (tt) return tt;
     if (e.number == null) return tr(lang, 'untitled');
     if (label(p, lang)) return code(e, lang);
-    const noun = tr(lang, 'noun_' + nounOf(p)), n = fmtNum(e.number, lang);
+    const noun = tr(lang, 'noun_' + nounOf(p)), n = fmtId(p, e.number, lang);
     return e.season != null ? tr(lang, 'untitledSE', {s: fmtNum(e.season, lang), noun, n}) : tr(lang, 'untitledN', {noun, n});
   };
   // The upload card's guide tag: the best-role link, with every same-role link of the same production and season when all
@@ -319,7 +353,7 @@ function model(payload) {
     const same = links.filter(l => l.role === role && l.e.production === e.production && (l.e.season ?? null) === (e.season ?? null));
     let text = code(e, lang) || epTitle(e, lang), rest = links.length - 1;
     if (same.length > 1 && same.every(l => Number.isInteger(l.e.number))) {
-      text = codeText(p, e.season ?? null, same.map(l => fmtNum(l.e.number, lang)).join(pos ? tr(lang, 'orSep') : ', '), lang);
+      text = codeText(p, e.season ?? null, same.map(l => fmtId(p, l.e.number, lang)).join(pos ? tr(lang, 'orSep') : ', '), lang);
       rest = links.length - same.length;
     } else if (same.length > 1 && pos) {
       text = same.map(l => code(l.e, lang) || epTitle(l.e, lang)).join(tr(lang, 'orSep')); rest = links.length - same.length;
@@ -359,12 +393,19 @@ function model(payload) {
         conf.length && conf.every(c => c === 'uploader-label') ? 'uploader' : 'provisional';
       const numbering = byNum.size ? (def && NUMBERINGS.includes(def.numbering) ? def.numbering : derived) : null;
       const first0 = def && Number.isInteger(def.firstNumber) && def.firstNumber > 0 ? def.firstNumber : 1;
+      // excludedNumbers are not episodes: no cell, gap or expected place; the season's exp-th number skips them.
+      const excluded = new Set((def && Array.isArray(def.excludedNumbers) ? def.excludedNumbers : [])
+        .flatMap(x => Array.from({length: x.to - x.from + 1}, (_, k) => x.from + k)));
+      let expLast = 0;
+      if (exp) { let k = 0, n = first0 - 1; while (k < exp) { n++; if (!excluded.has(n)) k++; } expLast = n; }
       const first = byNum.size ? Math.min(first0, ...byNum.keys()) : first0;
-      const last = byNum.size ? Math.min(first + 399, Math.max(max, exp ? first0 + exp - 1 : 0)) : first - 1;
-      const len = byNum.size ? last - first + 1 : 0;
-      let gaps = 0, expCells = 0; const slotNs = [];
-      for (let n = first; n <= last; n++) if (!byNum.has(n)) { slotNs.push(n); if (n <= max) gaps++; else expCells++; }
-      return {def, season, eps: ge, byNum, max, first, last, exp, numbering, len, gaps, expCells, slotNs,
+      const last = byNum.size ? Math.min(first + 399 + excluded.size, Math.max(max, expLast)) : first - 1;
+      let len = 0, gaps = 0, expCells = 0; const slotNs = [];
+      for (let n = first; n <= last; n++) {
+        if (excluded.has(n)) continue;
+        len++; if (!byNum.has(n)) { slotNs.push(n); if (n <= max) gaps++; else expCells++; }
+      }
+      return {def, season, eps: ge, byNum, max, first, last, exp, numbering, len, gaps, expCells, slotNs, excluded,
         slots: exp != null ? Math.max(0, exp - ge.length) : 0};
     });
     const exp = ts === 'known' ? p.expectedTotal : null;
@@ -398,10 +439,91 @@ function model(payload) {
   const licGroups = LIC_MODELS.filter(m => SVC.some(x => x.model === m)).map(m => 'lic-' + m);
   const licOther = !licGroups.length || records.some(r => r.access === 'licensed' && !svcOfUrl(safe(r.directUrl) || safe(r.url) || safe(r.sourceUrl)));
   const agroups = ['direct', 'public', 'web', 'vpn', ...licGroups, ...(licOther ? ['lic-other'] : []), 'unavailable'];
+  // Entries (one per episode or video, what Browse, Starred, Home and Surprise list): an episode's counted copies (whole,
+  // alternate, part) whose record is a counted copy of no other episode; every other record its own entry, joined by records
+  // that are the same video (the same host video id in the record's own link).
+  const COUNTED = ['whole-candidate', 'alternate-edition', 'part'];
+  const countedIn = new Map();
+  for (const e of eps) for (const x of ups.get(e.id)) if (COUNTED.includes(x.role)) countedIn.set(x.r.id, [...(countedIn.get(x.r.id) || []), e.id]);
+  const vidKey = r => {
+    const u = safe(r.directUrl) || safe(r.url); if (!u) return '';
+    const k = hostKind(u), url = new URL(u), seg = url.pathname.split('/').filter(Boolean), dec = x => { try { return decodeURIComponent(x); } catch { return x; } };
+    if (k === 'youtube') {
+      const id = url.hostname.endsWith('youtu.be') ? seg[0] : url.searchParams.get('v') || (['shorts', 'embed', 'live', 'v'].includes(seg[0]) ? seg[1] : '');
+      if (/^[\w-]{11}$/.test(id || '')) return 'youtube:' + id;
+      return /^[\w-]+$/.test(url.searchParams.get('list') || '') ? 'youtube-list:' + url.searchParams.get('list') : '';
+    }
+    if (k === 'vimeo') { const id = seg.find(x => /^\d{5,}$/.test(x)); return id ? 'vimeo:' + id : ''; }
+    if (k === 'dailymotion') { const i = seg.indexOf('video'), id = url.hostname === 'dai.ly' ? seg[0] : i >= 0 ? seg[i + 1] : ''; return id ? 'dailymotion:' + id.split('_')[0].toLowerCase() : ''; }
+    if (k === 'archive' && ['details', 'embed', 'download', 'stream'].includes(seg[0]) && seg[1]) {
+      const file = seg.slice(2).map(dec).join('/'); return 'archive:' + dec(seg[1]) + (file ? '/' + file : '');
+    }
+    if (k === 'okru') { const i = seg.findIndex(x => x === 'video' || x === 'videoembed'); return i >= 0 && /^\d+$/.test(seg[i + 1] || '') ? 'okru:' + seg[i + 1] : ''; }
+    if (k === 'facebook') { const i = seg.findIndex(x => x === 'videos' || x === 'reel'); const id = url.searchParams.get('v') || (i >= 0 ? seg[i + 1] : '') || (url.hostname === 'fb.watch' ? seg[0] : ''); return id ? 'facebook:' + id : ''; }
+    return '';
+  };
+  const entries = [], entryOf = new Map(), byVid = new Map(), roleIn = new Map();
+  for (const p of prods) for (const e of eps.filter(x => x.production === p.id)
+    .sort((a, b) => num(a.season) - num(b.season) || num(a.number) - num(b.number) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))) {
+    const mem = ups.get(e.id).filter(x => COUNTED.includes(x.role) && countedIn.get(x.r.id).length === 1);
+    for (const x of mem) roleIn.set(x.r.id, x.role);
+    const members = [...new Set(mem.map(x => x.r))];
+    if (!members.length) continue;
+    const en = {id: 'ep:' + e.id, key: 'ep:' + e.id, e, members}; entries.push(en); for (const r of members) entryOf.set(r.id, en);
+  }
+  for (const en of entries) for (const r of en.members) { const v = vidKey(r); if (v && !byVid.has(v)) byVid.set(v, r); }
+  for (const r of records) {
+    if (entryOf.has(r.id)) continue;
+    const v = vidKey(r), twin = v ? byVid.get(v) : null;
+    if (twin) { const en = entryOf.get(twin.id); en.members.push(r); entryOf.set(r.id, en); if (roleIn.has(twin.id)) roleIn.set(r.id, roleIn.get(twin.id)); continue; }
+    const en = {id: r.id, key: r.id || r.url, e: null, members: [r]}; entries.push(en); entryOf.set(r.id, en); if (v) byVid.set(v, r);
+  }
+  // An entry's members in link order, and the one a card shows: the first with a link that passes `ok`.
+  const memberB = (en, r) => {
+    const role = en.e ? roleIn.get(r.id) || 'whole-candidate' : 'whole-candidate', px = en.e ? partsOf(en.e).find(x => x.u.r === r) : null;
+    return {r, role, i: px ? px.no : 0, n: px ? px.of : 0};
+  };
+  const rankedOf = (en, locals = {}) => en.members.map(r => [r, memberB(en, r)])
+    .sort((a, b) => cmpKeys(copyKey(a[0], a[1].role, a[1].i, locals[a[0].id] || ''), copyKey(b[0], b[1].role, b[1].i, locals[b[0].id] || '')) ||
+      (a[0].id < b[0].id ? -1 : a[0].id > b[0].id ? 1 : 0)).map(x => x[0]);
+  const shownOf = (en, ok = () => true, locals = {}) => { const rs = rankedOf(en, locals);
+    return rs.find(r => expectDest(r, locals[r.id] || '') && ok(r)) || rs.find(ok) || rs[0]; };
+  const entryTitleOf = (en, r, lang = 'en') => (en.e ? epTitle(en.e, lang) : recTitleIn(r || rankedOf(en)[0], lang));
+  // A production with more than eight seasons shows one season at a time: the chosen one, else the season of its earliest
+  // episode with a whole link that is not marked watched.
+  const paged = p => Array.isArray(p.seasons) && p.seasons.length > 8;
+  const pageGroup = (p, watchedIds = new Set(), want = null) => {
+    const m = prodModel(p), g = want != null && m.groups.find(x => x.season === want); if (g) return g;
+    const next = m.all.find(e => cov(e) === 'whole-candidate' && !watchedIds.has(e.id));
+    return (next && m.groups.find(x => x.season === (next.season ?? null))) || m.groups.find(x => x.eps.length) || m.groups[0];
+  };
+  // Browse counts entries: one counts when some member passes.
+  const countE = pred => entries.filter(en => en.members.some(pred)).length;
+  const entryStarredIn = (en, favs) => favs.has(en.key) || en.members.some(r => favs.has(r.id || r.url));
   return {records, recById, guide: g, prods, prodById, eps, ups, poss, linked, possibleIds, queued, guideStatus, recLinks, linkTag, partsOf,
-    cov, ev, evSource, covLong, best, fmt, isCoreRechov, famRank, epsOf, prodModel, label, codeOf, codeText, code, epTitle, storyOf, altLabels,
+    entries, entryOf, countE, memberB, rankedOf, shownOf, entryTitleOf, entryStarredIn, fmtId, paged, pageGroup, cov, ev, evSource, covLong, best, fmt, isCoreRechov, famRank, epsOf, prodModel, label, codeOf, codeText, code, epTitle, storyOf, altLabels,
     altText, hasGuide: prods.length > 0, services: SVC, licGroups, licOther, agroups};
 }
+
+// Checks of the page shell (language and theme boot, stored values, start routes) do not read the data, so they boot a light
+// copy: the data without the large series (US Sesame Street), which every other check covers. A payload function still applies.
+const LIGHT_SERIES = new Set(['sesame-street']);
+function lightPayload(p) {
+  p.records = p.records.filter(r => !LIGHT_SERIES.has(r.series));
+  if (p.guide && Array.isArray(p.guide.productions)) {
+    const drop = new Set(p.guide.productions.filter(x => LIGHT_SERIES.has(x.series)).map(x => x.id));
+    p.guide.productions = p.guide.productions.filter(x => !drop.has(x.id));
+    p.guide.episodes = p.guide.episodes.filter(e => !drop.has(e.production));
+    for (const id of drop) delete p.guide.unidentified[id];
+  }
+  return p;
+}
+const bootLight = (htmlPath, o = {}) => boot(htmlPath, {...o, payload: q => { const r = lightPayload(q); return o.payload ? o.payload(r) || r : r; }});
+
+// The Browse card of an upload: its entry's card (an episode's copies share one).
+const cardKey = (M, rid) => 'card-' + (M.entryOf.get(rid) || {id: rid}).id;
+// Its title: the episode's for an episode entry, else the upload's.
+const cardTitle = (M, rid, lang = 'en') => { const en = M.entryOf.get(rid); return M.entryTitleOf(en, M.shownOf(en), lang); };
 
 // ---------------------------------------------------------------- harness helpers
 function harness(app) {
@@ -505,32 +627,36 @@ function assertEditorialRow(H, value, lang, where) {
 
 // ---------------------------------------------------------------- uploads (both modes)
 async function checkUploads(H, M) {
-  const {records} = M, N = records.length;
+  // Browse lists entries (one per episode or video); a facet counts an entry once when some member passes, and a
+  // combination of filters needs one member that passes them all.
+  const {records} = M, E = M.entries, N = E.length;
+  const countE = (pred, es = E) => es.filter(en => en.members.some(pred)).length;
   const lang = 'en';
   await H.navigate('browse');
   assert.equal(H.h1().textContent, L.en.browseTitle);
   assert.equal(H.document.title, L.en.browseTitle + ' · ' + L.en.appName, 'document.title per view');
-  assert.equal(H.count(), N, 'Every record is listed');
+  assert.equal(H.count(), N, 'Every entry is listed');
+  assert.equal(new Set(E.flatMap(en => en.members)).size, records.length, 'Every record belongs to exactly one entry');
   assert.equal(H.$('grid').children.length, Math.min(48, N), 'The first page holds 48 cards');
   assert(!H.byClass('tab-count', H.fk('tab-browse')).length && H.fk('tab-browse').textContent === L.en.navBrowse + L.en.navBrowseShort,
     'The Browse tab is named Browse and carries no count');
-  const bySeries = k => records.filter(r => r.series === k).length;
-  const byKind = (k, rs = records) => rs.filter(r => kindOf(r) === k).length;
+  const bySeries = k => countE(r => r.series === k);
+  const byKind = (k, pred = () => true) => countE(r => kindOf(r) === k && pred(r));
   assert.equal(H.chipCount(H.fk('fs-all')), N);
   for (const k of SERIES) assert.equal(H.chipCount(H.fk('fs-' + k)), bySeries(k), 'Series count ' + k);
   for (const k of KINDS) assert.equal(H.chipCount(H.fk('fk-' + k)), byKind(k), 'Type count ' + k);
   const shownGroups = H.find(n => /^fa-/.test(n.getAttribute?.('data-fk') || '')).map(n => n.getAttribute('data-fk').slice(3));
   assert.deepEqual(shownGroups, M.agroups, 'Access filters: the fixed groups, one per described licensed model, then the rest');
   for (const g of M.agroups) {
-    assert.equal(H.chipCount(H.fk('fa-' + g)), records.filter(r => expectGroup(r) === g).length, 'Access count ' + g);
+    assert.equal(H.chipCount(H.fk('fa-' + g)), countE(r => expectGroup(r) === g), 'Access count ' + g);
   }
   assert.equal(records.filter(r => !M.agroups.includes(expectGroup(r))).length, 0, 'Every record is in one shown access group');
   if (M.hasGuide) {
-    assert.equal(H.chipCount(H.fk('fg-matched')), records.filter(r => M.linked.has(r.id)).length, 'Matched count');
-    assert.equal(H.chipCount(H.fk('fg-queue')), M.queued.size, 'Queue count');
+    assert.equal(H.chipCount(H.fk('fg-matched')), countE(r => M.linked.has(r.id)), 'Matched count');
+    assert.equal(H.chipCount(H.fk('fg-queue')), countE(r => M.queued.has(r.id)), 'Queue count');
     // A record linked only as a possible copy is neither matched nor "not in the guide".
     for (const k of ['matched', 'queue', 'possible', 'none']) {
-      assert.equal(H.chipCount(H.fk('fg-' + k)), records.filter(r => M.guideStatus(r) === k).length, 'Guide status count ' + k);
+      assert.equal(H.chipCount(H.fk('fg-' + k)), countE(r => M.guideStatus(r) === k), 'Guide status count ' + k);
     }
   } else assert(!H.has('fg-matched'), 'Without a guide there is no "In the guide" facet');
   assert(H.$('kind-help').textContent.includes(L.en.kindHelp.split('. ').at(-1)), 'Type help says selecting none includes all');
@@ -543,9 +669,9 @@ async function checkUploads(H, M) {
   ok('uploads facet counts derived from data');
 
   // Counts ignore their own facet; other facets follow the selection.
-  const big = [...SERIES].sort((a, b) => bySeries(b) - bySeries(a))[0], inBig = records.filter(r => r.series === big);
+  const big = [...SERIES].sort((a, b) => bySeries(b) - bySeries(a))[0], inBig = r => r.series === big;
   await H.fk('fs-' + big).click();
-  assert.equal(H.count(), inBig.length);
+  assert.equal(H.count(), bySeries(big));
   assert.equal(H.chipCount(H.fk('fs-all')), N, 'Series counts ignore the series selection');
   for (const k of SERIES) assert.equal(H.chipCount(H.fk('fs-' + k)), bySeries(k));
   for (const k of KINDS) assert.equal(H.chipCount(H.fk('fk-' + k)), byKind(k, inBig), 'Type counts follow the series selection');
@@ -553,7 +679,7 @@ async function checkUploads(H, M) {
   // Selected zero-count options stay operable.
   let zero = null;
   for (const s of SERIES) for (const k of KINDS) {
-    if (!zero && bySeries(s) && byKind(k) && !byKind(k, records.filter(r => r.series === s))) zero = [s, k];
+    if (!zero && bySeries(s) && byKind(k) && !byKind(k, r => r.series === s)) zero = [s, k];
   }
   if (zero) {
     await H.fk('fs-' + zero[0]).click(); await H.fk('fk-' + zero[1]).click();
@@ -564,18 +690,18 @@ async function checkUploads(H, M) {
     await H.fk('fs-all').click();
   }
   // Full episodes and short-series installments are separate categories.
-  const shortOnly = SERIES.find(s => byKind('short-episode', records.filter(r => r.series === s)) && !byKind('episode', records.filter(r => r.series === s)));
+  const shortOnly = SERIES.find(s => byKind('short-episode', r => r.series === s) && !byKind('episode', r => r.series === s));
   if (shortOnly) {
     await H.fk('fs-' + shortOnly).click(); await H.fk('fk-episode').click();
     assert.equal(H.count(), 0, 'Short-series installments do not count as full episodes');
     await H.fk('fk-episode').click(); await H.fk('fk-short-episode').click();
-    assert.equal(H.count(), byKind('short-episode', records.filter(r => r.series === shortOnly)));
+    assert.equal(H.count(), byKind('short-episode', r => r.series === shortOnly));
     await H.fk('fk-short-episode').click(); await H.fk('fs-all').click();
   }
   // Multi-select types; selecting none includes all.
   const two = KINDS.filter(k => byKind(k)).slice(0, 2);
   for (const k of two) await H.fk('fk-' + k).click();
-  assert.equal(H.count(), two.reduce((s, k) => s + byKind(k), 0), 'Type multi-select adds categories');
+  assert.equal(H.count(), countE(r => two.includes(kindOf(r))), 'Type multi-select adds categories');
   for (const k of two) await H.fk('fk-' + k).click();
   assert.equal(H.count(), N, 'Selecting no types includes all types');
   ok('counts ignore their own facet; zero-count selections retained; full vs short-series separate; multi-select');
@@ -589,23 +715,23 @@ async function checkUploads(H, M) {
   const lenOk = (r, n) => Number(r.durationSeconds) > 0 && Number(r.durationSeconds) <= n * 60;
   const SP = ['he', 'en', 'other', 'none'];
   assert.equal(H.chipCount(H.fk('fsp-all')), N, 'All languages counts every upload');
-  for (const g of SP) assert.equal(H.chipCount(H.fk('fsp-' + g)), records.filter(r => spokenOf(r).includes(g)).length, 'Spoken count ' + g);
+  for (const g of SP) assert.equal(H.chipCount(H.fk('fsp-' + g)), countE(r => spokenOf(r).includes(g)), 'Spoken count ' + g);
   assert(SP.reduce((n, g) => n + H.chipCount(H.fk('fsp-' + g)), 0) >= N, 'Every upload is in at least one language group');
   assert.equal(H.chipCount(H.fk('fl-any')), N);
-  for (const n of [5, 10, 20, 30]) assert.equal(H.chipCount(H.fk('fl-' + n)), records.filter(r => lenOk(r, n)).length, 'Length count ' + n);
+  for (const n of [5, 10, 20, 30]) assert.equal(H.chipCount(H.fk('fl-' + n)), countE(r => lenOk(r, n)), 'Length count ' + n);
   await H.fk('fsp-he').click(); await H.fk('fsp-en').click();
-  const heEn = records.filter(r => spokenOf(r).some(g => g === 'he' || g === 'en'));
-  assert.equal(H.count(), heEn.length, 'Spoken choices add up (either language)');
+  const heEnR = r => spokenOf(r).some(g => g === 'he' || g === 'en'), heEnN = countE(heEnR);
+  assert.equal(H.count(), heEnN, 'Spoken choices add up (either language)');
   await H.fk('fl-10').click(); await H.fk('fl-5').click();
   assert.equal(H.fk('fl-10').getAttribute('aria-pressed'), 'false', 'Length is one choice at a time');
-  assert.equal(H.count(), heEn.filter(r => lenOk(r, 5)).length, 'Length narrows the result');
+  assert.equal(H.count(), countE(r => heEnR(r) && lenOk(r, 5)), 'Length narrows the result (one member passes both)');
   assert(/[?&]spoken=he%2Cen(&|$)/.test(H.location.hash) && /[?&]len=5(&|$)/.test(H.location.hash), 'Spoken and length are in the hash: ' + H.location.hash);
-  for (const k of [5, 10, 20, 30]) assert.equal(H.chipCount(H.fk('fl-' + k)), heEn.filter(r => lenOk(r, k)).length, 'Length counts ignore the length choice');
-  assert.equal(H.chipCount(H.fk('fsp-other')), records.filter(r => lenOk(r, 5) && spokenOf(r).includes('other')).length, 'Spoken counts follow the length');
+  for (const k of [5, 10, 20, 30]) assert.equal(H.chipCount(H.fk('fl-' + k)), countE(r => heEnR(r) && lenOk(r, k)), 'Length counts ignore the length choice');
+  assert.equal(H.chipCount(H.fk('fsp-other')), countE(r => lenOk(r, 5) && spokenOf(r).includes('other')), 'Spoken counts follow the length');
   assert(H.has('ux-sp-he') && H.has('ux-len'), 'Removable chips for both');
-  await H.fk('ux-len').click(); assert.equal(H.count(), heEn.length, 'Removing the length chip clears it');
+  await H.fk('ux-len').click(); assert.equal(H.count(), heEnN, 'Removing the length chip clears it');
   await H.navigate('browse?spoken=none,bogus&len=7');
-  assert.equal(H.count(), records.filter(r => spokenOf(r).includes('none')).length, 'Unknown values in the hash are dropped');
+  assert.equal(H.count(), countE(r => spokenOf(r).includes('none')), 'Unknown values in the hash are dropped');
   await H.fk('fsp-all').click(); assert.equal(H.count(), N, 'All languages clears the spoken choice');
   // An empty result shows the bin and one button per active filter group, each with what clearing it alone would show.
   const lone = SERIES.map(sr => [sr, SP.find(g => records.some(r => spokenOf(r).includes(g)) &&
@@ -616,7 +742,7 @@ async function checkUploads(H, M) {
     const empty = H.byClass('empty')[0];
     assert(!empty.hidden && H.byClass('bin', empty).length === 1 && H.byClass('bin', empty)[0].getAttribute('aria-hidden') === 'true', 'The bin, hidden from assistive technology');
     assert.equal(H.fk('relax-series').textContent, tr('en', 'relaxFilter', {name: L.en.fSeries,
-      n: records.filter(r => spokenOf(r).includes(lone[1])).length.toLocaleString('en-US')}), 'Clearing the series would show the language');
+      n: countE(r => spokenOf(r).includes(lone[1])).toLocaleString('en-US')}), 'Clearing the series would show the language');
     assert.equal(H.fk('relax-spoken').textContent, tr('en', 'relaxFilter', {name: L.en.fSpoken, n: bySeries(lone[0]).toLocaleString('en-US')}));
     await H.fk('relax-spoken').click(); assert.equal(H.count(), bySeries(lone[0]), 'A relax button clears its group');
     await H.fk('fs-all').click();
@@ -632,7 +758,7 @@ async function checkUploads(H, M) {
   assert.equal(await typed('Chanukah'), await typed('Hanukkah'), 'Holiday spelling alias');
   assert.equal(await typed('Abigail'), await typed('Avigail'), 'Name alias');
   // Plene and defective Hebrew spellings of the Elmo show's name find the same uploads.
-  const elmoN = records.filter(r => r.series === 'elmo').length;
+  const elmoN = countE(r => r.series === 'elmo');
   assert.equal(await typed('תוכנית האירוח של אלמו'), await typed('תכנית האירוח של אלמו'), 'Plene spelling תוכנית folds to תכנית');
   if (elmoN) assert(H.count() >= elmoN, 'The Elmo show name finds every Elmo upload');
   // change after the debounced render has run does not re-render (the next click must reach its target).
@@ -654,11 +780,11 @@ async function checkUploads(H, M) {
   for (const [k, r] of samples) {
     const url = k.startsWith('direct:') ? r.directUrl : r.url;
     await typed(url);
-    assert(cardIds().includes(r.id), `Pasted ${k} link finds its upload: ${url}`);
+    assert(cardIds().includes(M.entryOf.get(r.id).id), `Pasted ${k} link finds its upload's entry: ${url}`);
     assert(H.text().includes(L.en.urlHit), 'Banner says the video is already in the library');
   }
-  assert.equal(await typed('https://youtu.be/AAAAAAAAAAA'), records.filter(r => [r.url, r.directUrl, r.sourceUrl]
-    .some(u => hostKind(u) === 'youtube' && /AAAAAAAAAAA/.test(u))).length, 'YouTube ids match by hostname only');
+  assert.equal(await typed('https://youtu.be/AAAAAAAAAAA'), countE(r => [r.url, r.directUrl, r.sourceUrl]
+    .some(u => hostKind(u) === 'youtube' && /AAAAAAAAAAA/.test(u))), 'YouTube ids match by hostname only');
   if (H.count() === 0) assert(H.text().includes(tr('en', 'urlMiss', {id: 'AAAAAAAAAAA'})), 'Unknown video id banner');
   await typed('');
   ok('search: debounce, aliases, pasted links for ' + [...samples.keys()].join(', '));
@@ -705,32 +831,38 @@ async function checkUploads(H, M) {
   pageOne.forEach((li, i) => assert.equal(H.$('grid').children[i], li, 'Show more keeps the cards already shown'));
   const secs = r => { const s = Number(r.durationSeconds); return Number.isFinite(s) && s > 0 ? s : -1; };
   let prev = Infinity, unknown = false, played = 0;
-  const titles = new Map(records.map(r => [r.id, recTitleEn(r)]));
+  const enById = new Map(E.map(en => [en.id, en])), shownIds = new Set();
   for (const li of H.$('grid').children) {
     const id = H.find(n => /^card-/.test(n.getAttribute?.('data-fk') || ''), li)[0].getAttribute('data-fk').slice(5);
-    const r = M.recById.get(id), s = secs(r);
+    const en = enById.get(id), r = M.shownOf(en), s = secs(r); shownIds.add(r.id);
+    // The card shows the entry's first member in link order, and names the episode for an episode entry.
+    assert.equal(H.fk('card-' + id, li).textContent, M.entryTitleOf(en, r), 'Card title: ' + id);
+    if (en.members.length > 1) {
+      const also = [...new Set(M.rankedOf(en).filter(m => m !== r).map(m => expectHostLabel(m, lang)))].filter(h => h !== expectHostLabel(r, lang));
+      const al = H.byClass('u-also', li);
+      assert.equal(al.length ? al[0].textContent : '', also.length ? tr('en', 'alsoOn', {hosts: also.join(', ')}) : '', 'Other hosts named: ' + id);
+    } else assert(!H.byClass('u-also', li).length, 'A single copy names no other host: ' + id);
     if (s < 0) unknown = true; else { assert(!unknown, 'Known runtimes precede unknown ones'); assert(s <= prev, 'Runtime order descends'); prev = s; }
     const links = H.extLinks(li); assert.equal(links.length, 1, 'One watch link per card');
     assert.equal(links[0].href, expectDest(r), 'Watch link targets the indexed host URL: ' + id);
     assert(links[0].textContent.startsWith(expectWatchBase(r, lang)), 'Watch label names the host, or says licensed: ' + links[0].textContent);
-    assert(links[0].getAttribute('aria-label').includes(titles.get(id)), 'Card watch links name their upload: ' + id);
+    assert(links[0].getAttribute('aria-label').includes(M.entryTitleOf(en, r)), 'Card watch links name their entry: ' + id);
     assert.equal(H.byClass('u-host', li)[0].textContent, expectHostLabel(r, lang), 'Host label by hostname: ' + id);
     const access = H.byClass('u-access', li)[0].textContent;
     assert.equal(access, expectAccessText(r, lang), 'Access line: ' + id);
     if (access.startsWith(L.en.acc_played)) played++;
   }
-  const claimed = records.filter(r => r.playbackVerified === true && r.playbackWithoutVpn === true);
+  const claimed = records.filter(r => r.playbackVerified === true && r.playbackWithoutVpn === true && shownIds.has(r.id));
   assert.equal(played, claimed.length, 'Only records with recorded playback outside the VPN claim it');
-  if (H.payload.meta && 'playbackVerifiedWithoutVpn' in H.payload.meta) assert.equal(played, H.payload.meta.playbackVerifiedWithoutVpn);
   if (H.payload.meta && 'playerLinksDiscovered' in H.payload.meta) {
     assert.equal(records.filter(r => r.directLinkProvenance).length, H.payload.meta.playerLinksDiscovered, 'All discovered Vimeo links remain');
   }
-  ok('longest-first sort with unknown last; watch links, host labels and access lines for all ' + N + ' cards');
+  ok('longest-first sort with unknown last; titles, other hosts, watch links, host labels and access lines for all ' + N + ' cards (entries)');
 
-  // Starred uploads: star, starred-only, clear keeps the starred list, Starred tab.
-  const longest = M.recById.get(cardIds()[0]);
+  // Starred entries: star, starred-only, clear keeps the starred list, Starred tab.
+  const longest = enById.get(cardIds()[0]);
   const star = H.fk('star-' + longest.id), starName = star.getAttribute('aria-label');
-  assert.equal(starName, tr('en', 'starAria', {title: recTitleEn(longest)}));
+  assert.equal(starName, tr('en', 'starAria', {title: M.entryTitleOf(longest, M.shownOf(longest))}));
   assert.equal(star.getAttribute('aria-pressed'), 'false', 'The star is a toggle button (aria-pressed)');
   const shownBefore = [...H.$('grid').children];
   await star.click();
@@ -775,7 +907,7 @@ async function checkUploads(H, M) {
   return longest;
 }
 
-async function checkVimeoAndBackups(H, M, starredRecord) {
+async function checkVimeoAndBackups(H, M, starredEntry) {
   const hop = M.records.filter(r => hostKind(r.url) === 'hop' && r.directUrl && expectAccess(r) === 'vimeo');
   if (hop.length) {
     const r = hop[0];
@@ -799,7 +931,7 @@ async function checkVimeoAndBackups(H, M, starredRecord) {
     const backup = await H.blobJson();
     assert.equal(backup.format, 'sumsum-direct-links-v1');
     assert.equal(backup.mappings[r.id].url, exact);
-    assert.deepEqual(backup.favorites, [starredRecord.id], 'Backup includes stars (the favorites list, as before)');
+    assert.deepEqual(backup.favorites, [starredEntry.key], 'Backup includes stars (the favorites list, as before), keyed by entry');
     assert(Array.isArray(backup.watched), 'Backup carries watched marks');
     ok('Vimeo link validation, exact URL preservation, sumsum-direct-links-v1 backup');
     // Recorded playback belongs to an exact URL: a different pasted link is "your pasted link", not "played".
@@ -828,13 +960,15 @@ async function checkVimeoAndBackups(H, M, starredRecord) {
   };
   await importJson({'bare-key': 'https://vimeo.com/123456789/abcdef1234'});
   assert(JSON.parse(H.storage.get('sumsum-vimeo-mappings'))['bare-key'], 'Bare mapping object imports');
-  await importJson({format: 'sumsum-direct-links-v1', mappings: {'old-key': {url: 'https://vimeo.com/22222222/abcd'}}, favorites: [starredRecord.id]});
+  await importJson({format: 'sumsum-direct-links-v1', mappings: {'old-key': {url: 'https://vimeo.com/22222222/abcd'}}, favorites: [starredEntry.key]});
   assert(JSON.parse(H.storage.get('sumsum-vimeo-mappings'))['old-key'], 'Backups without watched marks still import');
   // A backup's stars and watched marks import on their own (review round 1): no mappings, two records not starred yet and one
   // watched mark, so the import can succeed only through the favorites and watched lists. Stars keep their backup field
   // (`favorites`), so older backups load.
   const favsBefore = JSON.parse(H.storage.get('sumsum-favorites') || '[]'), watchedBefore = JSON.parse(H.storage.get('sumsum-watched') || '[]');
-  const newStars = M.records.filter(r => !favsBefore.includes(r.id)).slice(0, 2).map(r => r.id);
+  // Two records of two entries that are not starred yet (an old backup holds record keys; each stars its entry).
+  const freshEns = M.entries.filter(en => !M.entryStarredIn(en, new Set(favsBefore))).slice(0, 2);
+  const newStars = freshEns.map(en => en.members[0].id);
   const newWatch = (M.eps.find(e => !watchedBefore.includes(e.id)) || {}).id;
   if (newStars.length === 2 && newWatch) {
     await importJson({format: 'sumsum-direct-links-v1', mappings: {}, favorites: newStars, watched: [newWatch]});
@@ -843,8 +977,9 @@ async function checkVimeoAndBackups(H, M, starredRecord) {
     assert(newStars.every(id => favsAfter.includes(id)) && favsBefore.every(id => favsAfter.includes(id)), 'Imported stars join the stored ones');
     assert(JSON.parse(H.storage.get('sumsum-watched')).includes(newWatch), 'The imported watched mark is stored');
     await H.navigate('starred');
-    for (const id of newStars) assert(H.has('card-' + id, H.view()), 'Starred lists an imported star: ' + id);
-    assert.equal(H.number(H.byClass('tab-count', H.fk('tab-starred'))[0].textContent), favsAfter.length, 'The Starred count includes them');
+    for (const en of freshEns) assert(H.has('card-' + en.id, H.view()), 'Starred lists an imported star\'s entry: ' + en.id);
+    assert.equal(H.number(H.byClass('tab-count', H.fk('tab-starred'))[0].textContent),
+      M.entries.filter(en => M.entryStarredIn(en, new Set(favsAfter))).length, 'The Starred count includes them (entries)');
     // Undo them through the page, so the later checks see the earlier state.
     for (const id of newStars) { await H.navigate('record/' + encodeURIComponent(id)); await H.fk('rec-star').click(); }
     await H.navigate('episode/' + encodeURIComponent(newWatch)); await H.fk('watch-toggle').click();
@@ -888,7 +1023,7 @@ async function checkVimeoAndBackups(H, M, starredRecord) {
     const card = H.byClass('ucard').find(c => H.byClass('u-actions', c)[0] && H.extLinks(H.byClass('u-actions', c)[0]).length);
     const w = H.extLinks(H.byClass('u-actions', card)[0])[0];
     const rid = H.find(n => n.getAttribute && (n.getAttribute('data-fk') || '').startsWith('card-'), card)[0].getAttribute('data-fk').slice(5);
-    const rec = M.records.find(x => x.id === rid), key = rec.id || rec.url, nOf = () => (JSON.parse(H.storage.get('sumsum-opened') || '{}')[key] || {n: 0}).n;
+    const rec = M.shownOf(M.entries.find(en => en.id === rid)), key = rec.id || rec.url, nOf = () => (JSON.parse(H.storage.get('sumsum-opened') || '{}')[key] || {n: 0}).n;
     const n0 = nOf();
     await w.click(); assert(w.isConnected, 'The clicked Watch link is still in the page'); H.flushTimers();
     assert.equal(nOf(), n0 + 1, 'A click on a card\'s Watch link counts an open');
@@ -959,10 +1094,12 @@ async function checkGuide(H, M) {
     const m = M.prodModel(p);
     if (m.ts === 'known') assert(m.all.length + m.slots <= Math.max(m.exp, m.all.length), 'Identified plus expected stay within ' + p.id);
   }
-  // Strips: every numbered episode has a cell; gaps and expected cells match the model; inferred marking.
+  // Strips: every numbered episode has a cell; gaps and expected cells match the model; inferred marking. A paged production
+  // (one season at a time) draws no strip on the all-productions guide; its seasons are checked on its own page below.
   const cells = H.find(n => n.tagName === 'a' && H.cls(n).includes('cell'));
   let gaps = 0, exps = 0, total = 0;
-  for (const p of prods) for (const g of M.prodModel(p).groups) {
+  const flat = prods.filter(p => !M.paged(p));
+  for (const p of flat) for (const g of M.prodModel(p).groups) {
     total += g.len; gaps += g.gaps; exps += g.expCells;
     for (const e of g.byNum.values()) assert(cells.some(c => c.href === '#/episode/' + e.id), 'Strip cell for ' + e.id);
   }
@@ -970,17 +1107,50 @@ async function checkGuide(H, M) {
   assert.equal(cells.filter(c => H.cls(c).includes('gap')).length, gaps, 'Gap cells');
   assert.equal(cells.filter(c => H.cls(c).includes('exp')).length, exps, 'Expected cells');
   const strips = H.find(n => n.tagName === 'ul' && H.cls(n).includes('strip'));
-  const numberings = prods.flatMap(p => M.prodModel(p).groups.filter(g => g.len).map(g => g.numbering));
+  const numberings = flat.flatMap(p => M.prodModel(p).groups.filter(g => g.len).map(g => g.numbering));
   assert.equal(strips.length, numberings.length);
   strips.forEach((s, i) => assert.equal(H.cls(s).includes('inferred'), numberings[i] !== 'documented', 'Strip numbering marking'));
-  for (const p of prods) {
+  for (const p of flat) {
     const m = M.prodModel(p);
     for (const g of m.groups) if (!g.len && g.open) assert(H.text().includes(tr('en', 'slotsCaption', {n: g.open.toLocaleString('en-US')})));
   }
-  // Tile budget in the all-productions album.
-  const tiles = () => H.byClass('tile');
-  assert.equal(tiles().length, prods.reduce((s, p) => s + Math.min(12, M.epsOf.get(p.id).length), 0), 'Twelve tiles per production');
-  ok(`strips: ${total} cells, ${gaps} gaps, ${exps} expected; numbering marked; tile budget`);
+  // Tile budget in the all-productions album: twelve per production, from the season a paged production shows first.
+  const tiles = () => H.byClass('tile'), watchedNow = () => new Set(JSON.parse(H.storage.get('sumsum-watched') || '[]'));
+  assert.equal(tiles().length, prods.reduce((s, p) => s + Math.min(12, M.paged(p) ? M.pageGroup(p, watchedNow()).eps.length : M.epsOf.get(p.id).length), 0),
+    'Twelve tiles per production');
+  // "Show all" counts what it reveals: for a paged production, the episodes of the season it shows, not of every season.
+  for (const p of prods.filter(M.paged)) {
+    const n = M.pageGroup(p, watchedNow()).eps.length;
+    if (n > 12) assert.equal(H.fk('more-' + p.id).textContent, tr('en', 'showAllEps', {n: n.toLocaleString('en-US')}), 'Show all counts one season: ' + p.id);
+  }
+  // A paged production: every season on its own page (?season=N), with its strip (excluded numbers skipped) and every tile.
+  let pagedSeasons = 0;
+  for (const p of prods.filter(M.paged)) {
+    for (const g of M.prodModel(p).groups) {
+      await H.navigate('guide/' + encodeURIComponent(p.id) + '?season=' + g.season);
+      assert.equal(H.location.hash, '#/guide/' + encodeURIComponent(p.id) + '?season=' + g.season, 'The season is in the route');
+      assert.equal(H.$('season-pick').value, String(g.season), 'The select shows the season');
+      const sc = H.find(n => n.tagName === 'a' && H.cls(n).includes('cell'));
+      assert.equal(sc.length, g.len, `Season ${g.season}: one cell per number, excluded numbers skipped`);
+      for (const n of g.excluded) assert(!H.has('cell-' + p.id + '-' + g.season + '-' + n), 'No cell for excluded number ' + n);
+      for (const e of g.byNum.values()) assert(sc.some(c => c.href === '#/episode/' + e.id && c.textContent === M.fmtId(p, e.number)), 'Padded cell for ' + e.id);
+      assert.equal(tiles().length, g.eps.length, `Season ${g.season}: every tile`);
+      pagedSeasons++;
+    }
+    // The select changes the season and keeps focus on itself.
+    const two = M.prodModel(p).groups[1];
+    await H.navigate('guide/' + encodeURIComponent(p.id));
+    H.$('season-pick').value = String(two.season); await H.$('season-pick').fire('change');
+    assert(H.location.hash.endsWith('?season=' + two.season) && H.document.activeElement === H.$('season-pick'), 'The select picks a season');
+    // A search spans every season, without strips.
+    const last = M.prodModel(p).groups.at(-1).eps[0];
+    await H.navigate('guide/' + encodeURIComponent(p.id) + '?season=' + two.season + '&q=' + encodeURIComponent(M.code(last))); H.flushTimers();
+    assert(H.has('ep-' + last.id, H.view()) && !H.find(n => n.tagName === 'ul' && H.cls(n).includes('strip')).length,
+      'A search finds an episode of another season, without strips');
+  }
+  await H.navigate('guide');
+  ok(`strips: ${total} cells, ${gaps} gaps, ${exps} expected; numbering marked; tile budget; ${pagedSeasons} seasons of paged productions ` +
+    'on their own pages (route, select, padded cells, excluded numbers, every tile), searches across seasons');
   await checkNumbering(H, M);
 
   // Coverage chips: counts ignore their own selection; scope in the status line; hash replace.
@@ -1094,6 +1264,41 @@ async function checkGuide(H, M) {
       if (cands.length > 1) await H.fk('next-skip').click();
     }
     assert.deepEqual([...shown].sort(), cands.map(e => '#/episode/' + encodeURIComponent(e.id)).sort(), 'Up next offers exactly the candidates');
+  }
+  // The family switch: Sesame Street walks its own core episodes, earliest unwatched with an offered copy first; the choice is
+  // stored and focus stays on it. Without a stored choice, All starts on Rechov Sumsum and English Spoken on Sesame Street.
+  const ssProds = prods.filter(p => p.format === 'core' && FAMILY_OF[p.series] === 'sesame-street');
+  if (ssProds.length && cands.length) {
+    const rechov = FAMILY_OF[GOAL[0].series], epHref = e => '#/episode/' + encodeURIComponent(e.id);
+    assert(H.has('next-fam-sesame-street', H.view()) && H.has('next-fam-' + rechov, H.view()), 'Up next has a family switch');
+    assert.equal(H.fk('next-fam-' + rechov).getAttribute('aria-pressed'), 'true', 'Rechov Sumsum is the default under All');
+    if (H.has('next-skip', H.view())) await H.fk('next-skip').click();
+    await H.fk('next-fam-sesame-street').click();
+    assert.equal(H.storage.get('sumsum-upnext'), '"sesame-street"', 'The family choice is stored');
+    assert.equal(H.document.activeElement, H.fk('next-fam-sesame-street'), 'Focus stays on the switch');
+    assert.equal(H.fk('next-fam-sesame-street').getAttribute('aria-pressed'), 'true');
+    const s0 = [...ssProds].sort((a, b) => (a.order ?? 99) - (b.order ?? 99)).flatMap(p => M.epsOf.get(p.id))
+      .find(e => cov(e) === 'whole-candidate' && !seen.has(e.id) && nextCopyM(M, e, local));
+    assert.equal(H.fk('next-ep').href, epHref(s0), 'Sesame Street Up next starts at its earliest unwatched episode (Another one resets)');
+    assert.equal(H.fk('next-watch').href, expectDest(nextCopyM(M, s0, local).r, local(nextCopyM(M, s0, local).r)), 'with its chosen copy');
+    await H.fk('next-fam-' + rechov).click();
+    assert.equal(H.fk('next-ep').href, epHref(cands[0]), 'Back to Rechov Sumsum');
+    H.storage.delete('sumsum-upnext'); await H.fk('pref-spoken-en').click();
+    assert.equal(H.fk('next-fam-sesame-street').getAttribute('aria-pressed'), 'true', 'English Spoken starts on Sesame Street');
+    // Sesame Street chosen with Spoken Hebrew: nothing in it fits, so Rechov Sumsum is shown, pressed, with a line saying so.
+    await H.fk('next-fam-sesame-street').click(); await H.fk('pref-spoken-he').click();
+    const ssHe = ssProds.flatMap(p => M.epsOf.get(p.id)).some(e => cov(e) === 'whole-candidate' && !seen.has(e.id) &&
+      M.ups.get(e.id).some(u => ['whole-candidate', 'alternate-edition'].includes(u.role) && offerable(u.r) && spokenOfM(u.r).includes('he')));
+    if (!ssHe) {
+      assert.equal(H.fk('next-fam-' + rechov).getAttribute('aria-pressed'), 'true', 'The family shown is the one pressed');
+      assert.equal(H.fk('next-fam-sesame-street').getAttribute('aria-pressed'), 'false');
+      assert.equal(H.byClass('fam-none')[0]?.textContent, tr('en', 'upNextNone', {name: 'Sesame Street'}), 'and a line says the chosen one has nothing');
+    }
+    H.storage.delete('sumsum-upnext');
+    await H.fk('pref-spoken-all').click();
+    assert.equal(H.fk('next-fam-' + rechov).getAttribute('aria-pressed'), 'true');
+    assert(!H.byClass('fam-none').length, 'No fallback line when the chosen family is shown');
+    ok('Up next family switch: Rechov Sumsum or Sesame Street, stored, earliest unwatched first, English Spoken defaults to Sesame Street');
   }
   // Strip keyboard: one tab stop, arrows by reading direction, Home/End.
   const strip0 = H.byClass('strip')[0];
@@ -1282,7 +1487,9 @@ async function checkNumbering(H, M) {
   const {prods} = M;
   let strips = 0, labelledCells = 0;
   for (const p of prods) {
-    const groups = M.prodModel(p).groups.filter(g => g.len); if (!groups.length) continue;
+    // A paged production draws only the season it shows first on its own page.
+    const ws = new Set(JSON.parse(H.storage.get('sumsum-watched') || '[]'));
+    const groups = (M.paged(p) ? [M.pageGroup(p, ws)] : M.prodModel(p).groups).filter(g => g.len); if (!groups.length) continue;
     await H.navigate('guide/' + encodeURIComponent(p.id) + '?layout=numbers');
     const uls = H.find(n => n.tagName === 'ul' && H.cls(n).includes('strip'));
     assert.equal(uls.length, groups.length, 'One strip per numbered season: ' + p.id);
@@ -1324,6 +1531,17 @@ async function checkNumbering(H, M) {
       await search(p.numberLabelHe + ' ' + e.number);
       assert(H.has('ep-' + e.id, H.view()), 'The Hebrew number label finds the episode too');
     }
+  }
+  // A label that is also a plain word ("פרק", Sesame Street's) keeps finding unlabelled productions' episodes by their text
+  // ("פרק 5" was found through their own "פרק 5" token before any production used the label).
+  const shared = labelled.find(p => normalizeQ(p.numberLabelHe || '') === normalizeQ('פרק'));
+  const plainEp = shared && M.eps.find(e => Number.isInteger(e.number) && e.number < 10 && !M.label(M.prodById.get(e.production), 'en') &&
+    M.eps.some(x => x.production === shared.id && x.number === e.number));
+  if (plainEp) {
+    await search('פרק ' + plainEp.number);
+    assert(H.has('ep-' + plainEp.id, H.view()), `"פרק ${plainEp.number}" still finds ${plainEp.id}, an unlabelled production's episode`);
+    const own = M.eps.find(x => x.production === shared.id && x.number === plainEp.number);
+    assert(H.has('ep-' + own.id, H.view()), `and ${own.id}, by its number label`);
   }
   // "<n>" must be a code search, not text search: take a labelled number that other episodes' notes or titles quote, so
   // the plain text fallback would find more episodes than the code does (real data: <133> is quoted by <148> and <178>).
@@ -1380,7 +1598,9 @@ async function checkNumbering(H, M) {
     if (lang === 'he') await H.flipLang();
     for (const p of M.prods.filter(q => M.epsOf.get(q.id).some(e => M.altLabels(e).length))) {
       await H.navigate('guide/' + encodeURIComponent(p.id) + '?layout=list');
-      for (const e of M.epsOf.get(p.id).filter(x => M.altLabels(x).length)) {
+      // A paged production lists the season it shows first.
+      const shownEps = M.paged(p) ? M.pageGroup(p, new Set(JSON.parse(H.storage.get('sumsum-watched') || '[]'))).eps : M.epsOf.get(p.id);
+      for (const e of shownEps.filter(x => M.altLabels(x).length)) {
         const al = H.byClass('altlab', H.fk('row-' + e.id).parentElement)[0];
         assert(al, `The list row of ${e.id} has its alternate labels`);
         assert.equal(al.textContent, tr(lang, 'alsoLabelled') + ': ' + M.altText(e, lang), `List row alternate labels (${lang}): ${e.id}`);
@@ -1396,6 +1616,88 @@ async function checkNumbering(H, M) {
 }
 
 // ---------------------------------------------------------------- Hebrew
+// The episode page's "About this episode": the quoted summary (English in both languages) with its source and revision link, the
+// sponsors in words, word on the street and guest stars; container labels and extent notes on upload rows.
+async function checkEpisodeAbout(H, M) {
+  const e = M.eps.find(x => typeof x.summaryEn === 'string' && x.sponsors && (x.sponsors.letters || []).length > 1 &&
+    (x.sponsors.numbers || []).length && (x.guestStars || []).length);
+  if (!e) return;
+  const list = (xs, ui) => (ui === 'he' ? xs.join(', ') : xs.length > 1 ? xs.slice(0, -1).join(', ') + ' and ' + xs.at(-1) : xs[0]);
+  const src = e.summarySource || {}, site = String(src.label || '').split(',')[0].trim();
+  const page = src.url || ((e.sources || []).find(x => x && x.url && String(x.label || '').startsWith(site)) || {}).url;
+  const rev = Number.isInteger(src.revisionId) ? page + (page.includes('?') ? '&' : '?') + 'oldid=' + src.revisionId : page;
+  for (const ui of ['en', 'he']) {
+    if (ui === 'he') await H.flipLang();
+    await H.navigate('episode/' + encodeURIComponent(e.id));
+    const sec = H.byClass('ep-about')[0]; assert(sec, 'An episode with a summary has an About section (' + ui + ')');
+    assert.equal(H.byClass('sec-h', sec)[0].textContent, L[ui].aboutEpisode);
+    const sum = H.byClass('ep-summary', sec)[0];
+    assert(sum.textContent === e.summaryEn.trim() && sum.getAttribute('lang') === 'en', 'The summary is quoted verbatim, marked English (' + ui + ')');
+    const at = H.byClass('ep-attrib', sec)[0], links = H.find(n => n.tagName === 'a', at);
+    assert.equal(links[0].href, rev, 'The summary links its source revision');
+    assert(at.textContent.startsWith(L[ui].summaryFrom.split('{src}')[0]) && at.textContent.includes(src.label), 'The source is named (' + ui + ')');
+    if (/muppet\.fandom\.com/.test(page)) assert(links.some(a => a.textContent.startsWith('CC BY-SA') && a.href === 'https://www.fandom.com/licensing'), 'Muppet Wiki text carries its licence');
+    const dd = label => { const dl = H.byClass('facts', sec)[0], k = dl.children.findIndex(d => d.tagName === 'dt' && d.textContent === label); return k < 0 ? null : dl.children[k + 1]; };
+    const sp = e.sponsors, letters = tr(ui, 'sponsorLetters', {x: list(sp.letters, ui)});
+    const nums = tr(ui, sp.numbers.length > 1 ? 'sponsorNumbers' : 'sponsorNumber', {x: list(sp.numbers, ui)});
+    assert.equal(dd(L[ui].broughtBy).textContent, tr(ui, 'sponsorBoth', {a: letters, b: nums}), 'Brought to you by (' + ui + ')');
+    assert.equal(dd(L[ui].guestStars).textContent, e.guestStars.join(', '), 'Guest stars (' + ui + ')');
+    if (ui === 'he') await H.flipLang();
+  }
+  const word = M.eps.find(x => typeof x.wordOnTheStreet === 'string' && x.wordOnTheStreet.trim());
+  if (word) {
+    await H.navigate('episode/' + encodeURIComponent(word.id));
+    const dl = H.byClass('facts', H.byClass('ep-about')[0])[0], i = dl.children.findIndex(d => d.tagName === 'dt' && d.textContent === L.en.wordStreet);
+    assert(i >= 0 && dl.children[i + 1].textContent === word.wordOnTheStreet.trim(), 'Word on the street');
+  }
+  // A copy inside a compilation (or a service listing) says so on its row, with its extent note.
+  for (const c of ['compilation', 'listing']) {
+    const hit = M.eps.find(x => (x.uploads || []).some(u => u.container === c && u.role !== 'possible' && M.recById.get(u.recordId)));
+    if (!hit) continue;
+    const u = hit.uploads.find(v => v.container === c && v.role !== 'possible' && M.recById.get(v.recordId));
+    await H.navigate('episode/' + encodeURIComponent(hit.id));
+    let row = H.fk('ur-' + u.recordId); while (row && !(row.className || '').split(' ').includes('urow')) row = row.parentElement;
+    assert.equal(H.byClass('u-cont', row)[0]?.textContent, L.en['container_' + c], 'A ' + c + ' copy is labelled on its row');
+    if (u.extentNoteEn) assert(row.textContent.includes(u.extentNoteEn), 'with its extent note');
+    const wl = H.byClass('wl', row)[0];
+    if (wl) assert(wl.textContent.includes(' · ' + L.en[c === 'listing' ? 'listingQ' : 'compQ']), 'Its Watch label says what it opens: ' + wl.textContent);
+  }
+  // A copy of the episode alone outranks a compilation on the same host; an episode whose only whole copy is a compilation
+  // still has a star and a "+" that act on what Watch opens (the compilation's entry), and "+" toggles.
+  const W = ['whole-candidate', 'alternate-edition'];
+  const usable = (e, f) => (e.uploads || []).filter(u => W.includes(u.role) && M.recById.get(u.recordId) && f(u));
+  const mixed = M.eps.find(e => { const d = usable(e, u => !u.container), c = usable(e, u => u.container === 'compilation');
+    return d.length && c.length && c.some(cu => d.some(du => tierNo(M.recById.get(du.recordId)) === tierNo(M.recById.get(cu.recordId)))); });
+  if (mixed) {
+    await H.navigate('episode/' + encodeURIComponent(mixed.id));
+    const watch = H.fk('ep-watch').href, comp = usable(mixed, u => u.container === 'compilation').map(u => expectDest(M.recById.get(u.recordId)));
+    assert(!comp.includes(watch), 'Watch opens a copy of the episode alone before a compilation on the same host: ' + mixed.id);
+  }
+  const compOnly = M.eps.find(e => usable(e, () => true).length && usable(e, () => true).every(u => u.container === 'compilation') &&
+    (e.uploads || []).every(u => u.role !== 'part'));
+  if (compOnly) {
+    await H.navigate('episode/' + encodeURIComponent(compOnly.id));
+    assert(H.has('ep-star', H.view()), 'A compilation-only episode can be starred: ' + compOnly.id);
+    const q = () => H.fk('ep-q'), before = H.storage.get('sumsum-sitting') || '[]';
+    await q().click(); H.flushTimers();
+    assert.equal(q().getAttribute('aria-pressed'), 'true', 'Its "+" shows the compilation queued');
+    await q().click(); H.flushTimers();
+    assert.equal(q().getAttribute('aria-pressed'), 'false', 'and a second press takes it off the queue');
+    assert.deepEqual(JSON.parse(H.storage.get('sumsum-sitting') || '[]'), JSON.parse(before));
+  }
+  // A record whose completenessStatus names a shared note shows that note, not its file's default note (which expansion does
+  // not fill in for it); a record's own note would still come first (checkEntries' fixture).
+  const std = (H.payload.meta || {}).standardCompletenessNotes || {}, defs = H.payload.recordDefaults || [];
+  const noted = M.records.find(r => typeof r.completenessStatus === 'string' && Object.prototype.hasOwnProperty.call(std, r.completenessStatus) &&
+    Number.isInteger(r._d) && defs[r._d] && defs[r._d].completenessNote && defs[r._d].completenessNote !== std[r.completenessStatus]);
+  if (noted) {
+    assert(!('completenessNote' in noted), 'Expansion does not give a shared-note record its file\'s default note: ' + noted.id);
+    await H.navigate('record/' + encodeURIComponent(noted.id));
+    assert(H.text().includes(std[noted.completenessStatus]) && !H.text().includes(defs[noted._d].completenessNote),
+      'A record page shows the shared note its status names, not the default note: ' + noted.id);
+  }
+  ok('episode About: the quoted summary with its source revision and licence, sponsors, word on the street and guest stars (EN, HE); compilation and listing rows labelled');
+}
 async function checkHebrew(H, M) {
   await H.navigate('browse');
   // After "Show more", the language toggle starts the list again from its first page (rebuilding every shown card in the other
@@ -1412,7 +1714,8 @@ async function checkHebrew(H, M) {
   assert.equal(H.byClass('lbl', H.fk('fk-short-episode'))[0].textContent, L.he.kShort);
   for (const li of H.$('grid').children) {
     const id = H.find(n => /^card-/.test(n.getAttribute?.('data-fk') || ''), li)[0].getAttribute('data-fk').slice(5);
-    const r = M.recById.get(id), local = (JSON.parse(H.storage.get('sumsum-vimeo-mappings') || '{}')[id] || {}).url || '';
+    const maps = JSON.parse(H.storage.get('sumsum-vimeo-mappings') || '{}'), locals = Object.fromEntries(Object.entries(maps).map(([k, v]) => [k, (v || {}).url || '']));
+    const r = M.shownOf(M.entries.find(en => en.id === id), () => true, locals), local = locals[r.id] || '';
     const w = H.extLinks(li)[0];
     assert(w.textContent.startsWith(expectWatchBase(r, 'he', local)), 'Hebrew watch label: ' + w.textContent);
     assert.equal(H.byClass('u-access', li)[0].textContent, expectAccessText(r, 'he', local));
@@ -1750,7 +2053,7 @@ async function checkWithoutGuide(htmlPath) {
   const M = model(H.payload);
   assert.equal(H.h1().textContent, L.en.browseTitle, 'Without a guide the library opens on Browse');
   assert.equal(H.history[0]?.hash, '#/browse');
-  assert.equal(H.count(), M.records.length);
+  assert.equal(H.count(), M.entries.length);
   assert(!H.has('fg-matched'), 'No guide facet without a guide');
   await H.navigate('guide');
   assert.equal(H.h1().textContent, L.en.guideTitle);
@@ -2185,6 +2488,53 @@ function edgePayload(p) {
   evEp(1, []); evEp(2, [{recordId: evB.id, role: 'whole-candidate'}]); evEp(3, [{recordId: evP.id, role: 'whole-candidate'}]);
   evEp(4, [{recordId: evF.id, role: 'whole-candidate'}], stated(evF, 'complete-playback-reviewed', '2026-10-02'));
   evEp(5, [{recordId: evR.id, role: 'whole-candidate'}], stated(evR, 'reference-compared', '2026-10-03'));
+  // Entries and link order: one episode with whole copies on four hosts and a failed one; one with two parts only; one whose
+  // only copy is on a subscribed service; a record counted whole in two episodes (an entry of its own); and two Hop pages that
+  // embed the same Vimeo video (one entry).
+  const svcList = p.services && Array.isArray(p.services.services) ? p.services.services : null;
+  if (svcList) svcList.push({id: 'edge-stream', name: 'Edge Stream', model: 'subscription', subscribed: true, hosts: ['edgestream.example'],
+    summary: {en: 'Edge Stream, a subscription the user has.', he: 'שירות בדיקה במנוי.'}, sources: [{id: 'edge-src', kind: 'user-observation',
+      checkedAt: '2026-10-19', title: 'Edge', finding: 'Edge'}]});
+  const ord = (id, url, extra = {}) => add({id, url, series: 'modern', kind: 'episode', titleEn: 'Edge order copy ' + id + ' zqorder', durationSeconds: 1500, ...extra});
+  ord('edge-ord-yt', 'https://www.youtube.com/watch?v=EdgeOrderYt1');
+  ord('edge-ord-ia', 'https://archive.org/details/edge-order/one.mp4');
+  ord('edge-ord-ia-bad', 'https://archive.org/details/edge-order/bad.mp4', {availabilityCheck: chk('unavailable', 'item dark')});
+  ord('edge-ord-sub', 'https://play.edgestream.example/episode/1', {access: 'licensed'});
+  ord('edge-ord-vm', 'https://vimeo.com/555666777');
+  ord('edge-ord-p1', 'https://www.youtube.com/watch?v=EdgeOrderP01', {kind: 'clip', durationSeconds: 700});
+  ord('edge-ord-p2', 'https://www.youtube.com/watch?v=EdgeOrderP02', {kind: 'clip', durationSeconds: 800});
+  ord('edge-ord-only-sub', 'https://play.edgestream.example/episode/3', {access: 'licensed'});
+  ord('edge-ord-comp', 'https://archive.org/details/edge-order/compilation.mp4', {kind: 'collection', durationSeconds: 3600});
+  ord('edge-ord-ia6', 'https://archive.org/details/edge-order/six.mp4');
+  // A record's own completeness note comes before the shared note its status names.
+  p.meta = {...(p.meta || {}), standardCompletenessNotes: {...((p.meta || {}).standardCompletenessNotes || {}), 'edge-shared': 'Edge shared note.'}};
+  add({id: 'edge-own-note', url: 'https://www.youtube.com/watch?v=EdgeOwnNote', series: 'modern', kind: 'clip', titleEn: 'Edge own note',
+    completenessStatus: 'edge-shared', completenessNote: 'Edge record-specific warning: ending is missing.'});
+  add({id: 'edge-shared-note', url: 'https://www.youtube.com/watch?v=EdgeShrNote', series: 'modern', kind: 'clip', titleEn: 'Edge shared note',
+    completenessStatus: 'edge-shared'});
+  ord('edge-ord-bad7', 'https://archive.org/details/edge-order/seven.mp4', {availabilityCheck: chk('unavailable', 'item dark')});
+  ord('edge-ord-ex7', 'https://www.youtube.com/watch?v=EdgeOrderX07', {kind: 'clip', durationSeconds: 300});
+  add({id: 'edge-twin-a', url: 'https://hop.co.il/shows/edge-twin-a/', directUrl: 'https://vimeo.com/987654321/aaaa', series: 'modern', kind: 'clip',
+    titleEn: 'Edge twin A zqtwin'});
+  add({id: 'edge-twin-b', url: 'https://hop.co.il/music/edge-twin-b/', directUrl: 'https://vimeo.com/987654321/aaaa', series: 'modern', kind: 'clip',
+    titleEn: 'Edge twin B zqtwin'});
+  g.productions.push({id: 'edge-order', series: 'modern', format: 'core', order: 0, years: '2026', nameEn: 'Edge order', nameHe: 'סדר בדיקה',
+    expectedTotal: 7, totalsEvidence: [], seasons: []});
+  const oe = (n, uploads) => g.episodes.push({id: 'edge-order-' + n, production: 'edge-order', season: null, number: n, confidence: 'documented',
+    titleEn: 'Edge order episode ' + n, uploads});
+  oe(1, ['edge-ord-yt', 'edge-ord-ia-bad', 'edge-ord-sub', 'edge-ord-vm', 'edge-ord-ia'].map(recordId => ({recordId, role: 'whole-candidate'})));
+  // A summary whose source has no url of its own, on an episode whose first source is another site (a title listing).
+  Object.assign(g.episodes.at(-1), {summaryEn: 'Edge summary sentence.', summarySource: {label: 'Muppet Wiki, first scene', revisionId: 7},
+    sources: [{label: 'Prime Video, edge season', url: 'https://www.primevideo.com/detail/EDGE'}, {label: 'Muppet Wiki, Episode Edge', url: 'https://muppet.fandom.com/wiki/Edge'}]});
+  oe(2, [{recordId: 'edge-ord-p2', role: 'part', part: 2}, {recordId: 'edge-ord-p1', role: 'part', part: 1}]);
+  oe(3, [{recordId: 'edge-ord-only-sub', role: 'whole-candidate'}]);
+  const comp = {recordId: 'edge-ord-comp', role: 'whole-candidate', container: 'compilation', extentNoteEn: 'Edge order episodes 4, 5 and 6.'};
+  oe(4, [comp]);
+  oe(5, [comp]);
+  // Listed first, the compilation still ranks after the episode's own copy on the same host.
+  oe(6, [comp, {recordId: 'edge-ord-ia6', role: 'whole-candidate'}]);
+  // Every whole copy failed: Watch opens the usable excerpt, which is outside the episode's entry.
+  oe(7, [{recordId: 'edge-ord-bad7', role: 'whole-candidate'}, {recordId: 'edge-ord-ex7', role: 'excerpt'}]);
   return p;
 }
 
@@ -2270,7 +2620,8 @@ async function checkEdgeCases(htmlPath) {
   const qitems = within => H.byClass('qitem', within).length;
   // Encoded routes: ids that are URLs or contain / ? # % open from the rendered links and from their hrefs.
   for (const [id, title, q] of [[EDGE.idless, 'Edge title-only programme 42', 'Edge title-only'], [EDGE.weird, 'Edge archive episode', 'Edge archive']]) {
-    await H.navigate('browse?q=' + enc(q));
+    // An upload that is a copy of an episode is listed under its episode in Browse; Identified videos lists it on its own.
+    await H.navigate((M.entryOf.get(id).id === id ? 'browse' : 'browse/identified') + '?q=' + enc(q));
     const card = H.fk('card-' + id);
     assert.equal(card.href, '#/record/' + enc(id), 'Record links encode their id: ' + id);
     await card.click();
@@ -2309,7 +2660,7 @@ async function checkEdgeCases(htmlPath) {
     ['https://www.kan.org.il/item/?itemId=999999', ''], ['https://www.kan.org.il/item/?itemId=1&utm_source=x', 'edge-kan-item']]) {
     assert.equal(await count(url), hit ? 1 : 0, 'Pasted link query decides the match: ' + url);
     assert(H.text().includes(hit ? L.en.urlHit : tr('en', 'urlMiss', {id: '\u0000'}).split('\u0000')[0]), 'Banner for ' + url);
-    if (hit) assert(H.has('card-' + hit, H.view()));
+    if (hit) assert(H.has(cardKey(M, hit), H.view()));
   }
   ok('pasted links: the query string identifies playlists and item pages');
 
@@ -2526,7 +2877,8 @@ async function checkContractEdges(H, M) {
   ok('firstNumber: a season numbered 66-68 has no gap cells for 1-65; one numbered 66-70 has expected cells 68-70; cells and slot ' +
     'titles use the number label; a totals claim without a url is plain text; season and episode codes match exactly');
 
-  // Licensed listings rank below a Hop page and above an upload blocked in a check; their labels name the service and its need.
+  // The link order the user set: links that need the VPN (a Hop page, an upload blocked outside Israel) come before library-card
+  // and paid listings; a licensed listing's labels name the service and its need.
   await H.navigate('episode/' + id(1));
   assert.equal(H.fk('ep-watch').href, 'https://hop.co.il/shows/edge-hop-page/', 'A Hop page outranks a licensed listing');
   assert(H.cls(H.fk('ep-watch')).includes('vpn'));
@@ -2534,22 +2886,32 @@ async function checkContractEdges(H, M) {
   const m1 = M.best(M.eps.find(e => e.id === id(1)));
   assert.equal(m1.r.id, 'edge-hop-page', 'The independent model agrees');
   await H.navigate('episode/' + id(68));
-  const w = H.fk('ep-watch');
+  let w = H.fk('ep-watch');
   const hs = M.services.find(x => x.hosts.includes('hoopladigital.com')), b68 = M.best(M.eps.find(e => e.id === id(68)));
-  assert(['edge-licensed', 'edge-licensed-2'].includes(b68.r.id) && w.href === expectDest(b68.r), 'A licensed listing outranks an upload blocked outside Israel');
-  // With the services described, the library-card listing wins over the buy-or-rent one listed before it.
-  if (hs && hs.model === 'library-card') assert.equal(w.href, 'https://www.hoopladigital.com/title/edge0001', 'The free licensed listing wins');
+  assert(w.href === expectDest(b68.r) && expectTier(b68.r) === 'vpn', 'An upload that needs the VPN outranks the licensed listings: ' + w.href);
+  assert(H.cls(w).includes('vpn') && !H.has('howto', H.view()), 'with the VPN shape, and no how-to box for a service it does not open');
+  // Among the licensed listings, the library-card one ranks before the buy-or-rent one listed before it.
+  const lics = ['edge-licensed', 'edge-licensed-2'].map(x => M.recById.get(x)).filter(Boolean);
+  if (hs && hs.model === 'library-card' && lics.length === 2) {
+    const [a, b] = lics.map(r => [r, copyKey(r, 'whole-candidate', 0)]).sort((x, y) => cmpKeys(x[1], y[1])).map(x => x[0]);
+    assert.equal(expectDest(a), 'https://www.hoopladigital.com/title/edge0001', 'The library-card listing ranks before the paid one');
+    const rows = H.find(n => /^ur-edge-licensed/.test(n.getAttribute?.('data-fk') || '')).map(n => n.getAttribute('data-fk').slice(3));
+    assert.deepEqual(rows.filter(x => x === a.id || x === b.id), [a.id, b.id], 'and the episode page lists them in that order');
+  }
+  const licRec = lics.find(r => hs && expectSvc(r) === hs) || lics[0];
+  await H.navigate('record/' + encodeURIComponent(licRec.id)); w = H.fk('rec-watch');
   if (hs) {
     assert(w.textContent.startsWith(tr('en', 'watchLic_' + hs.model, {service: hs.name})), 'The Watch label names the service: ' + w.textContent);
     assert(H.text().includes(tr('en', 'licNote_' + hs.model, {service: hs.name})) &&
       H.text().includes(tr('en', 'acc_licSvc', {service: hs.name, req: tr('en', 'lic_' + hs.model)})), 'The service note and access line');
     assert.equal(H.has('howto', H.view()), !!hs.howTo, 'The how-to box follows the Watch link');
   } else {
-    const host = hostname(expectDest(b68.r));
+    const host = hostname(expectDest(licRec));
     assert(w.textContent.startsWith(tr('en', 'watchLicensed', {host})), 'The Watch label says licensed: ' + w.textContent);
     assert(H.text().includes(L.en.licensedNote) && H.text().includes(tr('en', 'acc_licensed', {host})));
   }
   assert(H.cls(w).includes('lic') && !H.cls(w).includes('vpn'));
+  await H.navigate('episode/' + id(68));
   assert.equal(H.fk('ep-cov').textContent, L.en.covWhole_core, 'A licensed listing of the whole programme is a whole link');
   assert(H.text().includes(L.en.rolePl_possible) && H.text().includes(L.en.possibleHelp), 'Possible copies are listed apart');
   await H.navigate('browse?ag=licensed&q=zqlic');
@@ -2567,7 +2929,7 @@ async function checkContractEdges(H, M) {
   // Up next never offers a licensed listing.
   await H.navigate('home');
   if (H.has('next-watch', H.view())) assert(!/hoopladigital|tv\.apple/.test(H.fk('next-watch').href));
-  ok('licensed listings: rank between Hop pages and blocked uploads, licensed Watch label, access line, note and group');
+  ok('licensed listings: after links that need the VPN, library card before paid; licensed Watch label, access line, note and group');
 
   // Possible copies: never counted; the episode stays missing; the record still awaits identification.
   await H.navigate('episode/' + id(66));
@@ -2636,14 +2998,16 @@ async function checkContractEdges(H, M) {
 
   // Card tags and breadcrumbs follow the best role; a record's other links are named or counted.
   const cardTag = rid => H.byClass('u-tags', H.fk('card-' + rid).parentElement.parentElement)[0].children[1];
+  // A copy of an episode is listed under its episode in Browse; Identified videos lists each upload with its own tag.
+  const listOf = rid => (M.entryOf.get(rid).id === rid ? 'browse' : 'browse/identified');
   assert.equal(M.linkTag(M.recById.get('edge-tape')), 'No. 3 · ' + L.en['role_whole-candidate'] + ' ' + tr('en', 'moreLinks', {n: '1'}));
   assert.equal(M.linkTag(M.recById.get('edge-possible')), 'Edge no. 66' + L.en.orSep + '68 · ' + L.en.role_possible);
   for (const [q, rid] of [['zqtape', 'edge-tape'], ['Edge possible copy', 'edge-possible'], ['zqposs', 'edge-possible-free'],
     ['Edge blocked upload', 'edge-blocked']]) {
-    await H.navigate('browse?q=' + enc(q));
+    await H.navigate(listOf(rid) + '?q=' + enc(q));
     assert.equal(cardTag(rid).textContent, M.linkTag(M.recById.get(rid)), 'Card tag of ' + rid);
   }
-  await H.flipLang(); await H.navigate('browse?q=zqtape');
+  await H.flipLang(); await H.navigate(listOf('edge-tape') + '?q=zqtape');
   assert.equal(cardTag('edge-tape').textContent, M.linkTag(M.recById.get('edge-tape'), 'he'), 'Hebrew card tag');
   await H.navigate('browse?q=' + enc('Edge possible copy'));
   assert.equal(cardTag('edge-possible').textContent, 'מס׳ בדיקה 66' + L.he.orSep + '68 · ' + L.he.role_possible, 'Hebrew possible-copy tag');
@@ -2805,7 +3169,7 @@ async function checkStoryNames(H, M) {
     assert(H.has('ep-' + sid(n), H.view()), `The guide search finds the story name "${q}"`);
   }
   await H.navigate('browse?q=zqstory'); H.flushTimers();
-  assert(H.has('card-edge-story-upload', H.view()), 'An upload is found by its episode\'s story name');
+  assert(H.has(cardKey(M, 'edge-story-upload'), H.view()), 'An upload is found by its episode\'s story name');
   // Missing episodes: the YouTube search uses the story name, not "<series> <n>"; the to-do export carries storyHe.
   await H.navigate('browse/missing');
   const td2 = H.fk('td-' + sid(2)), find2 = H.extLinks(td2.parentElement.parentElement)[0];
@@ -2927,8 +3291,8 @@ async function checkEditorialTitles(H, M) {
   // Search finds editorial Hebrew titles: uploads by their own or their episode's, episodes by their own or an upload's.
   for (const [q, id] of [['זקהעלאה', rec.id], ['זקקטע', clip.id], ['זקפרק', rec.id], ['זקתור', queued.id]]) {
     await H.navigate('browse?q=' + enc(q)); H.flushTimers();
-    assert(H.has('card-' + id, H.view()), `Browse search finds the editorial Hebrew title "${q}"`);
-    assert.equal(H.fk('card-' + id).textContent, M.recById.get(id).titleEn, 'and the English card keeps the English title');
+    assert(H.has(cardKey(M, id), H.view()), `Browse search finds the editorial Hebrew title "${q}"`);
+    assert.equal(H.fk(cardKey(M, id)).textContent, cardTitle(M, id), 'and the English card keeps the English title');
   }
   for (const [q, id] of [['זקפרק', e1.id], ['זקבלי', e2.id], ['זקהעלאה', e1.id], ['זקשלום', es.id]]) {
     await H.navigate('guide?layout=album&q=' + enc(q)); H.flushTimers();
@@ -2958,7 +3322,7 @@ async function checkEditorialTitles(H, M) {
   assert.equal(H.h1().getAttribute('dir'), 'auto', 'A published Hebrew title heading keeps dir=auto');
   await H.navigate('record/' + enc(latin.id)); rtlTitle(H.h1(), latin.titleHeEditorial, 'Hebrew Latin-first editorial record heading');
   await H.navigate('browse?q=' + enc('זקלטיני')); H.flushTimers();
-  rtlTitle(H.fk('card-' + latin.id), latin.titleHeEditorial, 'Hebrew Latin-first editorial upload card');
+  rtlTitle(H.fk(cardKey(M, latin.id)), latin.titleHeEditorial, 'Hebrew Latin-first editorial upload card');
   await H.navigate('guide/' + EDGE.edited + '?layout=album');
   rtlTitle(H.fk('ep-' + e2.id), e2.titleHeEditorial, 'Hebrew editorial tile');
   assert.equal(H.fk('ep-' + e3.id).getAttribute('dir'), 'auto', 'A published Hebrew title tile keeps dir=auto');
@@ -2984,15 +3348,16 @@ async function checkEditorialTitles(H, M) {
   assert(H.fk('ur-' + rec.id).textContent.endsWith(rec.titleHeEditorial), 'Hebrew upload rows on the episode page');
   assert(H.fk('ep-watch').getAttribute('aria-label').includes(', ' + e1.titleHeEditorial + ' ('), 'and the Watch link names the episode by it');
   await H.navigate('browse?q=' + enc('זקהעלאה')); H.flushTimers();
-  const card = H.fk('card-' + rec.id), body = card.parentElement.parentElement;
-  assert.equal(card.textContent, rec.titleHeEditorial, 'Hebrew upload cards');
-  assert.equal(H.byClass('u-pub', body)[0].textContent, rec.originalTitle, 'with the published title under it');
+  const card = H.fk(cardKey(M, rec.id)), body = card.parentElement.parentElement;
+  assert.equal(card.textContent, cardTitle(M, rec.id, 'he'), 'Hebrew upload cards');
+  if (M.entryOf.get(rec.id).id === rec.id) assert.equal(H.byClass('u-pub', body)[0].textContent, rec.originalTitle, 'with the published title under it');
+  else assert(!H.byClass('u-pub', body).length, 'An episode card is headed by the episode, with no upload title under it');
   await H.navigate('record/' + enc(rec.id));
   const links = H.find(a => a.tagName === 'a' && a.href === '#/episode/' + enc(e1.id)).map(a => a.textContent);
   assert(links.length && links.every(x => x.endsWith(e1.titleHeEditorial)),
     'The record page names its episode by the editorial title: ' + links.join(' | '));
   await H.fk('rec-star').click(); await H.navigate('starred');
-  assert.equal(H.fk('card-' + rec.id).textContent, rec.titleHeEditorial, 'Hebrew Starred cards');
+  assert.equal(H.fk(cardKey(M, rec.id)).textContent, cardTitle(M, rec.id, 'he'), 'Hebrew Starred cards');
   await H.navigate('record/' + enc(rec.id)); await H.fk('rec-star').click();
   // Up next offers core episodes with an offered whole copy; the edited episode is one of them.
   await H.navigate('home');
@@ -3002,7 +3367,7 @@ async function checkEditorialTitles(H, M) {
   assert(H.fk('next-watch').getAttribute('aria-label').includes(', ' + e1.titleHeEditorial + ' ('), 'and its Watch label');
   for (const [q, id] of [['זקהעלאה', rec.id], ['זקפרק', rec.id]]) {
     await H.navigate('browse?q=' + enc(q)); H.flushTimers();
-    assert(H.has('card-' + id, H.view()), `Hebrew browse search finds "${q}"`);
+    assert(H.has(cardKey(M, id), H.view()), `Hebrew browse search finds "${q}"`);
   }
   await H.navigate('guide?layout=album&q=' + enc('זקבלי')); H.flushTimers();
   assert(H.has('ep-' + e2.id, H.view()), 'Hebrew guide search finds an editorial title');
@@ -3065,7 +3430,7 @@ async function checkEditorialTitles(H, M) {
   await H.navigate('browse?q=' + enc(vimeoRec.url)); H.flushTimers();
   rtlTitle(linkTo('record/' + vimeoRec.id, H.byClass('banner')[0])[0], vimeoRec.titleHeEditorial, 'Hebrew pasted-link banner');
   await H.navigate('browse?q=' + enc('זקוימאו')); H.flushTimers();
-  const vBody = H.fk('card-' + vimeoRec.id).parentElement.parentElement, tagTip = H.find(n => n.getAttribute && n.getAttribute('title') &&
+  const vBody = H.fk(cardKey(M, vimeoRec.id)).parentElement.parentElement, tagTip = H.find(n => n.getAttribute && n.getAttribute('title') &&
     H.cls(n).includes('tag'), vBody)[0];
   assert(tagTip && [e6, e7].every(e => tagTip.getAttribute('title').includes(e.titleHeEditorial)), 'Hebrew card tag hint names the episodes');
   assert(H.extLinks(vBody.parentElement)[0].getAttribute('aria-label').includes(', ' + vimeoRec.titleHeEditorial + ' ('), 'Hebrew card Watch label');
@@ -3077,7 +3442,7 @@ async function checkEditorialTitles(H, M) {
     ['החנוכיה שנעלמה', 'edge-ed-menorah'], ['החנוכייה', 'edge-ed-menorah'], ['מצוה', 'edge-ed-mitzvah'], ['טו בשבט', 'edge-ed-shvat'],
     ["ט'ו בשבט", 'edge-ed-shvat']]) {
     await H.navigate('browse?q=' + enc(q)); H.flushTimers();
-    assert(H.has('card-' + id, H.view()), `Hebrew search "${q}" finds ${id}`);
+    assert(H.has(cardKey(M, id), H.view()), `Hebrew search "${q}" finds ${id}`);
   }
   await H.flipLang();
   ok('editorial Hebrew titles: Hebrew headings, document.title, tiles, rows, Missing episodes, to-do and Videos to identify rows, upload ' +
@@ -3088,14 +3453,107 @@ async function checkEditorialTitles(H, M) {
 }
 
 // Starred counts include only stars that match a record; unknown values in the hash are dropped; old #/saved links work.
+// Entries and link order on the fixtures of edgePayload(): one entry per episode with its copies in the user's order; a failed
+// copy last and never the Watch link; a compilation counted in two episodes is an entry of its own; one video on two pages is
+// one entry; stars on any member star the entry and unstarring clears them; the queue keeps the exact part; a subscribed service
+// is offered by Up next.
+async function checkEntries(htmlPath) {
+  const st = new Map([['sumsum-favorites', JSON.stringify(['edge-ord-yt'])], ['sumsum-sitting', JSON.stringify(['edge-ord-p2'])]]);
+  const H = harness(boot(htmlPath, {payload: edgePayload, storage: st})), M = model(H.payload);
+  const en1 = M.entries.find(en => en.id === 'ep:edge-order-1');
+  assert(en1 && en1.members.length === 5, 'The five copies of one episode are one entry');
+  assert.deepEqual(M.rankedOf(en1).map(r => r.id), ['edge-ord-ia', 'edge-ord-yt', 'edge-ord-sub', 'edge-ord-vm', 'edge-ord-ia-bad'],
+    'The model orders them archive.org, YouTube, the subscribed service, Vimeo, then the failed copy');
+  await H.navigate('browse?q=zqorder');
+  const cards = H.find(n => /^card-/.test(n.getAttribute?.('data-fk') || '')).map(n => n.getAttribute('data-fk').slice(5));
+  assert.deepEqual([...cards].sort(), ['edge-ord-comp', 'ep:edge-order-1', 'ep:edge-order-2', 'ep:edge-order-3', 'ep:edge-order-6', 'ep:edge-order-7', 'edge-ord-ex7'].sort(),
+    'Browse lists one card per episode, and the compilation counted in two episodes as a card of its own: ' + cards.join(' '));
+  const card = H.fk('card-ep:edge-order-1').parentElement.parentElement.parentElement;
+  assert.equal(H.extLinks(card)[0].href, 'https://archive.org/details/edge-order/one.mp4', 'The card opens the archive.org copy');
+  assert.equal(H.fk('card-ep:edge-order-1').href, '#/episode/edge-order-1', 'and its title opens the episode');
+  assert.equal(H.byClass('u-also', card)[0].textContent, tr('en', 'alsoOn', {hosts: [L.en.host_youtube, 'Edge Stream', L.en.host_vimeo].join(', ')}),
+    'It names the other places it was found, in order, once each');
+  assert.equal(H.fk('star-ep:edge-order-1').getAttribute('aria-pressed'), 'true', 'A star on a lower-ranked copy stars the entry');
+  // Filters need one copy that passes them all: a Vimeo filter shows the entry through its Vimeo copy.
+  await H.navigate('browse?q=zqorder&ag=direct');
+  const vcard = H.fk('card-ep:edge-order-1').parentElement.parentElement.parentElement;
+  assert.equal(H.extLinks(vcard)[0].href, 'https://vimeo.com/555666777', 'Under a filter the card shows the copy that passes it');
+  await H.navigate('browse?q=zqtwin');
+  assert.equal(H.count(), 1, 'Two pages with the same video are one entry');
+  // The episode page: the Watch link is the first copy; the rows follow the link order, the failed copy last.
+  await H.navigate('episode/edge-order-1');
+  assert.equal(H.fk('ep-watch').href, 'https://archive.org/details/edge-order/one.mp4', 'The episode opens archive.org first');
+  const rows = H.find(n => /^ur-edge-ord-/.test(n.getAttribute?.('data-fk') || '')).map(n => n.getAttribute('data-fk').slice(3));
+  assert.deepEqual(rows, M.rankedOf(en1).map(r => r.id), 'The episode page lists the copies in link order');
+  assert.equal(H.fk('ep-star').getAttribute('aria-pressed'), 'true', 'The episode page stars the entry');
+  await H.fk('ep-star').click();
+  const favs = JSON.parse(st.get('sumsum-favorites'));
+  assert(!favs.includes('edge-ord-yt') && !favs.includes('ep:edge-order-1'), 'Unstarring the entry clears the copy\'s star too: ' + favs.join(' '));
+  await H.fk('ep-star').click();
+  assert(JSON.parse(st.get('sumsum-favorites')).includes('ep:edge-order-1'), 'Starring an entry stores the episode key');
+  await H.fk('ep-star').click();
+  // The queue keeps the exact link: an old queued part 2 still opens part 2, named by its episode.
+  await H.navigate('home');
+  assert.equal(H.fk('home-open').href, 'https://www.youtube.com/watch?v=EdgeOrderP02', 'A queued part opens that part');
+  assert.equal(H.fk('home-qt-edge-ord-p2').textContent, 'Edge order episode 2', 'and is named by its episode');
+  assert(H.byClass('qcard')[0].textContent.includes(tr('en', 'partOf', {i: '2', n: '2'})), 'with its part');
+  // Adding an episode entry queues its first copy; removing it takes every copy out.
+  await H.navigate('episode/edge-order-1'); await H.fk('ep-q').click(); H.flushTimers();
+  assert.deepEqual(JSON.parse(st.get('sumsum-sitting')), ['edge-ord-p2', 'edge-ord-ia'], 'The episode queues its first copy');
+  await H.fk('ep-q').click(); H.flushTimers();
+  assert.deepEqual(JSON.parse(st.get('sumsum-sitting')), ['edge-ord-p2'], 'and leaves the queue as one');
+  // A summary without its own url links the source named like it (Muppet Wiki), not the episode's first source.
+  const attrib = H.byClass('ep-attrib')[0], alinks = H.find(n => n.tagName === 'a', attrib);
+  assert.equal(alinks[0].href, 'https://muppet.fandom.com/wiki/Edge?oldid=7', 'The summary links its own source\'s revision, not the first source');
+  assert(alinks.some(a => a.href === 'https://www.fandom.com/licensing'), 'with the Muppet Wiki licence');
+  // A copy of the episode alone outranks a compilation on the same host, wherever the guide lists it.
+  await H.navigate('episode/edge-order-6');
+  assert.equal(H.fk('ep-watch').href, 'https://archive.org/details/edge-order/six.mp4', 'The episode\'s own copy before the compilation');
+  // An episode whose only whole copy is a compilation (no entry of its own): star and "+" act on the compilation's entry.
+  await H.navigate('episode/edge-order-4');
+  assert.equal(H.fk('ep-watch').href, 'https://archive.org/details/edge-order/compilation.mp4');
+  assert(H.fk('ep-watch').textContent.includes(' · ' + L.en.compQ), 'The Watch button says the copy is in a compilation');
+  assert(H.has('ep-star', H.view()), 'A compilation-only episode can be starred');
+  await H.fk('ep-q').click(); H.flushTimers();
+  assert.equal(H.fk('ep-q').getAttribute('aria-pressed'), 'true', 'Its "+" shows the compilation queued');
+  assert.deepEqual(JSON.parse(st.get('sumsum-sitting')), ['edge-ord-p2', 'edge-ord-comp']);
+  await H.fk('ep-q').click(); H.flushTimers();
+  assert.deepEqual(JSON.parse(st.get('sumsum-sitting')), ['edge-ord-p2'], 'and a second press takes it off');
+  await H.navigate('record/edge-own-note');
+  assert(H.text().includes('Edge record-specific warning: ending is missing.') && !H.text().includes('Edge shared note.'),
+    'A record\'s own completeness note comes before the shared note');
+  await H.navigate('record/edge-shared-note');
+  assert(H.text().includes('Edge shared note.'), 'Without one, the shared note its status names');
+  // When Watch opens a copy outside the episode's entry, the star stores that copy, as "+" queues it.
+  await H.navigate('episode/edge-order-7');
+  assert.equal(H.fk('ep-watch').href, 'https://www.youtube.com/watch?v=EdgeOrderX07', 'A usable excerpt before a failed whole copy');
+  await H.fk('ep-star').click();
+  assert(JSON.parse(st.get('sumsum-favorites')).includes('edge-ord-ex7'), 'The star stores the copy Watch opens');
+  await H.fk('ep-star').click();
+  assert(!JSON.parse(st.get('sumsum-favorites')).includes('edge-ord-ex7'), 'and unstarring clears it');
+  // A subscribed service is offered unasked: Up next reaches the episode whose only copy is on it.
+  const sub = 'https://play.edgestream.example/episode/3';
+  assert(offerable(M.recById.get('edge-ord-only-sub')), 'The model offers a subscribed listing');
+  let found = false; await H.navigate('home');
+  for (let k = 0; k < 3000 && H.has('next-watch', H.view()); k++) {
+    if (H.fk('next-watch').href === sub) { found = true; break; }
+    if (!H.has('next-skip', H.view())) break; await H.fk('next-skip').click();
+  }
+  assert(found, 'Up next offers an episode whose copy is on a subscribed service');
+  ok('entries: one per episode with its copies in the user\'s link order (archive.org, YouTube, subscribed, Vimeo; failed last), ' +
+    'the other places named once, a filter shown through the copy that passes it; a compilation and a shared video each one entry; ' +
+    'stars on any copy, unstarring clears them; the queue keeps the exact part; subscribed services offered');
+}
+
 async function checkStarredAndHash(htmlPath, M) {
-  const real = M.records[0].id, N = M.records.length;
+  // Stars are stored per key and counted per entry: a record's star stars its entry.
+  const real = M.records[0].id, N = M.entries.length, oneEach = M.entries.map(en => en.members[0].id);
   let H = harness(boot(htmlPath, {storage: new Map([['sumsum-favorites', JSON.stringify([real, 'removed-record-id', 'https://example.org/gone'])]])}));
   assert.equal(H.number(H.byClass('tab-count', H.fk('tab-starred'))[0].textContent), 1, 'Starred tab counts only stars that match a record');
   // Over 99 stars the phone badge reads "99+" (review round 1: "1,200" ran over the theme button or off the page); the full
   // count is the text assistive technology reads, and wider screens show it.
   if (N > 99) {
-    const many = M.records.slice(0, Math.min(N, 150)).map(r => r.id);
+    const many = oneEach.slice(0, Math.min(N, 150));
     const S = harness(boot(htmlPath, {storage: new Map([['sumsum-favorites', JSON.stringify(many)]])}));
     const badge = S.byClass('tab-count', S.fk('tab-starred'))[0], full = S.byClass('cnt-full', badge)[0], short = S.byClass('cnt-short', badge)[0];
     assert(S.cls(badge).includes('capped') && full && short, 'A count over 99 has a capped badge');
@@ -3116,7 +3574,7 @@ async function checkStarredAndHash(htmlPath, M) {
   await H.navigate('starred');
   assert(H.text().includes(L.en.starredEmpty), 'Only stale stars: "No stars yet"');
   // Unstarring in Starred moves focus to the next card, then to the count.
-  const two = M.records.slice(0, 2).map(r => r.id);
+  const two = oneEach.slice(0, 2);
   H = harness(boot(htmlPath, {storage: new Map([['sumsum-favorites', JSON.stringify(two)]])}));
   await H.navigate('starred');
   const order = H.$('grid').children.map(li => H.find(n => /^card-/.test(n.getAttribute?.('data-fk') || ''), li)[0].getAttribute('data-fk').slice(5));
@@ -3161,7 +3619,7 @@ async function checkStarredAndHash(htmlPath, M) {
 // distinct link names.
 async function checkRobustness(htmlPath, M) {
   for (const value of ['constructor', '__proto__', 'toString', 'hasOwnProperty']) {
-    const H = harness(boot(htmlPath, {storage: new Map([['sumsum-language', JSON.stringify(value)]])}));
+    const H = harness(bootLight(htmlPath, {storage: new Map([['sumsum-language', JSON.stringify(value)]])}));
     assert.equal(H.document.documentElement.lang, 'en', `A stored language '${value}' falls back to English`);
     assert(H.h1().textContent.trim(), 'and the app renders');
   }
@@ -3280,15 +3738,15 @@ async function checkLicensed(htmlPath, H, M) {
       const m = g.slice(4), label = tr(lang, 'agLic_' + m, {services: M.services.filter(x => x.model === m).map(x => x.name).join(', ')});
       assert.equal(H.byClass('lbl', H.fk('fa-' + g))[0].textContent, label, `Filter label (${lang}) ${g}`);
       await H.fk('fa-' + g).click();
-      assert.equal(H.count(), M.records.filter(r => expectGroup(r) === g).length, `Filter count (${lang}) ${g}`);
+      assert.equal(H.count(), M.countE(r => expectGroup(r) === g), `Filter count (${lang}) ${g}`);
       assert.equal(H.fk('ux-a-' + g).getAttribute('aria-label'), tr(lang, 'removeFilter', {name: label}), `Active filter name (${lang}) ${g}`);
       await H.fk('fa-' + g).click();
     }
     // Links written before the split: ?ag=licensed selects every licensed group.
     await H.navigate('browse?ag=licensed');
-    assert.equal(H.count(), lic.length, `?ag=licensed lists every licensed listing (${lang})`);
+    assert.equal(H.count(), M.countE(r => lic.includes(r)), `?ag=licensed lists every entry with a licensed listing (${lang})`);
     assert.deepEqual(M.licGroups.map(g => H.fk('fa-' + g).getAttribute('aria-pressed')), M.licGroups.map(() => 'true'), 'and presses each group');
-    await H.navigate('browse?q='); assert.equal(H.count(), M.records.length, 'Filters cleared');
+    await H.navigate('browse?q='); assert.equal(H.count(), M.entries.length, 'Filters cleared');
     // The access legend: the licensed entry lists each service's summary, then the rule that a listing is not evidence.
     await H.navigate('guide');
     if (H.byClass('legend').length) {
@@ -3329,9 +3787,9 @@ async function checkLicensed(htmlPath, H, M) {
     assert.deepEqual(M0.licGroups, []); assert(M0.agroups.includes('lic-other'));
     await H0.navigate('browse');
     assert.equal(H0.byClass('lbl', H0.fk('fa-lic-other'))[0].textContent, L.en.agLicensed, 'Without services: one "Licensed listings" filter');
-    assert.equal(H0.chipCount(H0.fk('fa-lic-other')), lic.length);
+    assert.equal(H0.chipCount(H0.fk('fa-lic-other')), M0.countE(r => lic.some(x => x.id === r.id)));
     assert(!H0.has('fa-lic-library-card', H0.view()), 'Without services: no per-model filter');
-    await H0.navigate('browse?ag=licensed'); assert.equal(H0.count(), lic.length, 'Without services: ?ag=licensed still lists them');
+    await H0.navigate('browse?ag=licensed'); assert.equal(H0.count(), M0.countE(r => lic.some(x => x.id === r.id)), 'Without services: ?ag=licensed still lists them');
     for (const r of lic.slice(0, 3)) {
       await H0.navigate('record/' + encodeURIComponent(r.id));
       const host = hostname(expectDest(r));
@@ -3445,7 +3903,7 @@ async function checkLangBoot(htmlPath) {
     ['data-start-lang en over stored Hebrew', {'sumsum-language': '"he"'}, {'data-start-lang': 'en'}, 'en']];
   for (const [label, stored, htmlAttrs, want] of cases) {
     let early = null;
-    const app = boot(htmlPath, {storage: new Map(Object.entries(stored)), htmlAttrs, onLangBoot: doc => {
+    const app = bootLight(htmlPath, {storage: new Map(Object.entries(stored)), htmlAttrs, onLangBoot: doc => {
       early = ['lang-en', 'lang-he'].map(id => [doc.getElementById(id).getAttribute('aria-checked'), doc.getElementById(id).getAttribute('tabindex')]);
     }});
     const expect = want === 'en' ? [['true', '0'], ['false', '-1']] : [['false', '-1'], ['true', '0']];
@@ -3454,7 +3912,7 @@ async function checkLangBoot(htmlPath) {
     assert.deepEqual(late, expect, `${label}: the application keeps that state`);
     assert.equal(app.document.documentElement.lang, want, `${label}: the page language agrees`);
   }
-  const noScript = boot(htmlPath, {storage: new Map([['sumsum-language', '"he"']]), noLangBoot: true});
+  const noScript = bootLight(htmlPath, {storage: new Map([['sumsum-language', '"he"']]), noLangBoot: true});
   assert.equal(noScript.ids['lang-he'].getAttribute('aria-checked'), 'true', 'Without the inline script the application still checks Hebrew');
   ok(`language toggle before the first paint: #lang-boot checks the stored language (${cases.length} cases) and the application agrees`);
 }
@@ -3475,7 +3933,7 @@ async function checkThemePicker(htmlPath) {
   const prefs = H => { const de = H.document.documentElement; return ['palette', 'appearance', 'scheme'].map(k => de.getAttribute('data-' + k)); };
   const metaScheme = H => H.$('meta-color-scheme').getAttribute('content');
   const booted = H => { assert(H.h1() && H.h1().textContent.trim(), 'The app renders'); return H; };
-  let H = booted(harness(boot(htmlPath)));
+  let H = booted(harness(bootLight(htmlPath)));
   const P = [...H.window.sumsumTheme.palettes], A = [...H.window.sumsumTheme.appearances];
   assert.deepEqual(prefs(H), [DEFAULT_PALETTE, 'system', 'light'], `Defaults: ${DEFAULT_PALETTE} and System (here a light system scheme)`);
   assert.equal(metaScheme(H), 'light dark', 'Under System the page offers both schemes');
@@ -3585,26 +4043,26 @@ async function checkThemePicker(htmlPath) {
   // default, so that nothing stored would fail).
   const storage = H.storage;
   await H.$('tp-pal-sage').click(); await H.$('tp-app-dark').click();
-  H = booted(harness(boot(htmlPath, {storage})));
+  H = booted(harness(bootLight(htmlPath, {storage})));
   assert.deepEqual(prefs(H), ['sage', 'dark', 'dark'], 'The palette and the appearance persist across reloads');
   assert(H.$('tp-pal-sage').getAttribute('aria-checked') === 'true' && H.$('tp-app-dark').getAttribute('aria-checked') === 'true',
     'The picker shows the stored choice');
   assert.equal(metaScheme(H), 'dark');
   // Start attributes take the place of the stored values (an invalid one gives the default, not the stored value).
-  H = booted(harness(boot(htmlPath, {storage, htmlAttrs: {'data-start-palette': 'stone', 'data-start-appearance': 'light'}})));
+  H = booted(harness(bootLight(htmlPath, {storage, htmlAttrs: {'data-start-palette': 'stone', 'data-start-appearance': 'light'}})));
   assert.deepEqual(prefs(H), ['stone', 'light', 'light'], 'data-start-palette and data-start-appearance win over storage');
-  H = booted(harness(boot(htmlPath, {storage, htmlAttrs: {'data-start-palette': 'constructor', 'data-start-appearance': '__proto__'}})));
+  H = booted(harness(bootLight(htmlPath, {storage, htmlAttrs: {'data-start-palette': 'constructor', 'data-start-appearance': '__proto__'}})));
   assert.deepEqual(prefs(H), [DEFAULT_PALETTE, 'system', 'light'], 'An invalid start attribute gives the default');
   // The system scheme, with and without matchMedia.
-  assert.deepEqual(prefs(booted(harness(boot(htmlPath, {prefersDark: true})))), [DEFAULT_PALETTE, 'system', 'dark'], 'System follows a dark system scheme at start');
-  assert.deepEqual(prefs(booted(harness(boot(htmlPath, {prefersDark: true, noMatchMedia: true})))), [DEFAULT_PALETTE, 'system', 'light'],
+  assert.deepEqual(prefs(booted(harness(bootLight(htmlPath, {prefersDark: true})))), [DEFAULT_PALETTE, 'system', 'dark'], 'System follows a dark system scheme at start');
+  assert.deepEqual(prefs(booted(harness(bootLight(htmlPath, {prefersDark: true, noMatchMedia: true})))), [DEFAULT_PALETTE, 'system', 'light'],
     'Without matchMedia, System is light');
   // Hostile or broken stored values fall back to the defaults and the app still starts; an old id that is not exactly one
   // ('GREEN', 'blue ', one inside an object or an array) is not migrated.
   const hostile = ['constructor', '__proto__', 'toString', 'hasOwnProperty', 'valueOf', 'GREEN', 'Dark', 'dark', 'blue ', 'olive', 'system'].map(v => JSON.stringify(v))
     .concat(['{', 'undefined', '42', '{}', '[]', 'null', '"', 'true', '{"__proto__":"blue"}', '["blue"]']);
   for (const raw of hostile) {
-    const h = booted(harness(boot(htmlPath, {storage: new Map([['sumsum-theme', raw], ['sumsum-appearance', raw === '"system"' ? '"blue"' : raw]])})));
+    const h = booted(harness(bootLight(htmlPath, {storage: new Map([['sumsum-theme', raw], ['sumsum-appearance', raw === '"system"' ? '"blue"' : raw]])})));
     const [pal, app] = prefs(h);
     assert.equal(pal, DEFAULT_PALETTE, `A stored palette ${raw} falls back to ${DEFAULT_PALETTE}`);
     assert.equal(app, raw === '"dark"' ? 'dark' : 'system', `A stored appearance ${raw} falls back to System unless it is one`);
@@ -3615,24 +4073,24 @@ async function checkThemePicker(htmlPath) {
   const migrated = Object.entries(RENAMED_PALETTES);
   for (const [old, now] of migrated) {
     assert(!P.includes(old) && P.includes(now) && now !== DEFAULT_PALETTE, `"${old}" is an old id and ${now} a palette other than the default`);
-    const st = new Map([['sumsum-theme', JSON.stringify(old)], ['sumsum-appearance', '"dark"']]), h = booted(harness(boot(htmlPath, {storage: st})));
+    const st = new Map([['sumsum-theme', JSON.stringify(old)], ['sumsum-appearance', '"dark"']]), h = booted(harness(bootLight(htmlPath, {storage: st})));
     assert.deepEqual(prefs(h), [now, 'dark', 'dark'], `A stored "${old}" boots into ${now}`);
     assert(h.$('tp-pal-' + now).getAttribute('aria-checked') === 'true' && h.$('tp-pal-' + DEFAULT_PALETTE).getAttribute('aria-checked') === 'false',
       `The picker marks ${now} after a stored "${old}"`);
     assert.equal(st.get('sumsum-theme'), JSON.stringify(old), `A stored "${old}" stays in storage until the next choice`);
-    assert.equal(prefs(booted(harness(boot(htmlPath, {htmlAttrs: {'data-start-palette': old}}))))[0], now, `data-start-palette="${old}" gives ${now}`);
+    assert.equal(prefs(booted(harness(bootLight(htmlPath, {htmlAttrs: {'data-start-palette': old}}))))[0], now, `data-start-palette="${old}" gives ${now}`);
   }
   {
     const st = new Map([['sumsum-theme', JSON.stringify(DEFAULT_PALETTE)]]);
-    assert.equal(prefs(booted(harness(boot(htmlPath, {storage: st}))))[0], DEFAULT_PALETTE, 'A stored default stays');
+    assert.equal(prefs(booted(harness(bootLight(htmlPath, {storage: st}))))[0], DEFAULT_PALETTE, 'A stored default stays');
     st.set('sumsum-theme', JSON.stringify(migrated[0][0]));
-    const h = booted(harness(boot(htmlPath, {storage: st})));
+    const h = booted(harness(bootLight(htmlPath, {storage: st})));
     await h.$('theme-btn').click(); await h.$('tp-pal-kippi').click();
     assert.equal(st.get('sumsum-theme'), '"kippi"', 'A choice after a migrated boot stores the new id');
-    assert.equal(prefs(booted(harness(boot(htmlPath, {storage: st}))))[0], 'kippi', 'and the next boot keeps it');
+    assert.equal(prefs(booted(harness(bootLight(htmlPath, {storage: st}))))[0], 'kippi', 'and the next boot keeps it');
   }
   // Without the preferences script the control is hidden and the default palette stays.
-  H = booted(harness(boot(htmlPath, {noBoot: true})));
+  H = booted(harness(bootLight(htmlPath, {noBoot: true})));
   assert(H.$('theme-picker').hidden && !H.document.documentElement.getAttribute('data-palette'), 'Without the preferences script the theme control is hidden');
   ok(`theme picker: defaults (${DEFAULT_PALETTE}, System), the system scheme and its changes, color-scheme meta; button and radio groups named ` +
     'in EN and HE, roving tabindex, arrows (mirrored in Hebrew), Home, End and clicks choose and store; Escape returns focus; outside ' +
@@ -3666,7 +4124,13 @@ async function checkHome(htmlPath, M) {
   const prefs = () => ({spoken: JSON.parse(H.storage.get('sumsum-spoken') || '"all"'), len: JSON.parse(H.storage.get('sumsum-length') || '""')});
   const prefOk = r => { const p = prefs(); return (p.spoken === 'all' || spokenOfM(r).includes(p.spoken)) && lenOkM(r, p.len); };
   const pickable = r => offerable(r) && prefOk(r);
-  const cardRec = (n, prefix) => byId.get(n.getAttribute('data-fk').slice(prefix.length));
+  // Home's cards are entries; each shows its first member (in link order) that the shelf or Surprise offers.
+  const enById = new Map(M.entries.map(en => [en.id, en]));
+  const isMusic = r => (r.themes || []).some(t => tagKeyM(t) === tagKeyM('music')), musicPick = r => isMusic(r) && pickable(r);
+  const cardEn = (n, prefix) => enById.get(n.getAttribute('data-fk').slice(prefix.length));
+  const cardRec = (n, prefix, ok = pickable) => M.shownOf(cardEn(n, prefix), ok);
+  // A card's entry and the member it queues: [entry, record].
+  const cardPair = (n, prefix, ok) => { const en = cardEn(n, prefix); return Object.assign(M.shownOf(en, ok), {en}); };
   const shelfCards = id => H.find(n => (n.getAttribute?.('data-fk') || '').startsWith('s' + id + '-card-'));
   // Preferences: stored, pressed, applied to Home; a Browse hash never changes them.
   assert.equal(H.fk('pref-spoken-all').getAttribute('aria-pressed'), 'true'); assert.equal(H.fk('pref-len-any').getAttribute('aria-pressed'), 'true');
@@ -3674,11 +4138,10 @@ async function checkHome(htmlPath, M) {
   assert.equal(H.storage.get('sumsum-length'), '"5"', 'Length is stored');
   assert.equal(H.fk('pref-len-5').getAttribute('aria-pressed'), 'true');
   const music = shelfCards('music');
-  assert(music.length && music.every(a => pickable(cardRec(a, 'smusic-card-')) && (cardRec(a, 'smusic-card-').themes || []).some(t => tagKeyM(t) === tagKeyM('music'))),
-    'The music shelf holds offered music videos within the preferences');
-  const musicAll = records.filter(r => (r.themes || []).some(t => tagKeyM(t) === tagKeyM('music')));
+  assert(music.length && music.every(a => musicPick(cardRec(a, 'smusic-card-', musicPick))),
+    'The music shelf holds entries shown through an offered music video within the preferences');
   assert.equal(H.fk('see-music').href, '#/browse?theme=' + encodeURIComponent(tagKeyM('music')) + '&len=5', 'See all opens the same query in Browse');
-  assert.equal(H.number(H.fk('see-music').textContent), musicAll.filter(prefOk).length, 'See all counts what Browse will show');
+  assert.equal(H.number(H.fk('see-music').textContent), M.countE(r => isMusic(r) && prefOk(r)), 'See all counts what Browse will show');
   await H.navigate('browse?len=10'); assert.equal(H.storage.get('sumsum-length'), '"5"', 'A Browse hash does not change the Home preference');
   await H.navigate('home');
   await H.fk('pref-spoken-en').click(); assert.equal(H.storage.get('sumsum-spoken'), '"en"');
@@ -3686,12 +4149,31 @@ async function checkHome(htmlPath, M) {
   assert(heroRec, 'Up next offers an offered video within the preferences: ' + hero.href);
   await H.fk('pref-spoken-all').click(); await H.fk('pref-len-any').click();
   assert.deepEqual(prefs(), {spoken: 'all', len: ''});
-  // The characters: the most-tagged twelve, each opening Browse filtered by that character, with its count.
+  // The characters: twelve, ranked by entries in the Spoken language; under All the Hebrew side (everything not English-only)
+  // and the English side take turns. Each opens Browse filtered by that character, with its count within the preferences.
+  const sideOfM = r => (spokenOfM(r).includes('en') && !spokenOfM(r).includes('he') ? 'en' : 'he');
+  const charRankM = keep => {
+    const m = new Map();
+    for (const en of M.entries) for (const k of new Set(en.members.filter(keep).flatMap(r => (r.characters || []).map(tagKeyM)))) m.set(k, (m.get(k) || 0) + 1);
+    return [...m].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).map(([k]) => k);
+  };
+  const alternateM = (lists, max) => {
+    const out = [];
+    for (let i = 0; out.length < max && lists.some(l => i < l.length); i++) for (const l of lists) if (l[i] && !out.includes(l[i]) && out.length < max) out.push(l[i]);
+    return out;
+  };
+  const tokKeys = () => H.find(n => (n.getAttribute?.('data-fk') || '').startsWith('tok-')).map(a => a.getAttribute('data-fk').slice(4));
+  assert.deepEqual(tokKeys(), alternateM([charRankM(r => sideOfM(r) === 'he'), charRankM(r => sideOfM(r) === 'en')], 12),
+    'Under All, the Hebrew and English character rankings take turns');
+  for (const g of ['he', 'en']) {
+    await H.fk('pref-spoken-' + g).click();
+    assert.deepEqual(tokKeys(), charRankM(r => spokenOfM(r).includes(g)).slice(0, 12), 'The character row follows Spoken: ' + g);
+  }
+  await H.fk('pref-spoken-all').click();
   const tokens = H.find(n => (n.getAttribute?.('data-fk') || '').startsWith('tok-'));
   const charN = new Map();
-  for (const r of records) for (const k of new Set((r.characters || []).map(tagKeyM))) charN.set(k, (charN.get(k) || 0) + 1);
-  const top = [...charN].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).slice(0, 12);
-  assert.equal(tokens.length, top.length, 'Twelve characters (or all there are)');
+  for (const en of M.entries) for (const k of new Set(en.members.flatMap(r => (r.characters || []).map(tagKeyM)))) charN.set(k, (charN.get(k) || 0) + 1);
+  assert.equal(tokens.length, Math.min(12, charN.size), 'Twelve characters (or all there are)');
   for (const a of tokens) {
     const k = a.getAttribute('data-fk').slice(4);
     assert.equal(a.href, '#/browse?character=' + encodeURIComponent(k), 'A character opens Browse filtered by it: ' + k);
@@ -3700,11 +4182,11 @@ async function checkHome(htmlPath, M) {
   await tokens[0].click(); assert.equal(H.count(), charN.get(tokens[0].getAttribute('data-fk').slice(4)), 'Browse shows the character\'s videos');
   await H.navigate('home');
   // The queue: "+" adds, the masthead counts, rows move and go, Clear can be undone, Open next opens the first and removes it.
-  const [c1, c2, c3] = shelfCards('music').slice(0, 3).map(a => cardRec(a, 'smusic-card-'));
-  for (const r of [c1, c2, c3]) { await H.fk('smusic-q-' + r.id).click(); H.flushTimers(); }
+  const [c1, c2, c3] = shelfCards('music').slice(0, 3).map(a => cardPair(a, 'smusic-card-', musicPick));
+  for (const r of [c1, c2, c3]) { await H.fk('smusic-q-' + r.en.id).click(); H.flushTimers(); }
   assert.deepEqual(JSON.parse(H.storage.get('sumsum-sitting')), [c1, c2, c3].map(keyOf), 'Queued in order');
   assert.equal(H.$('queue-btn').getAttribute('aria-label'), tr('en', 'queueN', {n: '3'}), 'The masthead counts the queue');
-  assert.equal(H.fk('smusic-q-' + c1.id).getAttribute('aria-pressed'), 'true', 'A queued card\'s + is pressed');
+  assert.equal(H.fk('smusic-q-' + c1.en.id).getAttribute('aria-pressed'), 'true', 'A queued card\'s + is pressed');
   await H.fk('home-down-' + c1.id).click(); H.flushTimers();
   assert.deepEqual(JSON.parse(H.storage.get('sumsum-sitting')), [c2, c1, c3].map(keyOf), 'Move down');
   assert.equal(H.document.activeElement.getAttribute('data-fk'), 'home-down-' + c1.id, 'Focus stays on the moved row\'s control');
@@ -3737,12 +4219,12 @@ async function checkHome(htmlPath, M) {
   H.fk('home-open').focus(); await H.fk('home-open').click(); H.flushTimers();
   assert.deepEqual(JSON.parse(H.storage.get('sumsum-sitting')), [], 'The last video leaves the queue');
   assert.equal(H.document.activeElement.getAttribute('data-fk'), 'home-qh', 'and focus moves to the queue heading');
-  await H.fk('smusic-q-' + c2.id).click(); H.flushTimers();
-  // Again: the opened video, with its count; the hero offers it again when Up next is something else.
-  assert(H.has('ag-w-' + c1.id) && H.fk('ag-w-' + c1.id).href === expectDest(c1), 'Again lists the opened video');
+  await H.fk('smusic-q-' + c2.en.id).click(); H.flushTimers();
+  // Again: the opened entry, with its count, reopening the member opened; the hero offers it again when Up next is something else.
+  assert(H.has('ag-w-' + c1.en.id) && H.fk('ag-w-' + c1.en.id).href === expectDest(c1), 'Again lists the opened entry and reopens the member opened');
   assert(H.byClass('again')[0].textContent.includes('×1'), 'with how often it was opened');
   if (H.fk('next-watch').href !== expectDest(c2)) assert.equal(H.fk('again-hero').href, expectDest(c2), 'The hero offers the last video opened again');
-  await H.fk('ag-w-' + c1.id).click(); H.flushTimers();
+  await H.fk('ag-w-' + c1.en.id).click(); H.flushTimers();
   assert.equal(JSON.parse(H.storage.get('sumsum-opened'))[keyOf(c1)].n, 2, 'Again counts another open');
   // Stickers: ×N for opens; ✓ only on a video that is the one whole or alternate copy of a watched episode.
   const soloRec = records.find(r => (M.recLinks.get(r.id) || []).length === 1 && M.recLinks.get(r.id)[0].role === 'whole-candidate');
@@ -3754,14 +4236,15 @@ async function checkHome(htmlPath, M) {
     await H.navigate('record/' + encodeURIComponent(r.id)); await H.fk('rec-star').click();
     await H.navigate('episode/' + encodeURIComponent(solo.id)); await H.fk('watch-toggle').click();
     await H.navigate('home');
-    const cardOf = id => H.fk('sstarred-card-' + id).parentElement.parentElement.parentElement;
-    assert.equal(H.byClass('s-seen', cardOf(r.id)).length, 1, 'The ✓ sticker shows on the watched episode\'s only whole copy');
+    const cardOf = rid => H.fk('sstarred-card-' + M.entryOf.get(rid).id).parentElement.parentElement.parentElement;
+    assert.equal(H.byClass('s-seen', cardOf(r.id)).length, 1, 'The ✓ sticker shows on the watched episode\'s entry');
     if (partRec) {
       const pe = M.recLinks.get(partRec.id)[0].e;
       await H.navigate('record/' + encodeURIComponent(partRec.id)); await H.fk('rec-star').click();
       if (pe.id !== solo.id) { await H.navigate('episode/' + encodeURIComponent(pe.id)); await H.fk('watch-toggle').click(); }
       await H.navigate('home');
-      assert.equal(H.byClass('s-seen', cardOf(partRec.id)).length, 0, 'A part of a watched episode has no ✓ sticker');
+      // A part is a copy of its episode's entry, so the entry shows the episode's mark.
+      assert.equal(H.byClass('s-seen', cardOf(partRec.id)).length, M.entryOf.get(partRec.id).e ? 1 : 0, 'A part\'s entry shows its episode\'s ✓');
       if (pe.id !== solo.id) { await H.navigate('episode/' + encodeURIComponent(pe.id)); await H.fk('watch-toggle').click(); }
       await H.navigate('record/' + encodeURIComponent(partRec.id)); await H.fk('rec-star').click();
     }
@@ -3775,10 +4258,10 @@ async function checkHome(htmlPath, M) {
   await sb.click();
   assert(!pop.hidden && sb.getAttribute('aria-expanded') === 'true' && pop.getAttribute('role') === 'dialog' &&
     pop.getAttribute('aria-labelledby') === 'surprise-h' && H.document.activeElement === H.$('surprise-h'), 'Surprise opens, named and focused');
-  const picked = () => { const a = H.find(n => (n.getAttribute?.('data-fk') || '').startsWith('sp-card-'), pop)[0]; return a && cardRec(a, 'sp-card-'); };
+  const picked = () => { const a = H.find(n => (n.getAttribute?.('data-fk') || '').startsWith('sp-card-'), pop)[0]; return a && cardEn(a, 'sp-card-'); };
   const seenPicks = [];
   for (let k = 0; k < 25; k++) {
-    const r = picked(); assert(r && pickable(r), 'Surprise picks an offered video within the preferences: ' + (r && r.id)); seenPicks.push(r);
+    const r = picked(); assert(r && pickable(M.shownOf(r, pickable)), 'Surprise picks an entry with an offered video within the preferences: ' + (r && r.id)); seenPicks.push(r);
     // A bubbling click, as in a browser: Another redraws the card during its own click and must not count as an outside click.
     if (k < 24) { await H.fk('sp-another').dispatch('click'); assert(!pop.hidden, 'Another keeps Surprise open'); }
   }
@@ -3799,22 +4282,23 @@ async function checkHome(htmlPath, M) {
     await st().click(); await H.fk('surprise-close').click(); }
   // "+" inside the Surprise card queues the pick in place: the popover stays open and the button shows it.
   await H.navigate('home'); await sb.click();
-  const pr = picked(), qb = () => H.fk('sp-q-' + pr.id), wasQ = JSON.parse(H.storage.get('sumsum-sitting') || '[]').includes(keyOf(pr));
+  const pr = picked(), qb = () => H.fk('sp-q-' + pr.id), wasQ = JSON.parse(H.storage.get('sumsum-sitting') || '[]').some(k => pr.members.some(m => keyOf(m) === k));
   await qb().dispatch('click'); H.flushTimers();
   assert(!pop.hidden && picked() === pr && qb().getAttribute('aria-pressed') === String(!wasQ), 'Queueing from Surprise keeps it open and updates its +');
   await qb().click(); H.flushTimers(); await H.fk('surprise-close').click();
   // A shuffled shelf keeps its order when Home is drawn again (a star or the queue), until the next shuffle.
   const order = () => shelfCards('music').map(a => a.getAttribute('data-fk'));
   await H.fk('shuf-music').click(); const shuffledOrder = order();
-  await H.fk('smusic-q-' + cardRec(shelfCards('music')[0], 'smusic-card-').id).click(); H.flushTimers();
+  await H.fk('smusic-q-' + cardEn(shelfCards('music')[0], 'smusic-card-').id).click(); H.flushTimers();
   assert.deepEqual(order(), shuffledOrder, 'A queue change does not reshuffle the shelf');
-  await H.fk('smusic-q-' + cardRec(shelfCards('music')[0], 'smusic-card-').id).click(); H.flushTimers();
+  await H.fk('smusic-q-' + cardEn(shelfCards('music')[0], 'smusic-card-').id).click(); H.flushTimers();
   // On Browse it picks from the list on screen.
   const cls = 'classic';
   await H.navigate('browse?series=' + cls);
   await sb.click();
   for (let k = 0; k < 10; k++) {
-    const r = picked(); assert(r && r.series === cls && offerable(r), 'On Browse, Surprise picks from the filtered list'); await H.fk('sp-another').click();
+    const en = picked(), r = en && M.shownOf(en, x => offerable(x) && x.series === cls);
+    assert(r && r.series === cls && offerable(r), 'On Browse, Surprise picks from the filtered list'); await H.fk('sp-another').click();
   }
   // A Surprise pick that is also a card on screen: starring either shows on both.
   {
@@ -3831,7 +4315,7 @@ async function checkHome(htmlPath, M) {
     }
   }
   await H.fk('surprise-close').click(); assert(pop.hidden && H.document.activeElement === sb, 'The close button closes it');
-  const kippi = top.find(([k]) => /kippi/.test(k));
+  const kippi = [...charN].find(([k]) => /kippi/.test(k));
   if (kippi) {
     await H.navigate('browse?character=' + encodeURIComponent(kippi[0])); await sb.click();
     assert(H.$('surprise-h').textContent.endsWith(tr('en', 'charPicks', {name: ''}).trim()) || H.$('surprise-h').textContent.includes('Kippi'),
@@ -3857,13 +4341,13 @@ async function checkHome(htmlPath, M) {
   // Removing the focused row moves focus to its neighbour, and the last one to the queue heading.
   await H.navigate('home');
   if (H.has('home-clear')) { await H.fk('home-clear').click(); H.flushTimers(); }
-  const [d1, d2] = shelfCards('music').slice(0, 2).map(a => cardRec(a, 'smusic-card-'));
-  await H.fk('smusic-q-' + d1.id).click(); H.flushTimers(); await H.fk('smusic-q-' + d2.id).click(); H.flushTimers();
+  const [d1, d2] = shelfCards('music').slice(0, 2).map(a => cardPair(a, 'smusic-card-', musicPick));
+  await H.fk('smusic-q-' + d1.en.id).click(); H.flushTimers(); await H.fk('smusic-q-' + d2.en.id).click(); H.flushTimers();
   H.fk('home-rm-' + d1.id).focus(); await H.fk('home-rm-' + d1.id).click(); H.flushTimers();
   assert.equal(H.document.activeElement.getAttribute('data-fk'), 'home-rm-' + d2.id, 'Removing a row focuses the next one');
   await H.fk('home-rm-' + d2.id).click(); H.flushTimers();
   assert.equal(H.document.activeElement.getAttribute('data-fk'), 'home-qh', 'Removing the last row focuses the queue heading');
-  await H.fk('smusic-q-' + d1.id).click(); H.flushTimers();
+  await H.fk('smusic-q-' + d1.en.id).click(); H.flushTimers();
   // Surprise opened from the phone bar stays bound to its button when Home is drawn again.
   await H.fk('tab-surprise').click();
   const p2 = picked(); await H.fk('sp-q-' + p2.id).click(); H.flushTimers();
@@ -3892,7 +4376,7 @@ async function checkHome(htmlPath, M) {
       ' in the queue popover: focus on its heading');
     await H.document.activeElement.dispatch('keydown', {key: 'Escape'});
   }
-  await H.fk('smusic-q-' + d1.id).click(); H.flushTimers();
+  await H.fk('smusic-q-' + d1.en.id).click(); H.flushTimers();
   // The queue popover from the masthead holds the same queue.
   await H.$('queue-btn').click();
   assert(!H.$('queue-pop').hidden && H.has('qp-open') && H.fk('qp-open').href === expectDest(d1), 'The queue popover offers the next video');
@@ -3911,11 +4395,11 @@ async function checkHome(htmlPath, M) {
     const H4 = harness(boot(htmlPath, {storage: st, hash: '#/starred'})), pop4 = H4.$('surprise-pop');
     await H4.$('surprise-btn').click();
     const pick4 = () => { const a = H4.find(n => (n.getAttribute?.('data-fk') || '').startsWith('sp-card-'), pop4)[0]; return a && a.getAttribute('data-fk').slice(8); };
-    const p1 = pick4(); assert([c1.id, c3.id].includes(p1), 'Surprise on Starred picks a starred video');
+    const p1 = pick4(); assert([c1.en.id, c3.en.id].includes(p1), 'Surprise on Starred picks a starred entry');
     await H4.fk('sp-star-' + p1).dispatch('click'); H4.flushTimers();
     H4.fk('sp-another').focus(); await H4.fk('sp-another').dispatch('click');
     assert(H4.document.activeElement.isConnected && pop4.contains(H4.document.activeElement), 'Focus stays in Surprise when Another goes');
-    const p2 = pick4(); assert(p2 && p2 !== p1 && [c1.id, c3.id].includes(p2), 'After unstarring, Another picks only what is still starred');
+    const p2 = pick4(); assert(p2 && p2 !== p1 && [c1.en.id, c3.en.id].includes(p2), 'After unstarring, Another picks only what is still starred');
     await H4.fk('sp-star-' + p2).dispatch('click'); H4.flushTimers();
     assert(!H4.has('sp-another'), 'Nothing left to pick: no Another');
   }
@@ -4045,9 +4529,12 @@ async function checkBrowsePages(H, M) {
   for (const k of SERIES) {
     assert.equal(H.chipCount(H.fk('fs-' + k)), M.records.filter(r => identifiedIds.has(r.id) && r.series === k).length, 'Identified series count ' + k);
   }
-  for (let k = 0; k < 100 && H.has('more', H.view()); k++) await H.fk('more').click();
+  // Every page when the list is short; otherwise the first ten pages, each card an identified upload, and the count above.
+  const pages = Math.ceil(identifiedIds.size / 48), full = pages <= 60;
+  for (let k = 0; k < (full ? pages : 10) && H.has('more', H.view()); k++) await H.fk('more').click();
   const shown = new Set(H.$('grid').children.map(li => H.find(n => /^card-/.test(n.getAttribute?.('data-fk') || ''), li)[0].getAttribute('data-fk').slice(5)));
-  assert.deepEqual([...shown].sort(), [...identifiedIds].sort(), 'Identified videos shows exactly the identified uploads');
+  if (full) assert.deepEqual([...shown].sort(), [...identifiedIds].sort(), 'Identified videos shows exactly the identified uploads');
+  else assert(shown.size === Math.min(identifiedIds.size, 11 * 48) && [...shown].every(id => identifiedIds.has(id)), 'Identified videos shows identified uploads');
   // Statuses outside the page, carried over from Browse or written in the hash, are dropped rather than emptying the list.
   await H.navigate('browse?gs=queue'); await H.navigate('browse/identified');
   assert(H.count() === counts.identified && !/gs=/.test(H.location.hash), 'A carried-over "Awaiting identification" filter is dropped');
@@ -4140,6 +4627,16 @@ async function checkBrowsePages(H, M) {
   assert.equal(H.number(tcount(H.$('ms-partial'))), lists['ms-parts'].length + lists['ms-excerpt'].length, 'No complete copy yet: parts + excerpts');
   assert.equal(lists['ms-missing'].length + lists['ms-parts'].length + lists['ms-excerpt'].length, counts.missing, 'The sections add up to the menu count');
   for (const id of ['ms-parts', 'ms-excerpt']) assert.equal(H.number(tcount(H.$(id + '-h'))), lists[id].length, id + ' count');
+  // A production with many seasons is folded: one heading per season with its count and a Show button, no rows until opened.
+  const pagedMissing = lists['ms-missing'].filter(e => M.paged(M.prodById.get(e.production)));
+  if (pagedMissing.length) {
+    const e0 = pagedMissing[0], p0 = M.prodById.get(e0.production);
+    assert(!H.has('td-' + e0.id, H.$('ms-missing')), 'Seasons of ' + p0.id + ' start folded');
+    const g0 = H.byClass('tgroup', H.$('ms-missing')).find(g => g.children[0].textContent === name(p0) + ' · ' + L.en.seasonLbl + ' ' + e0.season);
+    assert(g0, 'Each season is its own group, named by production and season');
+    await H.fk('more-ms-missing:' + p0.id + ':' + e0.season).click();
+    assert.equal(H.document.activeElement, H.fk('td-' + e0.id), 'Opening a season moves focus to its first episode');
+  }
   for (const id of ['ms-missing', 'ms-parts', 'ms-excerpt']) await expandAll(id + ':');
   const listOf = (secId, ulPred) => {
     const sec = H.$(secId), uls = H.find(n => n.tagName === 'ul' && H.cls(n).includes('tlist') && ulPred(n), sec);
@@ -4153,10 +4650,13 @@ async function checkBrowsePages(H, M) {
   }
   for (const sec of ['ms-missing', 'ms-partial']) {
     for (const g of H.byClass('tgroup', H.$(sec))) {
-      const p = M.prods.find(q => name(q) === g.children[0].textContent), ul = g.parentElement;
+      const head = g.children[0].textContent, sep = ' · ' + L.en.seasonLbl + ' ';
+      const p = M.prods.find(q => name(q) === head || (M.paged(q) && head.startsWith(name(q) + sep))), ul = g.parentElement;
+      const season = M.paged(p) ? Number(head.slice(name(p).length + sep.length).replace(/,/g, '')) : null;
       const c = ul.getAttribute('aria-labelledby') === 'ms-parts-h' ? 'parts-only' : ul.getAttribute('aria-labelledby') === 'ms-excerpt-h' ?
         'excerpt-only' : 'missing';
-      assert.equal(H.number(tcount(g)), M.epsOf.get(p.id).filter(e => M.cov(e) === c).length, `${sec} group count ${p.id} (${c})`);
+      assert.equal(H.number(tcount(g)), M.epsOf.get(p.id).filter(e => M.cov(e) === c && (season === null || e.season === season)).length,
+        `${sec} group count ${p.id}${season === null ? '' : ' season ' + season} (${c})`);
     }
   }
   // Expected places: one row per production with open places, gaps or an open total, its numbers linked to their slot pages.
@@ -4220,24 +4720,24 @@ async function checkBrowsePages(H, M) {
 
 // Old routes and start views: #/uploads (All uploads) lands on Browse with its filters; unknown Browse pages are Browse.
 async function checkRouteAliases(htmlPath, M) {
-  const classic = M.records.filter(r => r.series === 'classic').length;
+  const classic = M.countE(r => r.series === 'classic');
   for (const ui of ['en', 'he']) {
-    let H = harness(boot(htmlPath, {hash: '#/uploads', htmlAttrs: {'data-start-lang': ui}}));
+    let H = harness(bootLight(htmlPath, {hash: '#/uploads', htmlAttrs: {'data-start-lang': ui}}));
     assert(H.h1().textContent === L[ui].browseTitle && H.location.hash === '#/browse', `#/uploads opens Browse at start (${ui})`);
     assert.equal(H.document.title, L[ui].browseTitle + ' · ' + L[ui].appName);
     assertNav(H, 'browse', '#/uploads (' + ui + ')');
-    H = harness(boot(htmlPath, {hash: '#/uploads?series=classic&sort=longest', htmlAttrs: {'data-start-lang': ui}}));
+    H = harness(bootLight(htmlPath, {hash: '#/uploads?series=classic&sort=longest', htmlAttrs: {'data-start-lang': ui}}));
     assert(H.location.hash === '#/browse?series=classic&sort=longest' && H.count() === classic && H.$('u-sort').value === 'longest',
       `#/uploads keeps its filters (${ui}): ` + H.location.hash);
-    H = harness(boot(htmlPath, {htmlAttrs: {'data-start-lang': ui, 'data-start-view': 'uploads'}}));
+    H = harness(bootLight(htmlPath, {htmlAttrs: {'data-start-lang': ui, 'data-start-view': 'uploads'}}));
     assert(H.h1().textContent === L[ui].browseTitle && H.location.hash === '#/browse', `data-start-view="uploads" opens Browse (${ui})`);
-    H = harness(boot(htmlPath, {hash: '#/todo', htmlAttrs: {'data-start-lang': ui}}));
+    H = harness(bootLight(htmlPath, {hash: '#/todo', htmlAttrs: {'data-start-lang': ui}}));
     assert(H.h1().textContent === L[ui].todoTitle && H.location.hash === '#/todo', `#/todo still works (${ui})`);
     assertNav(H, 'todo', '#/todo (' + ui + ')');
   }
-  const H = harness(boot(htmlPath));
+  const H = harness(bootLight(htmlPath));
   await H.navigate('uploads?kind=clip');
-  assert(H.location.hash === '#/browse?kind=clip' && H.count() === M.records.filter(r => kindOf(r) === 'clip').length, 'A followed #/uploads link keeps its filter');
+  assert(H.location.hash === '#/browse?kind=clip' && H.count() === model(H.payload).countE(r => kindOf(r) === 'clip'), 'A followed #/uploads link keeps its filter');
   await H.navigate('browse/no-such-page');
   assert(H.h1().textContent === L.en.browseTitle && H.location.hash.split('?')[0] === '#/browse', 'An unknown Browse page is Browse: ' + H.location.hash);
   await H.navigate('identified'); assert.equal(H.h1().textContent, L.en.guideTitle, 'Browse pages live under #/browse/');
@@ -4697,16 +5197,18 @@ function builderChecks(builder, dir) {
   const write = (name, value) => { const f = path.join(dir, name); fs.writeFileSync(f, typeof value === 'string' ? value : JSON.stringify(value)); return f; };
   const guideFile = write('empty-guide.json', {productions: [], episodes: [], unidentified: {}});
   const rec = (id, url, extra = {}) => ({id, url, series: 'classic', kind: 'episode', titleEn: 'Fixture ' + id, ...extra});
-  const run = (records, {guide = guideFile, keep = false, services = null, series = null, vocabulary = null} = {}) => {
+  const run = (records, {guide = guideFile, keep = false, services = null, series = null, vocabulary = null, priority = null, parts = [], more = []} = {}) => {
     const input = write('fixture-records.json', typeof records === 'string' ? records : {records});
     const out = path.join(dir, 'out.html'); if (!keep) fs.writeFileSync(out, 'KEEP');
-    const r = spawnSync('python3', [builder, input, '--guide', guide, ...(services ? ['--services', services] : []),
-      ...(series ? ['--series', series] : []), ...(vocabulary ? ['--vocabulary', vocabulary] : []), '--output', out],
+    const r = spawnSync('python3', [builder, input, ...more, '--guide', guide, ...(services ? ['--services', services] : []),
+      ...(series ? ['--series', series] : []), ...(vocabulary ? ['--vocabulary', vocabulary] : []),
+      ...(priority ? ['--link-priority', priority] : []), ...parts.flatMap(x => ['--guide-part', x]), '--output', out],
       {encoding: 'utf8'});
     return {status: r.status, text: (r.stdout || '') + (r.stderr || ''), out: fs.readFileSync(out, 'utf8')};
   };
   const fails = (res, pattern, label) => {
     assert.notEqual(res.status, 0, 'Builder refuses: ' + label);
+    if (process.env.CHECK_TRACE && /TypeError/.test(res.text)) console.error(res.text);
     assert(!/TypeError|Traceback \(most recent call last\):[\s\S]*TypeError/.test(res.text), 'Clear error, not a TypeError: ' + label);
     assert(pattern.test(res.text), `Builder error names the problem (${label}): ${res.text.split('\n').filter(Boolean).at(-1)}`);
     assert.equal(res.out, 'KEEP', 'A failed build leaves the previous output untouched: ' + label);
@@ -4876,6 +5378,16 @@ function builderChecks(builder, dir) {
   svcBad('empty list', d => { d.services = []; }, /fixture-services\.json: expected an object with a non-empty services list/);
   svcBad('no check date', d => { delete d.checkedAt; }, /fixture-services\.json: checkedAt must be a date/);
   svcBad('unknown model', (d, x) => { x.model = 'rental'; }, /service 'fx-lib': model must be one of .*'rental'/);
+  svcBad('subscribed on a library-card service', (d, x) => { x.subscribed = true; }, /service 'fx-lib': subscribed may only be true, on a subscription service/);
+  // The link order: every tier exactly once.
+  const tiers = ['archive', 'youtube', 'subscribed', 'vimeo', 'other-free', 'vpn', 'library-card', 'free-with-ads', 'paid'];
+  const prio = t => write('fixture-priority.json', {tiers: t});
+  const recOnly = [rec('fx-o', 'https://www.youtube.com/watch?v=AAAAAAAAAA1')];
+  assert.equal(run(recOnly, {priority: prio([...tiers].reverse())}).status, 0, 'A reordered link priority builds');
+  for (const [label, t] of [['missing tier', tiers.slice(1)], ['repeated tier', [...tiers.slice(1), 'youtube']], ['unknown tier', [...tiers, 'kanopy']]]) {
+    fails(run(recOnly, {priority: prio(t)}), /fixture-priority\.json: tiers must list each of/, 'link priority: ' + label);
+  }
+  fails(run(recOnly, {priority: path.join(dir, 'no-such-priority.json')}), /no-such-priority\.json: not found/, 'missing link priority file');
   svcBad('duplicate id', d => { d.services.push({...d.services[0], hosts: ['tv.apple.com']}); }, /service 2: duplicate service id 'fx-lib'/);
   svcBad('host with a scheme', (d, x) => { x.hosts = ['https://hoopladigital.com']; }, /host 'https:\/\/hoopladigital\.com' must be a bare lowercase hostname/);
   svcBad('host claimed twice', d => { d.services.push({...d.services[0], id: 'fx-two'}); }, /service 'fx-two': host 'hoopladigital\.com' is already claimed by service 'fx-lib'/);
@@ -4893,7 +5405,10 @@ function builderChecks(builder, dir) {
   svcBad('participates not a boolean', (d, x) => { x.libraries[0].participates = 'yes'; }, /library 'l1': participates must be true or false/);
   svcBad('no participating library', (d, x) => { x.libraries[0].participates = false; }, /name at least one participating library/);
   svcBad('library without sources', (d, x) => { x.libraries[0].sources = []; }, /library 'l1': sources must name at least one source id/);
-  svcBad('library-card without how-to', (d, x) => { delete x.howTo; }, /a library-card service needs howTo/);
+  svcBad('library-card without how-to', (d, x) => { delete x.howTo; }, /a library-card service with libraries needs howTo/);
+  // A library-card service may be only a lookup link (Kanopy): no libraries, no how-to, but then a valid lookupUrl.
+  builds('a lookup-only library-card service', svcRun((() => { const d = svcOk(); delete d.services[0].howTo; delete d.services[0].libraries; return d; })()));
+  svcBad('a lookup-only service without its lookup URL', (d, x) => { delete x.howTo; delete x.libraries; delete x.lookupUrl; }, /needs howTo, or at least a valid lookupUrl/);
   // The how-to box shows the steps' prose, so the structured facts must agree with it (review round 1): each library is listed
   // by a step that names it in both languages and says whether its cards work; the lookup URL is a step's link; no fact is
   // checked after the build date.
@@ -5048,9 +5563,112 @@ function builderChecks(builder, dir) {
       'guide: episode season ' + JSON.stringify(bad));
     fails(run(recs, {guide: guide({}, {seasons: [{season: bad, firstNumber: 66, expectedEpisodes: 65}]})}),
       /season 1: season must be an integer or null/, 'guide: seasons[] key ' + JSON.stringify(bad));
+    fails(run(recs, {guide: guide({}, {seasons: [{season: bad, firstNumber: 1, expectedEpisodes: 3, excludedNumbers: [{from: 2, to: 2, sourceLabel: 'x'}]}]})}),
+      /season 1: season must be an integer or null/, 'guide: seasons[] key with excludedNumbers ' + JSON.stringify(bad));
   }
   // Availability checks: a known string, or an object whose optional status is known.
   const yt1 = 'https://www.youtube.com/watch?v=AAAAAAAAAA1';
+  // Sesame Street fields: numberWidth pads numbers; excludedNumbers marks numbers in a season's range that are not episodes;
+  // a summary needs its source; sponsors, guest stars and upload containers have fixed shapes.
+  builds('numberWidth', run(recs, {guide: guide({}, {numberWidth: 4})}));
+  for (const w of [0, 7, '4', 2.5]) fails(run(recs, {guide: guide({}, {numberWidth: w})}), /numberWidth must be an integer from 1 to 6/, 'numberWidth ' + JSON.stringify(w));
+  const season = extra => ({seasons: [{season: 1, firstNumber: 1, expectedEpisodes: 3, ...extra}]});
+  builds('excludedNumbers', run(recs, {guide: guide({}, season({excludedNumbers: [{from: 2, to: 3, sourceLabel: 'Muppet Wiki', noteEn: 'Repeats.'}]}))}));
+  for (const bad of [{from: 2, to: 3}, 3, 'x', true]) {
+    fails(run(recs, {guide: guide({}, season({excludedNumbers: bad}))}), /excludedNumbers must be an array/, 'excludedNumbers ' + JSON.stringify(bad));
+  }
+  for (const bad of [3, null, [2, 3], {from: '2', to: 3}]) {
+    fails(run(recs, {guide: guide({}, season({excludedNumbers: [bad]}))}), /excludedNumbers 1: expected \{from, to\}/, 'excludedNumbers entry ' + JSON.stringify(bad));
+  }
+  fails(run(recs, {guide: guide({}, season({excludedNumbers: [{from: 3, to: 2, sourceLabel: 'x'}]}))}), /excludedNumbers 1: expected \{from, to\} with 1 <= from <= to/, 'excludedNumbers reversed');
+  fails(run(recs, {guide: guide({}, season({excludedNumbers: [{from: 2, to: 3}]}))}), /excludedNumbers 1: sourceLabel required/, 'excludedNumbers without a source');
+  fails(run(recs, {guide: guide({}, season({excludedNumbers: [{from: 1, to: 1, sourceLabel: 'x'}]}))}), /episode 'fx-ep': number 1 is listed in its season's excludedNumbers/, 'an episode on an excluded number');
+  builds('a summary with its source', run(recs, {guide: guide({summaryEn: 'Big Bird sings.', summarySource: {label: 'Muppet Wiki', url: 'https://muppet.fandom.com/wiki/Episode_0001', revisionId: 5}})}));
+  fails(run(recs, {guide: guide({summaryEn: 'Big Bird sings.'})}), /summaryEn needs summarySource with a label/, 'summary without a source');
+  fails(run(recs, {guide: guide({summarySource: {label: 'Muppet Wiki'}})}), /summarySource without summaryEn/, 'source without a summary');
+  fails(run(recs, {guide: guide({summaryEn: 'x', summarySource: ['Muppet Wiki']})}), /summarySource/, 'summary source as a list');
+  fails(run(recs, {guide: guide({summaryEn: 'x', summarySource: {label: 'M', url: 'javascript:alert(1)'}})}), /summarySource url must be a public http\(s\) URL/, 'summary source url');
+  builds('sponsors and guest stars', run(recs, {guide: guide({sponsors: {letters: ['W', 'S'], numbers: ['2']}, guestStars: ['Carol Burnett'], wordOnTheStreet: 'Hug'})}));
+  for (const [label, sp] of [['both empty', {letters: [], numbers: []}], ['unknown key', {colours: ['red']}], ['long value', {letters: ['ABCDEFGHIJKLMN']}], ['a string', 'W']]) {
+    fails(run(recs, {guide: guide({sponsors: sp})}), /sponsors must be \{letters: \[\.\.\.\], numbers: \[\.\.\.\]\}/, 'sponsors: ' + label);
+  }
+  fails(run(recs, {guide: guide({guestStars: []})}), /guestStars must be a non-empty array of names/, 'empty guest stars');
+  const contained = c => guide({uploads: [{recordId: 'fx-w', role: 'whole-candidate', container: c, extentNoteEn: 'Episodes 1 and 2.'}]});
+  builds('a compilation copy', run(recs, {guide: contained('compilation')}));
+  fails(run(recs, {guide: contained('playlist')}), /upload 'fx-w': container must be one of \['compilation', 'listing'\]/, 'unknown container');
+  // Guide parts merge into the guide and are validated with it: a part's episode builds, an id repeated across files and a
+  // malformed base or part are refused with the file named (never a TypeError from the merge).
+  const partOf = (name, value) => write(name, {productions: [], episodes: [], unidentified: {}, ...value});
+  const partEp = {id: 'fx-ep2', production: 'fx-prod', season: 1, number: 2, confidence: 'documented', uploads: [{recordId: 'fx-x', role: 'whole-candidate'}]};
+  const partOut = run(recs, {guide: guide({uploads: [{recordId: 'fx-w', role: 'whole-candidate'}]}), parts: [partOf('fixture-part.json', {episodes: [partEp]})]});
+  builds('a guide part', partOut);
+  const partPayload = JSON.parse(partOut.out.match(/<script id="library-data" type="application\/json">([\s\S]*?)<\/script>/)[1]);
+  assert.deepEqual(partPayload.guide.episodes.map(e => e.id).sort(), ['fx-ep', 'fx-ep2'], 'A part\'s episodes join the guide');
+  assert.deepEqual(partPayload.meta.guideParts, ['fixture-part.json'], 'meta names the parts');
+  fails(run(recs, {guide: guide({}), parts: [partOf('fixture-part.json', {episodes: [{...partEp, id: 'fx-ep'}]})]}), /duplicate|already/i, 'an episode id repeated across parts');
+  fails(run(recs, {guide: guide({}), parts: [partOf('fixture-part.json', {unidentified: []})]}), /fixture-part\.json: unidentified must be an object/, 'a part with a list of queues');
+  for (const [k, v] of [['productions', null], ['unidentified', null], ['unidentified', []], ['episodes', {}]]) {
+    const base = write('fixture-base.json', {productions: [], episodes: [], unidentified: {}, [k]: v});
+    fails(run(recs, {guide: base, parts: [partOf('fixture-part.json', {})]}), new RegExp('fixture-base\\.json: ' + k + ' must be'), `a base guide with ${k} ${JSON.stringify(v)}`);
+  }
+  fails(run(recs, {guide: guide({}), parts: [path.join(dir, 'no-such-part.json')]}), /Guide part not found/, 'a missing guide part');
+  // Record-file defaults: filled in for validation, left out of the embedded record (its "_d" names them); unknown default keys,
+  // a record that sets "_d" and a malformed completeness-note table are refused.
+  const withDefaults = (d, records, extra = {}) => JSON.stringify({defaults: d, records, ...extra});
+  const dOut = run(withDefaults({language: 'en', sourceType: 'community'}, [rec('fx-d1', yt1), rec('fx-d2', 'https://www.youtube.com/watch?v=AAAAAAAAAA2', {language: 'he'})]));
+  builds('record defaults', dOut);
+  const dPayload = JSON.parse(dOut.out.match(/<script id="library-data" type="application\/json">([\s\S]*?)<\/script>/)[1]);
+  assert.deepEqual(dPayload.recordDefaults, [{language: 'en', sourceType: 'community'}], 'The defaults are embedded once');
+  const d1 = dPayload.records.find(r => r.id === 'fx-d1'), d2 = dPayload.records.find(r => r.id === 'fx-d2');
+  assert(d1._d === 0 && !('language' in d1) && !('sourceType' in d1), 'A record leaves out the fields equal to its defaults');
+  assert(d2.language === 'he' && !('sourceType' in d2), 'and keeps its own values');
+  fails(run(withDefaults({kind: 'clip'}, [rec('fx-d1', yt1)])), /defaults may set only .* not 'kind'/, 'a default outside the list');
+  fails(run(withDefaults({}, [rec('fx-d1', yt1)])), /defaults must be a non-empty object/, 'empty defaults');
+  fails(run([rec('fx-d1', yt1, {_d: 0})]), /entry 1: _d is reserved/, 'a record that sets _d');
+  fails(run(withDefaults({language: 'en'}, [rec('fx-d1', yt1)], {completenessNotes: {'ss-01': ''}})), /completenessNotes must map status codes to non-empty notes/, 'an empty completeness note');
+  // A shared-note record: its own note survives compaction even when it equals the file default; without one, no default
+  // note is embedded for it (the app shows the shared note).
+  const nOut = run(withDefaults({completenessNote: 'Ending missing.'}, [rec('fx-n1', yt1, {completenessStatus: 'sh', completenessNote: 'Ending missing.'}),
+    rec('fx-n2', 'https://www.youtube.com/watch?v=AAAAAAAAAA2', {completenessStatus: 'sh'}), rec('fx-n3', 'https://www.youtube.com/watch?v=AAAAAAAAAA3')],
+    {completenessNotes: {sh: 'Metadata checked only.'}}));
+  builds('shared and default completeness notes', nOut);
+  const nRecs = JSON.parse(nOut.out.match(/<script id="library-data" type="application\/json">([\s\S]*?)<\/script>/)[1]).records;
+  const nOf = id => nRecs.find(r => r.id === id);
+  assert.equal(nOf('fx-n1').completenessNote, 'Ending missing.', 'An own note equal to the default is kept for a shared-note record');
+  assert(!('completenessNote' in nOf('fx-n2')), 'A shared-note record without its own note embeds none');
+  assert(!('completenessNote' in nOf('fx-n3')), 'Any other record leaves out the note equal to its default');
+  // Two entries for one URL: a note one states itself wins over the note the other only inherited, in either order.
+  const dupNote = order => {
+    const a = rec('fx-m', yt1, {completenessStatus: 'sh'}), b = rec('fx-m', yt1, {completenessStatus: 'sh', completenessNote: 'Explicit ending missing.'});
+    const out = run(withDefaults({completenessNote: 'Default note.'}, order ? [a, b] : [b, a], {completenessNotes: {sh: 'Metadata checked only.'}}));
+    builds('duplicate entries with notes', out);
+    return JSON.parse(out.out.match(/<script id="library-data" type="application\/json">([\s\S]*?)<\/script>/)[1]).records.find(r => r.id === 'fx-m');
+  };
+  for (const order of [true, false]) assert.equal(dupNote(order).completenessNote, 'Explicit ending missing.', 'An explicit note wins a URL merge (' + (order ? 'second' : 'first') + ')');
+  // Many merged duplicates before records with their own notes: no own note is lost (provenance is not keyed by object identity).
+  const many = [];
+  for (let i = 0; i < 30; i++) many.push(rec('fx-dup', yt1, {completenessStatus: 'sh'}));
+  for (let i = 0; i < 10; i++) many.push(rec('fx-own' + i, 'https://www.youtube.com/watch?v=OwnNote' + String(i).padStart(4, '0'), {completenessStatus: 'sh', completenessNote: 'Own note ' + i + '.'}));
+  const manyOut = run(withDefaults({completenessNote: 'Default note.'}, many, {completenessNotes: {sh: 'Metadata checked only.'}}));
+  builds('many duplicates then own notes', manyOut);
+  const manyRecs = JSON.parse(manyOut.out.match(/<script id="library-data" type="application\/json">([\s\S]*?)<\/script>/)[1]).records;
+  for (let i = 0; i < 10; i++) assert.equal(manyRecs.find(r => r.id === 'fx-own' + i).completenessNote, 'Own note ' + i + '.', 'Own note kept after merged duplicates: ' + i);
+  assert(!('completenessNote' in manyRecs.find(r => r.id === 'fx-dup')) && !('_inheritedNote' in manyRecs.find(r => r.id === 'fx-dup')),
+    'A merged record that only inherited its note embeds neither the note nor the marker');
+  fails(run([rec('fx-r', yt1, {_inheritedNote: true})]), /entry 1: _inheritedNote is reserved/, 'a record that sets the inherited-note marker');
+  // Across files: a record from a file without defaults, then the same URL from a file whose defaults (index 0) supply a note
+  // and whose table names the status: the merged record shows the shared note, not the inherited default.
+  const fileB = write('fixture-records-b.json', {defaults: {completenessNote: 'Default note.'}, completenessNotes: {sh: 'Ending missing.'},
+    records: [rec('fx-x2', yt1, {completenessStatus: 'sh'})]});
+  const xOut = run([rec('fx-x2', yt1, {completenessStatus: 'sh'})], {more: [fileB]});
+  builds('a cross-file merge with defaults index 0', xOut);
+  const xRec = JSON.parse(xOut.out.match(/<script id="library-data" type="application\/json">([\s\S]*?)<\/script>/)[1]).records.find(r => r.id === 'fx-x2');
+  assert(!('completenessNote' in xRec) && !('_inheritedNote' in xRec), 'The merged shared-status record embeds no inherited note: ' + JSON.stringify(xRec));
+  const fileC = write('fixture-records-c.json', {defaults: {completenessNote: 'Default note.'}, completenessNotes: {sh: 'Ending missing.'},
+    records: [rec('fx-x3', yt1, {completenessStatus: 'sh', completenessNote: 'Own note.'})]});
+  const yRec = JSON.parse(run([rec('fx-x3', yt1, {completenessStatus: 'sh'})], {more: [fileC]}).out
+    .match(/<script id="library-data" type="application\/json">([\s\S]*?)<\/script>/)[1]).records.find(r => r.id === 'fx-x3');
+  assert.equal(yRec.completenessNote, 'Own note.', 'and an own note from the second file is kept');
   builds('object availability check', run([rec('fx-c', yt1, {access: 'unavailable', availabilityCheck: {method: 'yt-dlp', checkedAt: '2026-10-18',
     status: 'unavailable', result: 'Video unavailable'}})]));
   builds('string availability check', run([rec('fx-c', yt1, {access: 'vpn-required', availabilityCheck: 'country-restricted'})]));
@@ -5082,6 +5700,8 @@ function builderChecks(builder, dir) {
 }
 
 async function run() {
+  // CHECK_ONLY=builder runs only the builder tests (a quick loop while editing the builder).
+  if (process.env.CHECK_ONLY === 'builder') { checkBuilder(); console.log('PASS builder:'); for (const line of passed) console.log('  - ' + line); return; }
   const app = boot(htmlPath);
   const H = harness(app), M = model(app.payload);
   checkStrings();
@@ -5089,19 +5709,23 @@ async function run() {
   assert.equal(H.document.documentElement.dir, 'ltr', 'English is the default');
   assert.equal(H.h1().textContent, M.hasGuide ? L.en.homeTitle : L.en.browseTitle, 'Start view');
   assert.equal(H.location.hash, M.hasGuide ? '#/home' : '#/browse', 'Start route');
+  // Between groups the event loop runs, so pages and harnesses of finished checks can be collected (see navigate in dom-double).
+  const tick = () => new Promise(resolve => setImmediate(resolve));
   const starred = await checkUploads(H, M);
   await checkVimeoAndBackups(H, M, starred);
   if (M.hasGuide) await checkGuide(H, M);
+  if (M.hasGuide) await checkEpisodeAbout(H, M);
   await checkHebrew(H, M);
   await checkPersistence(htmlPath, app.storage, starred);
   await checkMasthead(H);
-  await checkLangBoot(htmlPath);
-  await checkThemePicker(htmlPath);
-  await checkLicensed(htmlPath, H, M);
+  await tick(); await checkLangBoot(htmlPath);
+  await tick(); await checkThemePicker(htmlPath);
+  await tick(); await checkLicensed(htmlPath, H, M);
   if (M.hasGuide) { await checkNav(H, M); await checkBrowsePages(H, M); await checkHome(htmlPath, M); }
   await sweep(H, M);
-  await checkWithoutGuide(htmlPath);
-  await checkEdgeCases(htmlPath);
+  await tick(); await checkWithoutGuide(htmlPath);
+  await tick(); await checkEdgeCases(htmlPath);
+  if (M.hasGuide) await checkEntries(htmlPath);
   await checkStarredAndHash(htmlPath, M);
   await checkRouteAliases(htmlPath, M);
   await checkRobustness(htmlPath, M);
