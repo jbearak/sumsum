@@ -5197,10 +5197,10 @@ function builderChecks(builder, dir) {
   const write = (name, value) => { const f = path.join(dir, name); fs.writeFileSync(f, typeof value === 'string' ? value : JSON.stringify(value)); return f; };
   const guideFile = write('empty-guide.json', {productions: [], episodes: [], unidentified: {}});
   const rec = (id, url, extra = {}) => ({id, url, series: 'classic', kind: 'episode', titleEn: 'Fixture ' + id, ...extra});
-  const run = (records, {guide = guideFile, keep = false, services = null, series = null, vocabulary = null, priority = null, parts = []} = {}) => {
+  const run = (records, {guide = guideFile, keep = false, services = null, series = null, vocabulary = null, priority = null, parts = [], more = []} = {}) => {
     const input = write('fixture-records.json', typeof records === 'string' ? records : {records});
     const out = path.join(dir, 'out.html'); if (!keep) fs.writeFileSync(out, 'KEEP');
-    const r = spawnSync('python3', [builder, input, '--guide', guide, ...(services ? ['--services', services] : []),
+    const r = spawnSync('python3', [builder, input, ...more, '--guide', guide, ...(services ? ['--services', services] : []),
       ...(series ? ['--series', series] : []), ...(vocabulary ? ['--vocabulary', vocabulary] : []),
       ...(priority ? ['--link-priority', priority] : []), ...parts.flatMap(x => ['--guide-part', x]), '--output', out],
       {encoding: 'utf8'});
@@ -5656,6 +5656,19 @@ function builderChecks(builder, dir) {
   assert(!('completenessNote' in manyRecs.find(r => r.id === 'fx-dup')) && !('_inheritedNote' in manyRecs.find(r => r.id === 'fx-dup')),
     'A merged record that only inherited its note embeds neither the note nor the marker');
   fails(run([rec('fx-r', yt1, {_inheritedNote: true})]), /entry 1: _inheritedNote is reserved/, 'a record that sets the inherited-note marker');
+  // Across files: a record from a file without defaults, then the same URL from a file whose defaults (index 0) supply a note
+  // and whose table names the status: the merged record shows the shared note, not the inherited default.
+  const fileB = write('fixture-records-b.json', {defaults: {completenessNote: 'Default note.'}, completenessNotes: {sh: 'Ending missing.'},
+    records: [rec('fx-x2', yt1, {completenessStatus: 'sh'})]});
+  const xOut = run([rec('fx-x2', yt1, {completenessStatus: 'sh'})], {more: [fileB]});
+  builds('a cross-file merge with defaults index 0', xOut);
+  const xRec = JSON.parse(xOut.out.match(/<script id="library-data" type="application\/json">([\s\S]*?)<\/script>/)[1]).records.find(r => r.id === 'fx-x2');
+  assert(!('completenessNote' in xRec) && !('_inheritedNote' in xRec), 'The merged shared-status record embeds no inherited note: ' + JSON.stringify(xRec));
+  const fileC = write('fixture-records-c.json', {defaults: {completenessNote: 'Default note.'}, completenessNotes: {sh: 'Ending missing.'},
+    records: [rec('fx-x3', yt1, {completenessStatus: 'sh', completenessNote: 'Own note.'})]});
+  const yRec = JSON.parse(run([rec('fx-x3', yt1, {completenessStatus: 'sh'})], {more: [fileC]}).out
+    .match(/<script id="library-data" type="application\/json">([\s\S]*?)<\/script>/)[1]).records.find(r => r.id === 'fx-x3');
+  assert.equal(yRec.completenessNote, 'Own note.', 'and an own note from the second file is kept');
   builds('object availability check', run([rec('fx-c', yt1, {access: 'unavailable', availabilityCheck: {method: 'yt-dlp', checkedAt: '2026-10-18',
     status: 'unavailable', result: 'Video unavailable'}})]));
   builds('string availability check', run([rec('fx-c', yt1, {access: 'vpn-required', availabilityCheck: 'country-restricted'})]));

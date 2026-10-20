@@ -267,15 +267,19 @@ INHERITED_NOTE = "_inheritedNote"
 def compact_record(r, table, shared=None):
     inherited = r.get(INHERITED_NOTE) is True
     r = {f: v for f, v in r.items() if f != INHERITED_NOTE}
+    # A record whose completenessStatus names a shared note shows that note unless it states its own: a note inherited from
+    # a file's defaults is dropped (whether or not the merged record kept its defaults index), and its own note is kept even
+    # when it equals the default.
+    is_shared = bool(shared) and isinstance(r.get("completenessStatus"), str) and r["completenessStatus"] in shared
+    if is_shared and inherited:
+        r.pop("completenessNote", None)
     k = r.get("_d")
     if k is None:
         return r
     d = table[k]
-    # A record whose completenessStatus names a shared note does not take the default note when the app expands it: an
-    # inherited copy is dropped, and its own note is kept even when it equals the default.
-    if shared and isinstance(r.get("completenessStatus"), str) and r["completenessStatus"] in shared and "completenessNote" in r:
+    if is_shared and "completenessNote" in r:
         out = compact_record({f: v for f, v in r.items() if f != "completenessNote"}, table)
-        return out if inherited else {**out, "completenessNote": r["completenessNote"]}
+        return {**out, "completenessNote": r["completenessNote"]}
     # The app reads absent themes and characters as empty.
     return {f: v for f, v in r.items() if not (f in d and d[f] == v) and not (f in ("themes", "characters") and v == [])}
 
