@@ -207,8 +207,6 @@ def build_episode(e):
         row["summaryEn"] = summary
         row["summarySource"] = {"label": label, "url": src.get("url"),
                                 **({"revisionId": src["revisionId"]} if src.get("revisionId") else {})}
-        if row["summarySource"]["url"] == f"https://muppet.fandom.com/wiki/Episode_{int(e['number']):04d}":
-            del row["summarySource"]["url"]  # the episode's Muppet Wiki page, its first source
     sp = e.get("sponsors") or {}
     letters, nums = [x for x in sp.get("letters") or [] if clean(x)], [x for x in sp.get("numbers") or [] if clean(x)]
     if letters or nums:
@@ -347,7 +345,27 @@ def evidence_of(c, rec):
         v = c.get(k)
         if v not in (None, "", [], {}):
             e[k] = v[:500] if isinstance(v, str) else v
+    e.update(provenance(c))
     return e
+
+
+def provenance(c):
+    """Where the sweep found a link: the page it was listed on (when it is not the link itself or, for an archive.org file,
+    its item page), the playlists and searches that surfaced it, and other files of the same item."""
+    out = {}
+    src, url = c.get("sourceUrl"), c.get("url") or ""
+    seg = urlsplit(url).path.split("/")
+    item = "https://archive.org/details/" + seg[2] if host_of(url) == "archive.org" and len(seg) > 2 and seg[1] == "details" else None
+    if src and src not in (url, item):
+        out["sourceUrl"] = src
+    for k in ("sourcePlaylists", "duplicateFileUrls"):
+        if c.get(k) not in (None, "", [], {}):
+            out[k] = c[k]
+    # The listing pages searched, without the sweep's scratch-file pointers (not tracked) or its single check date.
+    found = [{k: x[k] for k in ("spec", "kind") if x.get(k)} for x in c.get("discoverySources") or [] if isinstance(x, dict)]
+    if found:
+        out["discoverySources"] = found
+    return out
 
 
 def defaults_for(agent_names):
@@ -395,6 +413,9 @@ def main():
             c["_agent"] = agent
             if c["url"] in by_url:
                 stats["duplicate url skipped"] += 1
+                # The same link found again (by another search or agent): its discovery provenance stays with the record.
+                also = {"agent": agent, **provenance(c)}
+                evidence[by_url[c["url"]]["id"]].setdefault("alsoFoundBy", []).append(also)
                 continue
             if host_of(c["url"]) == "primevideo.com" and "HBO Max add-on" in (c.get("notes") or ""):
                 stats["Prime Video HBO Max channel skipped"] += 1

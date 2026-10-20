@@ -590,7 +590,8 @@ def validate_guide(guide, records, source, series):
             if isinstance(s, dict) and (s.get("season") is None or is_int(s.get("season"))) and \
                     is_int(s.get("firstNumber")) and s["firstNumber"] >= 1:
                 exp = s.get("expectedEpisodes") if is_int(s.get("expectedEpisodes")) else None
-                skip = sum(x["to"] - x["from"] + 1 for x in s.get("excludedNumbers") or []
+                excl = s.get("excludedNumbers") if isinstance(s.get("excludedNumbers"), list) else []
+                skip = sum(x["to"] - x["from"] + 1 for x in excl
                            if isinstance(x, dict) and is_int(x.get("from")) and is_int(x.get("to")))
                 ranges[(pid, s.get("season"))] = (s["firstNumber"], s["firstNumber"] + exp - 1 + skip if exp else None)
     out_of_range = []

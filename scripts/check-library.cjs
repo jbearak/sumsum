@@ -1621,7 +1621,8 @@ async function checkEpisodeAbout(H, M) {
     (x.sponsors.numbers || []).length && (x.guestStars || []).length);
   if (!e) return;
   const list = (xs, ui) => (ui === 'he' ? xs.join(', ') : xs.length > 1 ? xs.slice(0, -1).join(', ') + ' and ' + xs.at(-1) : xs[0]);
-  const src = e.summarySource || {}, page = src.url || (e.sources || []).find(x => x && x.url).url;
+  const src = e.summarySource || {}, site = String(src.label || '').split(',')[0].trim();
+  const page = src.url || ((e.sources || []).find(x => x && x.url && String(x.label || '').startsWith(site)) || {}).url;
   const rev = Number.isInteger(src.revisionId) ? page + (page.includes('?') ? '&' : '?') + 'oldid=' + src.revisionId : page;
   for (const ui of ['en', 'he']) {
     if (ui === 'he') await H.flipLang();
@@ -1679,6 +1680,15 @@ async function checkEpisodeAbout(H, M) {
     await q().click(); H.flushTimers();
     assert.equal(q().getAttribute('aria-pressed'), 'false', 'and a second press takes it off the queue');
     assert.deepEqual(JSON.parse(H.storage.get('sumsum-sitting') || '[]'), JSON.parse(before));
+  }
+  // A record whose completenessStatus names a shared note shows that note, not its file's default note.
+  const std = (H.payload.meta || {}).standardCompletenessNotes || {};
+  const noted = M.records.find(r => typeof r.completenessStatus === 'string' && Object.prototype.hasOwnProperty.call(std, r.completenessStatus) &&
+    r.completenessNote && r.completenessNote !== std[r.completenessStatus]);
+  if (noted) {
+    await H.navigate('record/' + encodeURIComponent(noted.id));
+    assert(H.text().includes(std[noted.completenessStatus]) && !H.text().includes(noted.completenessNote),
+      'A record page shows the shared note its status names, not the default note: ' + noted.id);
   }
   ok('episode About: the quoted summary with its source revision and licence, sponsors, word on the street and guest stars (EN, HE); compilation and listing rows labelled');
 }
@@ -2490,15 +2500,20 @@ function edgePayload(p) {
   ord('edge-ord-only-sub', 'https://play.edgestream.example/episode/3', {access: 'licensed'});
   ord('edge-ord-comp', 'https://archive.org/details/edge-order/compilation.mp4', {kind: 'collection', durationSeconds: 3600});
   ord('edge-ord-ia6', 'https://archive.org/details/edge-order/six.mp4');
+  ord('edge-ord-bad7', 'https://archive.org/details/edge-order/seven.mp4', {availabilityCheck: chk('unavailable', 'item dark')});
+  ord('edge-ord-ex7', 'https://www.youtube.com/watch?v=EdgeOrderX07', {kind: 'clip', durationSeconds: 300});
   add({id: 'edge-twin-a', url: 'https://hop.co.il/shows/edge-twin-a/', directUrl: 'https://vimeo.com/987654321/aaaa', series: 'modern', kind: 'clip',
     titleEn: 'Edge twin A zqtwin'});
   add({id: 'edge-twin-b', url: 'https://hop.co.il/music/edge-twin-b/', directUrl: 'https://vimeo.com/987654321/aaaa', series: 'modern', kind: 'clip',
     titleEn: 'Edge twin B zqtwin'});
   g.productions.push({id: 'edge-order', series: 'modern', format: 'core', order: 0, years: '2026', nameEn: 'Edge order', nameHe: 'סדר בדיקה',
-    expectedTotal: 6, totalsEvidence: [], seasons: []});
+    expectedTotal: 7, totalsEvidence: [], seasons: []});
   const oe = (n, uploads) => g.episodes.push({id: 'edge-order-' + n, production: 'edge-order', season: null, number: n, confidence: 'documented',
     titleEn: 'Edge order episode ' + n, uploads});
   oe(1, ['edge-ord-yt', 'edge-ord-ia-bad', 'edge-ord-sub', 'edge-ord-vm', 'edge-ord-ia'].map(recordId => ({recordId, role: 'whole-candidate'})));
+  // A summary whose source has no url of its own, on an episode whose first source is another site (a title listing).
+  Object.assign(g.episodes.at(-1), {summaryEn: 'Edge summary sentence.', summarySource: {label: 'Muppet Wiki, first scene', revisionId: 7},
+    sources: [{label: 'Prime Video, edge season', url: 'https://www.primevideo.com/detail/EDGE'}, {label: 'Muppet Wiki, Episode Edge', url: 'https://muppet.fandom.com/wiki/Edge'}]});
   oe(2, [{recordId: 'edge-ord-p2', role: 'part', part: 2}, {recordId: 'edge-ord-p1', role: 'part', part: 1}]);
   oe(3, [{recordId: 'edge-ord-only-sub', role: 'whole-candidate'}]);
   const comp = {recordId: 'edge-ord-comp', role: 'whole-candidate', container: 'compilation', extentNoteEn: 'Edge order episodes 4, 5 and 6.'};
@@ -2506,6 +2521,8 @@ function edgePayload(p) {
   oe(5, [comp]);
   // Listed first, the compilation still ranks after the episode's own copy on the same host.
   oe(6, [comp, {recordId: 'edge-ord-ia6', role: 'whole-candidate'}]);
+  // Every whole copy failed: Watch opens the usable excerpt, which is outside the episode's entry.
+  oe(7, [{recordId: 'edge-ord-bad7', role: 'whole-candidate'}, {recordId: 'edge-ord-ex7', role: 'excerpt'}]);
   return p;
 }
 
@@ -3437,7 +3454,7 @@ async function checkEntries(htmlPath) {
     'The model orders them archive.org, YouTube, the subscribed service, Vimeo, then the failed copy');
   await H.navigate('browse?q=zqorder');
   const cards = H.find(n => /^card-/.test(n.getAttribute?.('data-fk') || '')).map(n => n.getAttribute('data-fk').slice(5));
-  assert.deepEqual([...cards].sort(), ['edge-ord-comp', 'ep:edge-order-1', 'ep:edge-order-2', 'ep:edge-order-3', 'ep:edge-order-6'].sort(),
+  assert.deepEqual([...cards].sort(), ['edge-ord-comp', 'ep:edge-order-1', 'ep:edge-order-2', 'ep:edge-order-3', 'ep:edge-order-6', 'ep:edge-order-7', 'edge-ord-ex7'].sort(),
     'Browse lists one card per episode, and the compilation counted in two episodes as a card of its own: ' + cards.join(' '));
   const card = H.fk('card-ep:edge-order-1').parentElement.parentElement.parentElement;
   assert.equal(H.extLinks(card)[0].href, 'https://archive.org/details/edge-order/one.mp4', 'The card opens the archive.org copy');
@@ -3473,6 +3490,10 @@ async function checkEntries(htmlPath) {
   assert.deepEqual(JSON.parse(st.get('sumsum-sitting')), ['edge-ord-p2', 'edge-ord-ia'], 'The episode queues its first copy');
   await H.fk('ep-q').click(); H.flushTimers();
   assert.deepEqual(JSON.parse(st.get('sumsum-sitting')), ['edge-ord-p2'], 'and leaves the queue as one');
+  // A summary without its own url links the source named like it (Muppet Wiki), not the episode's first source.
+  const attrib = H.byClass('ep-attrib')[0], alinks = H.find(n => n.tagName === 'a', attrib);
+  assert.equal(alinks[0].href, 'https://muppet.fandom.com/wiki/Edge?oldid=7', 'The summary links its own source\'s revision, not the first source');
+  assert(alinks.some(a => a.href === 'https://www.fandom.com/licensing'), 'with the Muppet Wiki licence');
   // A copy of the episode alone outranks a compilation on the same host, wherever the guide lists it.
   await H.navigate('episode/edge-order-6');
   assert.equal(H.fk('ep-watch').href, 'https://archive.org/details/edge-order/six.mp4', 'The episode\'s own copy before the compilation');
@@ -3485,6 +3506,13 @@ async function checkEntries(htmlPath) {
   assert.deepEqual(JSON.parse(st.get('sumsum-sitting')), ['edge-ord-p2', 'edge-ord-comp']);
   await H.fk('ep-q').click(); H.flushTimers();
   assert.deepEqual(JSON.parse(st.get('sumsum-sitting')), ['edge-ord-p2'], 'and a second press takes it off');
+  // When Watch opens a copy outside the episode's entry, the star stores that copy, as "+" queues it.
+  await H.navigate('episode/edge-order-7');
+  assert.equal(H.fk('ep-watch').href, 'https://www.youtube.com/watch?v=EdgeOrderX07', 'A usable excerpt before a failed whole copy');
+  await H.fk('ep-star').click();
+  assert(JSON.parse(st.get('sumsum-favorites')).includes('edge-ord-ex7'), 'The star stores the copy Watch opens');
+  await H.fk('ep-star').click();
+  assert(!JSON.parse(st.get('sumsum-favorites')).includes('edge-ord-ex7'), 'and unstarring clears it');
   // A subscribed service is offered unasked: Up next reaches the episode whose only copy is on it.
   const sub = 'https://play.edgestream.example/episode/3';
   assert(offerable(M.recById.get('edge-ord-only-sub')), 'The model offers a subscribed listing');
@@ -5526,7 +5554,12 @@ function builderChecks(builder, dir) {
   for (const w of [0, 7, '4', 2.5]) fails(run(recs, {guide: guide({}, {numberWidth: w})}), /numberWidth must be an integer from 1 to 6/, 'numberWidth ' + JSON.stringify(w));
   const season = extra => ({seasons: [{season: 1, firstNumber: 1, expectedEpisodes: 3, ...extra}]});
   builds('excludedNumbers', run(recs, {guide: guide({}, season({excludedNumbers: [{from: 2, to: 3, sourceLabel: 'Muppet Wiki', noteEn: 'Repeats.'}]}))}));
-  fails(run(recs, {guide: guide({}, season({excludedNumbers: {from: 2, to: 3}}))}), /excludedNumbers must be an array/, 'excludedNumbers not a list');
+  for (const bad of [{from: 2, to: 3}, 3, 'x', true]) {
+    fails(run(recs, {guide: guide({}, season({excludedNumbers: bad}))}), /excludedNumbers must be an array/, 'excludedNumbers ' + JSON.stringify(bad));
+  }
+  for (const bad of [3, null, [2, 3], {from: '2', to: 3}]) {
+    fails(run(recs, {guide: guide({}, season({excludedNumbers: [bad]}))}), /excludedNumbers 1: expected \{from, to\}/, 'excludedNumbers entry ' + JSON.stringify(bad));
+  }
   fails(run(recs, {guide: guide({}, season({excludedNumbers: [{from: 3, to: 2, sourceLabel: 'x'}]}))}), /excludedNumbers 1: expected \{from, to\} with 1 <= from <= to/, 'excludedNumbers reversed');
   fails(run(recs, {guide: guide({}, season({excludedNumbers: [{from: 2, to: 3}]}))}), /excludedNumbers 1: sourceLabel required/, 'excludedNumbers without a source');
   fails(run(recs, {guide: guide({}, season({excludedNumbers: [{from: 1, to: 1, sourceLabel: 'x'}]}))}), /episode 'fx-ep': number 1 is listed in its season's excludedNumbers/, 'an episode on an excluded number');

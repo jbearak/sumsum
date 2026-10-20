@@ -156,7 +156,8 @@ English titles are editorial. The one linked title is "נוח וברוש לא ח
 
 - [ ] The 245 missing and 385 excerpt-only episodes, mostly seasons 5-9. The Missing episodes page lists them by season.
 - [ ] The 2,417 uploads in the Sesame Street identification queue: compilations and uploads whose numbers the sweep could not verify.
-- [ ] The three parts-only episodes (1285, 2275, 2282) each have two archive.org part sets with identical durations (TinyDroid's collection and pannoni4's items), so their parts train lists each number twice. Confirm they are the same files and keep one set as the parts.
+- [ ] The three parts-only episodes, 0202, 0601 and 3881: look for a whole copy.
+- [ ] Episodes 1285, 2275 and 2282 (which also have whole candidates) each have two archive.org part sets with identical durations (TinyDroid's collection and pannoni4's items), so their parts train lists each number twice. Confirm they are the same files and keep one set as the parts.
 
 ## Identifications that need viewing
 

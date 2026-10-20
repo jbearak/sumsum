@@ -4948,11 +4948,11 @@ VIEWS.episode = function mountEpisode(v) {
  info.append(tags);
  const prim = el('div', 'primary');
  // The episode's entry (its counted copies) is queued and starred as one; an episode with excerpts only queues the excerpt.
- // The queue and star act on what the Watch button opens: the episode's entry, or, when that copy is a compilation outside
- // it (the episode's only whole copy), the compilation's own entry.
+ // The queue and star act on what the Watch button opens: the episode's entry, or, when that copy is outside it (a
+ // compilation, or a usable excerpt when every whole copy failed), that copy's own entry.
  const een = entryById.get('ep:' + e.id), wen = b && (een && een.members.includes(b.r) ? een : entryOfRec.get(b.r.id));
  if (b) prim.append(fk(ticket(viewed(watchLink(b, false, 'btn big', epTitle(e)), b.r), b.r), 'ep-watch'), wen ? queueBtn(wen, 'ep-q', b.r) : queueBtn(b.r, 'ep-q'));
- if (een || wen) prim.append(starBtn(een || wen, 'ep-star'));
+ if (wen || een) prim.append(starBtn(wen || een, 'ep-star'));
  if (cov !== 'whole-candidate') prim.append(ext(ytSearchUrl(p, epSearchWords(e)), t('searchYoutube'), b ? 'btn ghost big' : 'btn big', 'search'));
  // Personal, beside the decision: separate from coverage and evidence; not offered without a link to watch.
  if (upsOf(e).length) {
@@ -5035,7 +5035,10 @@ function aboutEpisode(e, p) {
  if (sum) {
   sec.append(en('p', 'ep-summary', sum));
   const src = e.summarySource && typeof e.summarySource === 'object' ? e.summarySource : {};
-  const page = safeUrl(src.url) ? src.url : ((e.sources || []).find(x => x && safeUrl(x.url)) || {}).url;
+  // Without its own url, the page is the episode source named like the summary's source ("Muppet Wiki, ..."), never another.
+  const site = typeof src.label === 'string' ? src.label.split(',')[0].trim() : '';
+  const page = safeUrl(src.url) ? src.url : ((e.sources || []).find(x => x && safeUrl(x.url) && site && typeof x.label === 'string' &&
+   x.label.startsWith(site)) || {}).url;
   const rev = Number.isInteger(src.revisionId) && page ? page + (page.includes('?') ? '&' : '?') + 'oldid=' + src.revisionId : page;
   const at = el('p', 'note ep-attrib'), name = srcText(typeof src.label === 'string' ? src.label : '');
   at.append(tWith('summaryFrom', 'src', rev ? ext(rev, name) : name));
@@ -5397,7 +5400,8 @@ VIEWS.record = function mountRecord(v) {
  }
  const std = meta.standardCompletenessNotes, stdNote = std && typeof r.completenessStatus === 'string' &&
   Object.prototype.hasOwnProperty.call(std, r.completenessStatus) ? std[r.completenessStatus] : '';
- line(t('completeness'), r.completenessNote || stdNote);
+ // A status that names a shared note means the record's own note was moved there; the file's default note is only a fallback.
+ line(t('completeness'), stdNote || r.completenessNote);
  line(t('notes'), r.notes);
  const desc = r.descriptionHe || r.description;
  if (desc) { const p = el('p'); p.append(el('strong', '', t('description') + ': '), auto('span', '', desc)); rc.append(p); }
