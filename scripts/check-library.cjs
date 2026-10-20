@@ -5626,6 +5626,17 @@ function builderChecks(builder, dir) {
   fails(run(withDefaults({}, [rec('fx-d1', yt1)])), /defaults must be a non-empty object/, 'empty defaults');
   fails(run([rec('fx-d1', yt1, {_d: 0})]), /entry 1: _d is reserved/, 'a record that sets _d');
   fails(run(withDefaults({language: 'en'}, [rec('fx-d1', yt1)], {completenessNotes: {'ss-01': ''}})), /completenessNotes must map status codes to non-empty notes/, 'an empty completeness note');
+  // A shared-note record: its own note survives compaction even when it equals the file default; without one, no default
+  // note is embedded for it (the app shows the shared note).
+  const nOut = run(withDefaults({completenessNote: 'Ending missing.'}, [rec('fx-n1', yt1, {completenessStatus: 'sh', completenessNote: 'Ending missing.'}),
+    rec('fx-n2', 'https://www.youtube.com/watch?v=AAAAAAAAAA2', {completenessStatus: 'sh'}), rec('fx-n3', 'https://www.youtube.com/watch?v=AAAAAAAAAA3')],
+    {completenessNotes: {sh: 'Metadata checked only.'}}));
+  builds('shared and default completeness notes', nOut);
+  const nRecs = JSON.parse(nOut.out.match(/<script id="library-data" type="application\/json">([\s\S]*?)<\/script>/)[1]).records;
+  const nOf = id => nRecs.find(r => r.id === id);
+  assert.equal(nOf('fx-n1').completenessNote, 'Ending missing.', 'An own note equal to the default is kept for a shared-note record');
+  assert(!('completenessNote' in nOf('fx-n2')), 'A shared-note record without its own note embeds none');
+  assert(!('completenessNote' in nOf('fx-n3')), 'Any other record leaves out the note equal to its default');
   builds('object availability check', run([rec('fx-c', yt1, {access: 'unavailable', availabilityCheck: {method: 'yt-dlp', checkedAt: '2026-10-18',
     status: 'unavailable', result: 'Video unavailable'}})]));
   builds('string availability check', run([rec('fx-c', yt1, {access: 'vpn-required', availabilityCheck: 'country-restricted'})]));

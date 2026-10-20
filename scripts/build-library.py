@@ -260,11 +260,21 @@ def file_defaults(data, name):
     return d
 
 
-def compact_record(r, table):
+# Records (by object identity) whose completenessNote came from their file's defaults rather than their own entry.
+INHERITED_NOTE = set()
+
+
+def compact_record(r, table, shared=None):
     k = r.get("_d")
     if k is None:
         return r
     d = table[k]
+    # A record whose completenessStatus names a shared note does not take the default note when the app expands it: an
+    # inherited copy is dropped, and its own note is kept even when it equals the default.
+    if shared and isinstance(r.get("completenessStatus"), str) and r["completenessStatus"] in shared and "completenessNote" in r:
+        keep_note = id(r) not in INHERITED_NOTE
+        out = compact_record({f: v for f, v in r.items() if f != "completenessNote"}, table)
+        return {**out, "completenessNote": r["completenessNote"]} if keep_note else out
     # The app reads absent themes and characters as empty.
     return {f: v for f, v in r.items() if not (f in d and d[f] == v) and not (f in ("themes", "characters") and v == [])}
 
@@ -1418,6 +1428,8 @@ def main():
             if "_d" in raw:
                 raise ValueError(f"{path.name}, entry {offset}: _d is reserved (the builder sets it)")
             r = {**copy.deepcopy(defaults), **raw, "_d": len(default_table) - 1} if defaults is not None else dict(raw)
+            if defaults is not None and "completenessNote" in defaults and "completenessNote" not in raw:
+                INHERITED_NOTE.add(id(r))
             # Any public http(s) page is accepted (YouTube, Vimeo, Hop, Internet Archive, Dailymotion,
             # Facebook, Kan, ok.ru and others); hosts are recognised later by hostname.
             r["url"] = r.get("url") or r.get("sourceUrl") or r.get("directUrl")
@@ -1450,6 +1462,9 @@ def main():
             # Which entry holds each field, so a refusal after merging names the entries involved.
             entries.setdefault(key, []).append((where, {f for f, v in r.items() if v not in (None, "", [], {})}))
             if key in seen:
+                # A note the merged entry states itself is its own, whichever entry the record started from.
+                if "completenessNote" in r and id(r) not in INHERITED_NOTE:
+                    INHERITED_NOTE.discard(id(seen[key]))
                 merge_records(seen[key], r)
                 continue
             # One id must name one upload: links, playback evidence, favorites and guide references are keyed by id.
@@ -1525,7 +1540,7 @@ def main():
         notices.append(f"No licensed services file ({services_path.name} not found): licensed listings are labelled without "
                        "their access terms.")
     payload = {"meta": meta, "series": registry, "vocabulary": vocabulary, "linkPriority": link_priority,
-               "recordDefaults": default_table, "records": [compact_record(r, default_table) for r in records], "guide": guide if guide is not None else EMPTY_GUIDE}
+               "recordDefaults": default_table, "records": [compact_record(r, default_table, standard_notes) for r in records], "guide": guide if guide is not None else EMPTY_GUIDE}
     if services is not None:
         payload["services"] = services
     # Escape HTML-significant characters inside the script data block. JSON strings
