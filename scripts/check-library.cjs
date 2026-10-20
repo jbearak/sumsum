@@ -5645,6 +5645,9 @@ function builderChecks(builder, dir) {
   assert(d2.language === 'he' && !('sourceType' in d2), 'and keeps its own values');
   fails(run(withDefaults({kind: 'clip'}, [rec('fx-d1', yt1)])), /defaults may set only .* not 'kind'/, 'a default outside the list');
   fails(run(withDefaults({}, [rec('fx-d1', yt1)])), /defaults must be a non-empty object/, 'empty defaults');
+  // A default language is checked even when every record overrides it: a record merged by URL can still carry the defaults.
+  fails(run(withDefaults({language: 'he-il'}, [rec('fx-d1', yt1, {language: null})])), /defaults: language must be 'und' or codes from/,
+    'a malformed default language');
   fails(run([rec('fx-d1', yt1, {_d: 0})]), /entry 1: _d is reserved/, 'a record that sets _d');
   fails(run(withDefaults({language: 'en'}, [rec('fx-d1', yt1)], {completenessNotes: {'ss-01': ''}})), /completenessNotes must map status codes to non-empty notes/, 'an empty completeness note');
   // A shared-note record: its own note survives compaction even when it equals the file default; without one, no default
