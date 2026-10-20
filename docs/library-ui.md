@@ -28,7 +28,7 @@ The views nav has four items: Home, Episode guide, Browse and Starred. Phones al
 
 **Browse** (`#/browse`) lists every upload with the filters. The old All uploads route, `#/uploads`, still lands there with its filters.
 
-- **Spoken** goes by series (`spoken` in `data/series.json`): Rechov Sumsum and Elmo's talk show are Hebrew, Shalom Sesame and Sesame Street English, whatever a listing's recorded language says (the user, 2026-10-20; recorded values often name subtitles, as on the official "Hebrew with English Subtitles" uploads, or are missing, as on Hop). A recorded language that leaves out the series' own and names one other than Hebrew or English (Arabic, Russian) marks a dub, under Other languages. Each upload has one group.
+- **Spoken** goes by series (`spoken` in `data/series.json`): Rechov Sumsum and Elmo's talk show are Hebrew, Shalom Sesame and Sesame Street English, whatever a listing's recorded language says (the user, 2026-10-20; recorded values often name subtitles, as on the official "Hebrew with English Subtitles" uploads, or are missing, as on Hop). A recorded language that leaves out the series' own and names one other than Hebrew or English (Arabic, Russian) marks a dub, under Other languages; a region (`he-IL`) and the codes `iw`, `heb` and `eng` are not dubs. Each upload has one group.
 - **Length** is one choice at a time: up to 5, 10, 20 or 30 minutes. A video without a known duration shows only under Any length.
 - **An empty result** shows Oofnik's bin, drawn in CSS, with one button per active filter group. Each button gives the count that clearing that group alone would show.
 

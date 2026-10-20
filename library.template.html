@@ -3134,13 +3134,18 @@ const kindOf = r => (r.kind === 'episode' && r.programFormat === 'short-form' ? 
 const mapKey = r => r.id || r.url;
 // Spoken language: the series' own ('spoken' in the registry), so Rechov Sumsum is Hebrew and Shalom Sesame and Sesame Street
 // are English whatever a listing says (its recorded language often names subtitles, or is missing). A recorded language that
-// leaves out the series' own and names one other than Hebrew or English marks a dub: Other languages.
+// leaves out the series' own and names one other than Hebrew or English marks a dub: Other languages. Records list languages
+// with hyphens ('he-en'), so an uppercase two-letter part after the first is a region ('he-IL'), not a language; old and
+// three-letter codes for Hebrew and English ('iw', 'heb', 'eng') read as 'he' and 'en'.
 const SPOKEN = [['he', 'spHe'], ['en', 'spEn'], ['other', 'spOther']];
+const LANG_ALIAS = {iw: 'he', heb: 'he', eng: 'en'};
+const langParts = v => String(v ?? '').split(/[^A-Za-z]+/).filter((x, i) => x && !(i && /^[A-Z]{2}$/.test(x)))
+ .map(x => LANG_ALIAS[x.toLowerCase()] || x.toLowerCase()).filter(x => x !== 'und');
 const spokenCache = new Map();
 function spokenOf(r) {
  if (spokenCache.has(r)) return spokenCache.get(r);
  const own = SERIES_INFO[r.series]?.spoken;
- const parts = String(r.language ?? '').toLowerCase().split(/[^a-z]+/).filter(x => x && x !== 'und');
+ const parts = langParts(r.language);
  const dub = !parts.includes(own) && parts.some(x => x !== 'he' && x !== 'en');
  const g = [dub || (own !== 'he' && own !== 'en') ? 'other' : own];
  spokenCache.set(r, g); return g;

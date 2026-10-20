@@ -2003,6 +2003,8 @@ async function sweep(H, M) {
 // A sixth series in a family of its own, with a core production that comes first in production order: the registry alone
 // gives it a Browse chip, a rail heading after the others and its YouTube search terms, and it never counts as core
 // Rechov Sumsum (not in the goal rows or the separate list's exclusions, never Up next's preferred episode).
+const SPOKEN_FIXTURES = [['he-IL', 'en'], ['iw', 'en'], ['heb', 'en'], ['eng', 'en'], ['en-US', 'en'], ['en-he', 'en'], ['und', 'en'],
+  ['ru', 'other'], ['ar-he', 'other'], ['ara', 'other']];
 async function checkSeriesRegistry(htmlPath) {
   const url = 'https://www.youtube.com/watch?v=TestStreet01';
   const H = harness(boot(htmlPath, {payload: p => {
@@ -2011,6 +2013,9 @@ async function checkSeriesRegistry(htmlPath) {
       searchLanguage: 'en', spoken: 'en'});
     p.records.push({id: 'test-rec-1', url, series: 'test-street', kind: 'episode', titleEn: 'Test Street: The Big Test',
       durationSeconds: 1500, themes: [], characters: []});
+    // Recorded languages for the Spoken filter, an English series: regions and old or three-letter codes are not dubs.
+    SPOKEN_FIXTURES.forEach(([language], i) => p.records.push({id: 'test-lang-' + i, url: 'https://www.youtube.com/watch?v=TestLang' + i,
+      series: 'test-street', kind: 'clip', titleEn: 'Test Street language ' + i, language, themes: [], characters: []}));
     p.guide.productions.push({id: 'test-core', series: 'test-street', format: 'core', order: -1, years: '2026', nameEn: 'Test Street core',
       nameHe: 'רחוב בדיקה, הפקה', expectedTotal: 2, seasons: [{season: 1, numbering: 'documented', expectedEpisodes: 2}], totalsEvidence: []});
     p.guide.episodes.push({id: 'test-ep-1', production: 'test-core', season: 1, number: 1, confidence: 'documented',
@@ -2024,7 +2029,13 @@ async function checkSeriesRegistry(htmlPath) {
     .map(g => g.en);
   await H.navigate('browse');
   const chips = H.fkAll('fs-test-street');
-  assert.equal(chips.length, 1, 'A registered series gets a Browse chip'); assert.equal(H.chipCount(chips[0]), 1);
+  assert.equal(chips.length, 1, 'A registered series gets a Browse chip'); assert.equal(H.chipCount(chips[0]), 1 + SPOKEN_FIXTURES.length);
+  await chips[0].click();
+  for (const g of ['he', 'en', 'other']) {
+    assert.equal(H.chipCount(H.fk('fsp-' + g)), (g === 'en' ? 1 : 0) + SPOKEN_FIXTURES.filter(f => f[1] === g).length,
+      'Spoken ' + g + ' for the fixed recorded languages');
+  }
+  await H.fk('fs-all').click();
   assert.equal(chips[0].parentElement.children.filter(c => /^fs-/.test(c.getAttribute?.('data-fk') || '')).at(-1), chips[0],
     'Series chips follow the registry order');
   await H.navigate('record/test-rec-1'); assert(H.text().includes('Test Street'), 'Record pages name the series from the registry');
@@ -4112,8 +4123,12 @@ function menuModel(M) {
 // ---------------------------------------------------------------- Home, the queue and Surprise
 // The spoken language and length, as the app reads them (Browse's facets and Home's preferences): the series' language,
 // unless the recorded language leaves it out and names one other than Hebrew or English (a dub, Other).
+// Hyphens separate languages ('he-en'); an uppercase two-letter part after the first is a region ('he-IL').
+const LANG_ALIAS_M = {iw: 'he', heb: 'he', eng: 'en'};
 const spokenOfM = r => {
-  const own = SPOKEN_OF[r.series], parts = String(r.language ?? '').toLowerCase().split(/[^a-z]+/).filter(x => x && x !== 'und');
+  const own = SPOKEN_OF[r.series];
+  const parts = String(r.language ?? '').split(/[^A-Za-z]+/).filter((x, i) => x && !(i && /^[A-Z]{2}$/.test(x)))
+    .map(x => LANG_ALIAS_M[x.toLowerCase()] || x.toLowerCase()).filter(x => x !== 'und');
   const dub = !parts.includes(own) && parts.some(x => x !== 'he' && x !== 'en');
   return [dub || (own !== 'he' && own !== 'en') ? 'other' : own];
 };
