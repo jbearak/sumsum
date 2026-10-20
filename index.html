@@ -2578,10 +2578,13 @@ const records = Array.isArray(payload) ? payload : (payload.records || []);
 {
  const defs = !Array.isArray(payload) && Array.isArray(payload.recordDefaults) ? payload.recordDefaults : [];
  const own = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
+ // A record whose completenessStatus names a shared note does not take its file's default note: its own note, else the
+ // shared one, is shown.
+ const stdN = !Array.isArray(payload) && payload.meta && payload.meta.standardCompletenessNotes || {};
  for (const r of records) {
   if (!r || typeof r !== 'object' || !Number.isInteger(r._d) || !defs[r._d]) continue;
-  const d = defs[r._d];
-  for (const k of Object.keys(d)) if (!own(r, k)) r[k] = typeof d[k] === 'object' && d[k] ? JSON.parse(JSON.stringify(d[k])) : d[k];
+  const d = defs[r._d], shared = typeof r.completenessStatus === 'string' && own(stdN, r.completenessStatus);
+  for (const k of Object.keys(d)) if (!own(r, k) && !(k === 'completenessNote' && shared)) r[k] = typeof d[k] === 'object' && d[k] ? JSON.parse(JSON.stringify(d[k])) : d[k];
   let u = null; try { u = new URL(r.url); } catch { u = null; }
   if (!u) continue;
   const h = u.hostname.replace(/^www\./, ''), seg = u.pathname.split('/').filter(Boolean);
@@ -5406,8 +5409,8 @@ VIEWS.record = function mountRecord(v) {
  }
  const std = meta.standardCompletenessNotes, stdNote = std && typeof r.completenessStatus === 'string' &&
   Object.prototype.hasOwnProperty.call(std, r.completenessStatus) ? std[r.completenessStatus] : '';
- // A status that names a shared note means the record's own note was moved there; the file's default note is only a fallback.
- line(t('completeness'), stdNote || r.completenessNote);
+ // The record's own note, else the shared note its status names (the file's default note is not filled in for it).
+ line(t('completeness'), r.completenessNote || stdNote);
  line(t('notes'), r.notes);
  const desc = r.descriptionHe || r.description;
  if (desc) { const p = el('p'); p.append(el('strong', '', t('description') + ': '), auto('span', '', desc)); rc.append(p); }

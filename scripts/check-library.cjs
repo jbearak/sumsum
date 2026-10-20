@@ -1685,13 +1685,15 @@ async function checkEpisodeAbout(H, M) {
     assert.equal(q().getAttribute('aria-pressed'), 'false', 'and a second press takes it off the queue');
     assert.deepEqual(JSON.parse(H.storage.get('sumsum-sitting') || '[]'), JSON.parse(before));
   }
-  // A record whose completenessStatus names a shared note shows that note, not its file's default note.
-  const std = (H.payload.meta || {}).standardCompletenessNotes || {};
+  // A record whose completenessStatus names a shared note shows that note, not its file's default note (which expansion does
+  // not fill in for it); a record's own note would still come first (checkEntries' fixture).
+  const std = (H.payload.meta || {}).standardCompletenessNotes || {}, defs = H.payload.recordDefaults || [];
   const noted = M.records.find(r => typeof r.completenessStatus === 'string' && Object.prototype.hasOwnProperty.call(std, r.completenessStatus) &&
-    r.completenessNote && r.completenessNote !== std[r.completenessStatus]);
+    Number.isInteger(r._d) && defs[r._d] && defs[r._d].completenessNote && defs[r._d].completenessNote !== std[r.completenessStatus]);
   if (noted) {
+    assert(!('completenessNote' in noted), 'Expansion does not give a shared-note record its file\'s default note: ' + noted.id);
     await H.navigate('record/' + encodeURIComponent(noted.id));
-    assert(H.text().includes(std[noted.completenessStatus]) && !H.text().includes(noted.completenessNote),
+    assert(H.text().includes(std[noted.completenessStatus]) && !H.text().includes(defs[noted._d].completenessNote),
       'A record page shows the shared note its status names, not the default note: ' + noted.id);
   }
   ok('episode About: the quoted summary with its source revision and licence, sponsors, word on the street and guest stars (EN, HE); compilation and listing rows labelled');
@@ -2504,6 +2506,12 @@ function edgePayload(p) {
   ord('edge-ord-only-sub', 'https://play.edgestream.example/episode/3', {access: 'licensed'});
   ord('edge-ord-comp', 'https://archive.org/details/edge-order/compilation.mp4', {kind: 'collection', durationSeconds: 3600});
   ord('edge-ord-ia6', 'https://archive.org/details/edge-order/six.mp4');
+  // A record's own completeness note comes before the shared note its status names.
+  p.meta = {...(p.meta || {}), standardCompletenessNotes: {...((p.meta || {}).standardCompletenessNotes || {}), 'edge-shared': 'Edge shared note.'}};
+  add({id: 'edge-own-note', url: 'https://www.youtube.com/watch?v=EdgeOwnNote', series: 'modern', kind: 'clip', titleEn: 'Edge own note',
+    completenessStatus: 'edge-shared', completenessNote: 'Edge record-specific warning: ending is missing.'});
+  add({id: 'edge-shared-note', url: 'https://www.youtube.com/watch?v=EdgeShrNote', series: 'modern', kind: 'clip', titleEn: 'Edge shared note',
+    completenessStatus: 'edge-shared'});
   ord('edge-ord-bad7', 'https://archive.org/details/edge-order/seven.mp4', {availabilityCheck: chk('unavailable', 'item dark')});
   ord('edge-ord-ex7', 'https://www.youtube.com/watch?v=EdgeOrderX07', {kind: 'clip', durationSeconds: 300});
   add({id: 'edge-twin-a', url: 'https://hop.co.il/shows/edge-twin-a/', directUrl: 'https://vimeo.com/987654321/aaaa', series: 'modern', kind: 'clip',
@@ -3511,6 +3519,11 @@ async function checkEntries(htmlPath) {
   assert.deepEqual(JSON.parse(st.get('sumsum-sitting')), ['edge-ord-p2', 'edge-ord-comp']);
   await H.fk('ep-q').click(); H.flushTimers();
   assert.deepEqual(JSON.parse(st.get('sumsum-sitting')), ['edge-ord-p2'], 'and a second press takes it off');
+  await H.navigate('record/edge-own-note');
+  assert(H.text().includes('Edge record-specific warning: ending is missing.') && !H.text().includes('Edge shared note.'),
+    'A record\'s own completeness note comes before the shared note');
+  await H.navigate('record/edge-shared-note');
+  assert(H.text().includes('Edge shared note.'), 'Without one, the shared note its status names');
   // When Watch opens a copy outside the episode's entry, the star stores that copy, as "+" queues it.
   await H.navigate('episode/edge-order-7');
   assert.equal(H.fk('ep-watch').href, 'https://www.youtube.com/watch?v=EdgeOrderX07', 'A usable excerpt before a failed whole copy');

@@ -41,9 +41,11 @@ function readLibrary(htmlPath) {
 // derives for YouTube videos and Internet Archive files.
 function expandRecords(payload) {
   const defs = payload && Array.isArray(payload.recordDefaults) ? payload.recordDefaults : [];
+  const std = (payload && payload.meta && payload.meta.standardCompletenessNotes) || {};
   for (const r of payload && Array.isArray(payload.records) ? payload.records : []) {
     const d = Number.isInteger(r._d) ? defs[r._d] : null; if (!d) continue;
-    for (const [k, v] of Object.entries(d)) if (!(k in r)) r[k] = structuredClone(v);
+    const shared = typeof r.completenessStatus === 'string' && Object.prototype.hasOwnProperty.call(std, r.completenessStatus);
+    for (const [k, v] of Object.entries(d)) if (!(k in r) && !(k === 'completenessNote' && shared)) r[k] = structuredClone(v);
     let u; try { u = new URL(r.url); } catch { continue; }
     const host = u.hostname.replace(/^www\./, ''), seg = u.pathname.split('/').filter(Boolean), v = u.searchParams.get('v') || '';
     if (!r.thumbnailUrl && ['youtube.com', 'm.youtube.com'].includes(host) && /^[\w-]{11}$/.test(v)) r.thumbnailUrl = `https://i.ytimg.com/vi/${v}/hqdefault.jpg`;
