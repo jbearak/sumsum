@@ -5637,6 +5637,25 @@ function builderChecks(builder, dir) {
   assert.equal(nOf('fx-n1').completenessNote, 'Ending missing.', 'An own note equal to the default is kept for a shared-note record');
   assert(!('completenessNote' in nOf('fx-n2')), 'A shared-note record without its own note embeds none');
   assert(!('completenessNote' in nOf('fx-n3')), 'Any other record leaves out the note equal to its default');
+  // Two entries for one URL: a note one states itself wins over the note the other only inherited, in either order.
+  const dupNote = order => {
+    const a = rec('fx-m', yt1, {completenessStatus: 'sh'}), b = rec('fx-m', yt1, {completenessStatus: 'sh', completenessNote: 'Explicit ending missing.'});
+    const out = run(withDefaults({completenessNote: 'Default note.'}, order ? [a, b] : [b, a], {completenessNotes: {sh: 'Metadata checked only.'}}));
+    builds('duplicate entries with notes', out);
+    return JSON.parse(out.out.match(/<script id="library-data" type="application\/json">([\s\S]*?)<\/script>/)[1]).records.find(r => r.id === 'fx-m');
+  };
+  for (const order of [true, false]) assert.equal(dupNote(order).completenessNote, 'Explicit ending missing.', 'An explicit note wins a URL merge (' + (order ? 'second' : 'first') + ')');
+  // Many merged duplicates before records with their own notes: no own note is lost (provenance is not keyed by object identity).
+  const many = [];
+  for (let i = 0; i < 30; i++) many.push(rec('fx-dup', yt1, {completenessStatus: 'sh'}));
+  for (let i = 0; i < 10; i++) many.push(rec('fx-own' + i, 'https://www.youtube.com/watch?v=OwnNote' + String(i).padStart(4, '0'), {completenessStatus: 'sh', completenessNote: 'Own note ' + i + '.'}));
+  const manyOut = run(withDefaults({completenessNote: 'Default note.'}, many, {completenessNotes: {sh: 'Metadata checked only.'}}));
+  builds('many duplicates then own notes', manyOut);
+  const manyRecs = JSON.parse(manyOut.out.match(/<script id="library-data" type="application\/json">([\s\S]*?)<\/script>/)[1]).records;
+  for (let i = 0; i < 10; i++) assert.equal(manyRecs.find(r => r.id === 'fx-own' + i).completenessNote, 'Own note ' + i + '.', 'Own note kept after merged duplicates: ' + i);
+  assert(!('completenessNote' in manyRecs.find(r => r.id === 'fx-dup')) && !('_inheritedNote' in manyRecs.find(r => r.id === 'fx-dup')),
+    'A merged record that only inherited its note embeds neither the note nor the marker');
+  fails(run([rec('fx-r', yt1, {_inheritedNote: true})]), /entry 1: _inheritedNote is reserved/, 'a record that sets the inherited-note marker');
   builds('object availability check', run([rec('fx-c', yt1, {access: 'unavailable', availabilityCheck: {method: 'yt-dlp', checkedAt: '2026-10-18',
     status: 'unavailable', result: 'Video unavailable'}})]));
   builds('string availability check', run([rec('fx-c', yt1, {access: 'vpn-required', availabilityCheck: 'country-restricted'})]));

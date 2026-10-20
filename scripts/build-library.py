@@ -260,11 +260,13 @@ def file_defaults(data, name):
     return d
 
 
-# Records (by object identity) whose completenessNote came from their file's defaults rather than their own entry.
-INHERITED_NOTE = set()
+# Set on a record whose completenessNote came from its file's defaults rather than its own entry; never embedded.
+INHERITED_NOTE = "_inheritedNote"
 
 
 def compact_record(r, table, shared=None):
+    inherited = r.get(INHERITED_NOTE) is True
+    r = {f: v for f, v in r.items() if f != INHERITED_NOTE}
     k = r.get("_d")
     if k is None:
         return r
@@ -272,9 +274,8 @@ def compact_record(r, table, shared=None):
     # A record whose completenessStatus names a shared note does not take the default note when the app expands it: an
     # inherited copy is dropped, and its own note is kept even when it equals the default.
     if shared and isinstance(r.get("completenessStatus"), str) and r["completenessStatus"] in shared and "completenessNote" in r:
-        keep_note = id(r) not in INHERITED_NOTE
         out = compact_record({f: v for f, v in r.items() if f != "completenessNote"}, table)
-        return {**out, "completenessNote": r["completenessNote"]} if keep_note else out
+        return out if inherited else {**out, "completenessNote": r["completenessNote"]}
     # The app reads absent themes and characters as empty.
     return {f: v for f, v in r.items() if not (f in d and d[f] == v) and not (f in ("themes", "characters") and v == [])}
 
@@ -1425,11 +1426,12 @@ def main():
             if not isinstance(raw, dict):
                 raise ValueError(f"{path.name}, entry {offset}: expected an object")
             check_unicode(raw, f"{path.name}, entry {offset}")
-            if "_d" in raw:
-                raise ValueError(f"{path.name}, entry {offset}: _d is reserved (the builder sets it)")
+            for reserved in ("_d", INHERITED_NOTE):
+                if reserved in raw:
+                    raise ValueError(f"{path.name}, entry {offset}: {reserved} is reserved (the builder sets it)")
             r = {**copy.deepcopy(defaults), **raw, "_d": len(default_table) - 1} if defaults is not None else dict(raw)
             if defaults is not None and "completenessNote" in defaults and "completenessNote" not in raw:
-                INHERITED_NOTE.add(id(r))
+                r[INHERITED_NOTE] = True
             # Any public http(s) page is accepted (YouTube, Vimeo, Hop, Internet Archive, Dailymotion,
             # Facebook, Kan, ok.ru and others); hosts are recognised later by hostname.
             r["url"] = r.get("url") or r.get("sourceUrl") or r.get("directUrl")
@@ -1462,10 +1464,16 @@ def main():
             # Which entry holds each field, so a refusal after merging names the entries involved.
             entries.setdefault(key, []).append((where, {f for f, v in r.items() if v not in (None, "", [], {})}))
             if key in seen:
-                # A note the merged entry states itself is its own, whichever entry the record started from.
-                if "completenessNote" in r and id(r) not in INHERITED_NOTE:
-                    INHERITED_NOTE.discard(id(seen[key]))
-                merge_records(seen[key], r)
+                # Completeness notes: a note an entry states itself replaces one the kept record only inherited from its file's
+                # defaults; an inherited note fills an empty one and stays marked as inherited.
+                ex, inherited = seen[key], r.pop(INHERITED_NOTE, False) is True
+                if "completenessNote" in r and not inherited and ex.get(INHERITED_NOTE):
+                    ex["completenessNote"] = r["completenessNote"]
+                    ex.pop(INHERITED_NOTE)
+                had_note = bool(ex.get("completenessNote"))
+                merge_records(ex, r)
+                if inherited and not had_note and ex.get("completenessNote"):
+                    ex[INHERITED_NOTE] = True
                 continue
             # One id must name one upload: links, playback evidence, favorites and guide references are keyed by id.
             if r["id"] in origin and url_key(origin[r["id"]][0]) != key:
