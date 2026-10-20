@@ -257,6 +257,9 @@ def file_defaults(data, name):
     unknown = sorted(set(d) - DEFAULTABLE)
     if unknown:
         raise ValueError(f"{name}: defaults may set only {sorted(DEFAULTABLE)}, not {unknown[0]!r}")
+    # Checked here too: a record merged by URL can carry this file's defaults index without its own language.
+    if d.get("language") is not None and not language_ok(d["language"]):
+        raise ValueError(f"{name}: defaults: {language_problem(d['language'])}")
     return d
 
 
@@ -951,7 +954,7 @@ def load_guide(path, records, explicit, series, parts=()):
 
 # The series registry (data/series.json): the guide rail's families, the series every record and production names, and
 # the core broadcast series counted toward the core Rechov Sumsum goal. The app reads all of it from the payload.
-SERIES_FIELDS = ("id", "en", "he", "family", "searchPrefix", "searchLanguage")
+SERIES_FIELDS = ("id", "en", "he", "family", "searchPrefix", "searchLanguage", "spoken")
 
 
 def load_table(path):
@@ -1011,6 +1014,8 @@ def load_series(path):
             raise ValueError(f"{where}: searchPrefix must be non-empty text")
         if s.get("searchLanguage") not in ("he", "en"):
             raise ValueError(f"{where}: searchLanguage must be 'he' or 'en'")
+        if s.get("spoken") not in ("he", "en"):
+            raise ValueError(f"{where}: spoken must be 'he' or 'en'")
         family_of[s["id"]] = s["family"]
     rows = []
     for i, g in enumerate(goal, 1):
@@ -1322,7 +1327,23 @@ RECORD_TEXT = ("titleEn", "titleHe", "title", "originalTitle", "uploader", "subs
                "descriptionHe", "completenessNote", "playbackVerificationNote")
 
 
+# A record's recorded language: lowercase codes from LANGUAGES joined by hyphens ('he', 'en-he', 'ru-he'), or 'und'. The app
+# reads the parts as a list (the Spoken filter), so a region ('he-IL'), an old or three-letter code ('iw', 'eng') or another
+# spelling would read as a dub; the builder refuses them. Add a new language here.
+LANGUAGES = {"he", "en", "ar", "ru", "es"}
+
+
+def language_ok(value):
+    return value == "und" or (isinstance(value, str) and all(x in LANGUAGES for x in value.split("-")))
+
+
+def language_problem(value):
+    return f"language must be 'und' or codes from {sorted(LANGUAGES)} joined by hyphens, got {value!r}"[:400]
+
+
 def validate_record_fields(r, where):
+    if r.get("language") is not None and not language_ok(r["language"]):
+        raise ValueError(f"{where}: {language_problem(r['language'])}")
     if r.get("access") is not None and not enum_ok(r["access"], ACCESS):
         raise ValueError(f"{where}: access must be one of {sorted(ACCESS)} (or absent), got {r['access']!r}")
     check = r.get("availabilityCheck")

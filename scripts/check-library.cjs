@@ -36,12 +36,13 @@ const NAMES = Object.assign(Object.create(null), JSON.parse(readLibrary(htmlPath
 // ---------------------------------------------------------------- independent model of the data
 // The series registry (payload.series, from data/series.json): set from each booted payload by model(), like the services.
 // The rules below (what counts as core, how productions rank) are the checker's own; the registry supplies the facts.
-let SERIES = [], GOAL = [], FAMILY_ORDER = [], FAMILY_OF = {};
+let SERIES = [], GOAL = [], FAMILY_ORDER = [], FAMILY_OF = {}, SPOKEN_OF = {};
 const useSeries = payload => {
   const reg = payload && payload.series && typeof payload.series === 'object' ? payload.series : {};
   const list = v => (Array.isArray(v) ? v.filter(x => x && typeof x.id === 'string') : []);
   SERIES = list(reg.series).map(x => x.id);
   FAMILY_OF = Object.fromEntries(list(reg.series).map(x => [x.id, x.family]));
+  SPOKEN_OF = Object.fromEntries(list(reg.series).map(x => [x.id, x.spoken]));
   FAMILY_ORDER = list(reg.families).map(x => x.id);
   GOAL = (Array.isArray(reg.goal) ? reg.goal : []).filter(x => x && SERIES.includes(x.series));
 };
@@ -706,17 +707,16 @@ async function checkUploads(H, M) {
   assert.equal(H.count(), N, 'Selecting no types includes all types');
   ok('counts ignore their own facet; zero-count selections retained; full vs short-series separate; multi-select');
 
-  // Spoken: from the recorded language; a mixed value counts in each group it names; empty and 'und' are Not recorded.
+  // Spoken: the series' language; a recorded language without it that names another than Hebrew or English is a dub (Other).
   // Length: one choice at a time, up to N minutes; unknown durations pass only under Any.
-  const spokenOf = r => {
-    const parts = String(r.language ?? '').toLowerCase().split(/[^a-z]+/).filter(x => x && x !== 'und');
-    return parts.length ? [...new Set(parts.map(x => (x === 'he' || x === 'en' ? x : 'other')))] : ['none'];
-  };
+  const spokenOf = spokenOfM;
   const lenOk = (r, n) => Number(r.durationSeconds) > 0 && Number(r.durationSeconds) <= n * 60;
-  const SP = ['he', 'en', 'other', 'none'];
+  const SP = ['he', 'en', 'other'];
   assert.equal(H.chipCount(H.fk('fsp-all')), N, 'All languages counts every upload');
   for (const g of SP) assert.equal(H.chipCount(H.fk('fsp-' + g)), countE(r => spokenOf(r).includes(g)), 'Spoken count ' + g);
-  assert(SP.reduce((n, g) => n + H.chipCount(H.fk('fsp-' + g)), 0) >= N, 'Every upload is in at least one language group');
+  assert(SP.reduce((n, g) => n + H.chipCount(H.fk('fsp-' + g)), 0) >= N, 'Every upload is in a language group');
+  assert(records.every(r => spokenOf(r).length === 1), 'One language per upload');
+  for (const r of records) if (FAMILY_OF[r.series] === 'rechov' && spokenOf(r).includes('en')) assert.fail('Rechov Sumsum is never English: ' + r.id);
   assert.equal(H.chipCount(H.fk('fl-any')), N);
   for (const n of [5, 10, 20, 30]) assert.equal(H.chipCount(H.fk('fl-' + n)), countE(r => lenOk(r, n)), 'Length count ' + n);
   await H.fk('fsp-he').click(); await H.fk('fsp-en').click();
@@ -730,8 +730,8 @@ async function checkUploads(H, M) {
   assert.equal(H.chipCount(H.fk('fsp-other')), countE(r => lenOk(r, 5) && spokenOf(r).includes('other')), 'Spoken counts follow the length');
   assert(H.has('ux-sp-he') && H.has('ux-len'), 'Removable chips for both');
   await H.fk('ux-len').click(); assert.equal(H.count(), heEnN, 'Removing the length chip clears it');
-  await H.navigate('browse?spoken=none,bogus&len=7');
-  assert.equal(H.count(), countE(r => spokenOf(r).includes('none')), 'Unknown values in the hash are dropped');
+  await H.navigate('browse?spoken=other,none,bogus&len=7');
+  assert.equal(H.count(), countE(r => spokenOf(r).includes('other')), 'Unknown values in the hash are dropped');
   await H.fk('fsp-all').click(); assert.equal(H.count(), N, 'All languages clears the spoken choice');
   // An empty result shows the bin and one button per active filter group, each with what clearing it alone would show.
   const lone = SERIES.map(sr => [sr, SP.find(g => records.some(r => spokenOf(r).includes(g)) &&
@@ -748,7 +748,7 @@ async function checkUploads(H, M) {
     await H.fk('fs-all').click();
   }
   assert.equal(H.count(), N);
-  ok('spoken and length filters: counts from the recorded language and duration, mixed languages in each group, one length at a time, hash, chips, the bin and its relax buttons');
+  ok('spoken and length filters: counts from the series language (dubs as Other) and duration, one length at a time, hash, chips, the bin and its relax buttons');
 
   // Search: debounced typing, aliases, pasted links by hostname.
   const typed = async q => { H.$('u-search').value = q; await H.$('u-search').fire('input'); H.flushTimers(); return H.count(); };
@@ -2003,14 +2003,19 @@ async function sweep(H, M) {
 // A sixth series in a family of its own, with a core production that comes first in production order: the registry alone
 // gives it a Browse chip, a rail heading after the others and its YouTube search terms, and it never counts as core
 // Rechov Sumsum (not in the goal rows or the separate list's exclusions, never Up next's preferred episode).
+const SPOKEN_FIXTURES = [['he', 'en'], ['en-he', 'en'], ['he-en', 'en'], ['und', 'en'], ['en-es', 'en'],
+  ['ru', 'other'], ['ar-he', 'other'], ['he-ar', 'other'], ['es', 'other']];
 async function checkSeriesRegistry(htmlPath) {
   const url = 'https://www.youtube.com/watch?v=TestStreet01';
   const H = harness(boot(htmlPath, {payload: p => {
     p.series.families.push({id: 'test-fam', en: 'Test family', he: 'משפחת בדיקה'});
     p.series.series.push({id: 'test-street', en: 'Test Street', he: 'רחוב בדיקה', family: 'test-fam', searchPrefix: 'Test Street',
-      searchLanguage: 'en'});
+      searchLanguage: 'en', spoken: 'en'});
     p.records.push({id: 'test-rec-1', url, series: 'test-street', kind: 'episode', titleEn: 'Test Street: The Big Test',
       durationSeconds: 1500, themes: [], characters: []});
+    // Recorded languages for the Spoken filter, an English series: a listed language without English other than Hebrew is a dub.
+    SPOKEN_FIXTURES.forEach(([language], i) => p.records.push({id: 'test-lang-' + i, url: 'https://www.youtube.com/watch?v=TestLang' + i,
+      series: 'test-street', kind: 'clip', titleEn: 'Test Street language ' + i, language, themes: [], characters: []}));
     p.guide.productions.push({id: 'test-core', series: 'test-street', format: 'core', order: -1, years: '2026', nameEn: 'Test Street core',
       nameHe: 'רחוב בדיקה, הפקה', expectedTotal: 2, seasons: [{season: 1, numbering: 'documented', expectedEpisodes: 2}], totalsEvidence: []});
     p.guide.episodes.push({id: 'test-ep-1', production: 'test-core', season: 1, number: 1, confidence: 'documented',
@@ -2024,7 +2029,13 @@ async function checkSeriesRegistry(htmlPath) {
     .map(g => g.en);
   await H.navigate('browse');
   const chips = H.fkAll('fs-test-street');
-  assert.equal(chips.length, 1, 'A registered series gets a Browse chip'); assert.equal(H.chipCount(chips[0]), 1);
+  assert.equal(chips.length, 1, 'A registered series gets a Browse chip'); assert.equal(H.chipCount(chips[0]), 1 + SPOKEN_FIXTURES.length);
+  await chips[0].click();
+  for (const g of ['he', 'en', 'other']) {
+    assert.equal(H.chipCount(H.fk('fsp-' + g)), (g === 'en' ? 1 : 0) + SPOKEN_FIXTURES.filter(f => f[1] === g).length,
+      'Spoken ' + g + ' for the fixed recorded languages');
+  }
+  await H.fk('fs-all').click();
   assert.equal(chips[0].parentElement.children.filter(c => /^fs-/.test(c.getAttribute?.('data-fk') || '')).at(-1), chips[0],
     'Series chips follow the registry order');
   await H.navigate('record/test-rec-1'); assert(H.text().includes('Test Street'), 'Record pages name the series from the registry');
@@ -4110,10 +4121,13 @@ function menuModel(M) {
       missing: M.eps.filter(e => M.cov(e) !== 'whole-candidate').length}};
 }
 // ---------------------------------------------------------------- Home, the queue and Surprise
-// The recorded spoken language and length, as the app reads them (Browse's facets and Home's preferences).
+// The spoken language and length, as the app reads them (Browse's facets and Home's preferences): the series' language,
+// unless the recorded language leaves it out and names one other than Hebrew or English (a dub, Other).
+// The builder admits only lowercase language codes joined by hyphens ('en-he'), or 'und'.
 const spokenOfM = r => {
-  const parts = String(r.language ?? '').toLowerCase().split(/[^a-z]+/).filter(x => x && x !== 'und');
-  return parts.length ? [...new Set(parts.map(x => (x === 'he' || x === 'en' ? x : 'other')))] : ['none'];
+  const own = SPOKEN_OF[r.series], parts = String(r.language ?? '').split('-').filter(x => x && x !== 'und');
+  const dub = !parts.includes(own) && parts.some(x => x !== 'he' && x !== 'en');
+  return [dub || (own !== 'he' && own !== 'en') ? 'other' : own];
 };
 const lenOkM = (r, n) => !n || (Number(r.durationSeconds) > 0 && Number(r.durationSeconds) <= Number(n) * 60);
 const tagKeyM = v => normalizeQ((NAMES[String(v).toLowerCase()] || NAMES[normalizeQ(v)] || [v])[0]);
@@ -5232,7 +5246,7 @@ function builderChecks(builder, dir) {
   // The series registry: a series added there is accepted and embedded; a malformed registry is refused.
   const registry = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'data', 'series.json'), 'utf8'));
   const withSeries = edit => { const reg = JSON.parse(JSON.stringify(registry)); edit(reg); return write('series.json', reg); };
-  const usSeries = {id: 'us-street', en: 'US street', he: 'רחוב אמריקאי', family: 'us', searchPrefix: 'Street', searchLanguage: 'en'};
+  const usSeries = {id: 'us-street', en: 'US street', he: 'רחוב אמריקאי', family: 'us', searchPrefix: 'Street', searchLanguage: 'en', spoken: 'en'};
   const addUs = reg => { reg.families.push({id: 'us', en: 'US', he: 'אמריקאי'}); reg.series.push({...usSeries}); };
   const usBuild = run([rec('fx-us', 'https://www.youtube.com/watch?v=AAAAAAAAAA1', {series: 'us-street'})], {series: withSeries(addUs)});
   assert.equal(usBuild.status, 0, usBuild.text);
@@ -5267,6 +5281,7 @@ function builderChecks(builder, dir) {
     ['list-valued family', reg => reg.series.push({...usSeries, family: ['us']}), /family \['us'\] is not listed/],
     ['Hebrew label without Hebrew', reg => { addUs(reg); reg.series.at(-1).he = 'US'; }, /series 'us-street'\.he has no Hebrew letters/],
     ['search language', reg => { addUs(reg); reg.series.at(-1).searchLanguage = 'fr'; }, /searchLanguage must be 'he' or 'en'/],
+    ['spoken language', reg => { addUs(reg); delete reg.series.at(-1).spoken; }, /spoken must be 'he' or 'en'/],
     ['goal across families', reg => { addUs(reg); reg.goal.push({series: 'us-street', en: 'US', he: 'אמריקאי'}); }, /goal series must belong to one family/],
     ['goal series listed twice', reg => reg.goal.push({...reg.goal[0]}), /goal row 3: series 'classic' is listed twice/],
     ['goal row without labels', reg => reg.goal.push({series: 'elmo'}), /goal row 3 must be \{en, he\}/],
@@ -5354,6 +5369,12 @@ function builderChecks(builder, dir) {
   fails(run([rec('fx-l', 'https://www.hoopladigital.com/title/1', {access: 'paid'})]), /entry 1: access must be one of .*'paid'/,
     'unknown access value');
   fails(run([rec('fx-l', 'https://www.hoopladigital.com/title/1', {access: ['licensed']})]), /access must be one of/, 'list-valued access');
+  // Recorded languages: lowercase known codes joined by hyphens, or 'und'; the Spoken filter would read anything else as a dub.
+  for (const v of ['he', 'en-he', 'ru-he', 'und']) builds('language ' + v, run([rec('fx-lang', 'https://www.youtube.com/watch?v=AAAAAAAAAA2', {language: v})]));
+  for (const v of ['he-IL', 'he-il', 'iw', 'heb', 'eng', 'RU-HE', 'he en', 'he-', '', 'he-und', ['he']]) {
+    fails(run([rec('fx-lang', 'https://www.youtube.com/watch?v=AAAAAAAAAA2', {language: v})]), /entry 1: language must be 'und' or codes from/,
+      'language ' + JSON.stringify(v));
+  }
   // Licensed services: a valid file builds and is embedded; a malformed entry fails with a located message and keeps the
   // previous output; a licensed record no service describes, and a service without records, are warnings.
   const svcOk = () => ({format: 'sumsum-licensed-services-v1', checkedAt: '2026-10-18', services: [{id: 'fx-lib', name: 'Fixture Library',
@@ -5624,6 +5645,9 @@ function builderChecks(builder, dir) {
   assert(d2.language === 'he' && !('sourceType' in d2), 'and keeps its own values');
   fails(run(withDefaults({kind: 'clip'}, [rec('fx-d1', yt1)])), /defaults may set only .* not 'kind'/, 'a default outside the list');
   fails(run(withDefaults({}, [rec('fx-d1', yt1)])), /defaults must be a non-empty object/, 'empty defaults');
+  // A default language is checked even when every record overrides it: a record merged by URL can still carry the defaults.
+  fails(run(withDefaults({language: 'he-il'}, [rec('fx-d1', yt1, {language: null})])), /defaults: language must be 'und' or codes from/,
+    'a malformed default language');
   fails(run([rec('fx-d1', yt1, {_d: 0})]), /entry 1: _d is reserved/, 'a record that sets _d');
   fails(run(withDefaults({language: 'en'}, [rec('fx-d1', yt1)], {completenessNotes: {'ss-01': ''}})), /completenessNotes must map status codes to non-empty notes/, 'an empty completeness note');
   // A shared-note record: its own note survives compaction even when it equals the file default; without one, no default
