@@ -908,13 +908,16 @@ def load_guide(path, records, explicit, series, parts=()):
         check_unicode(data, part.name)
         if not isinstance(data, dict):
             raise ValueError(f"{part.name}: expected an object with productions, episodes and unidentified")
+        # With parts to merge, every file (the base too) must have the merged keys' types before merging; a guide alone
+        # is checked by validate_guide().
+        for key, kind in (("productions", list), ("episodes", list), ("unidentified", dict)):
+            if parts and not isinstance(data.get(key, kind()), kind):
+                raise ValueError(f"{part.name}: {key} must be {'an array' if kind is list else 'an object'}")
         if guide is None:
             guide = data
             continue
         for key, kind in (("productions", list), ("episodes", list), ("unidentified", dict)):
             value = data.get(key, kind())
-            if not isinstance(value, kind):
-                raise ValueError(f"{part.name}: {key} must be {'an array' if kind is list else 'an object'}")
             if kind is list:
                 guide[key] = [*guide.get(key, []), *value]
             else:
@@ -1360,6 +1363,8 @@ def main():
     parser.add_argument("inputs", nargs="*", type=Path)
     parser.add_argument("--output", type=Path, default=ROOT / "index.html")
     parser.add_argument("--guide", type=Path, help="episode guide JSON (default: data/episode-guide.json if it exists)")
+    parser.add_argument("--guide-part", type=Path, action="append", default=None,
+                        help="a guide part to merge into --guide (repeatable; default: data/guide-*.json with the default guide)")
     parser.add_argument("--series", type=Path, default=ROOT / "data/series.json", help="series registry JSON")
     parser.add_argument("--vocabulary", type=Path, default=ROOT / "data/vocabulary.json", help="tag vocabulary JSON")
     parser.add_argument("--link-priority", type=Path, default=ROOT / "data/link-priority.json",
@@ -1486,6 +1491,11 @@ def main():
         guide_path = ROOT / guide_path
     # Guide parts join the default guide only: an explicit --guide is the whole guide (fixtures and tests).
     guide_parts = sorted((ROOT / "data").glob("guide-*.json")) if args.guide is None else []
+    if args.guide_part is not None:
+        guide_parts = [x if x.is_absolute() else ROOT / x for x in args.guide_part]
+        for x in guide_parts:
+            if not x.exists():
+                raise ValueError(f"Guide part not found: {x}")
     guide, guide_sha, guide_warnings = load_guide(guide_path, records, explicit=args.guide is not None, parts=guide_parts,
                                                    series=series_ids)
     services_path = args.services or ROOT / "data/licensed-services.json"

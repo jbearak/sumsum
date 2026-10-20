@@ -84,8 +84,11 @@ const tierNo = (r, local = '') => { const k = expectTier(r, local); return k ===
 // An episode's copies: usable before failed; whole and alternate, then parts, then excerpts; then the tier; official first;
 // then the part number.
 const ROLE_CLASS = {'whole-candidate': 0, 'alternate-edition': 0, part: 1, excerpt: 2, possible: 3};
-const copyKey = (r, role, partNo, local = '') => [tierNo(r, local) === TIERS.length ? 1 : 0, ROLE_CLASS[role] ?? 3, tierNo(r, local),
-  r.sourceType === 'official' ? 0 : 1, partNo || 0];
+// Within a role class, a copy of the episode alone, then one inside a compilation, then a service listing (each record's worst
+// counted link; model() fills CONT for its payload's records).
+const CONT = new WeakMap(), CONT_CLASS = {compilation: 1, listing: 2};
+const copyKey = (r, role, partNo, local = '') => [tierNo(r, local) === TIERS.length ? 1 : 0, ROLE_CLASS[role] ?? 3, CONT.get(r) || 0,
+  tierNo(r, local), r.sourceType === 'official' ? 0 : 1, partNo || 0];
 const cmpKeys = (x, y) => { for (let i = 0; i < x.length; i++) if (x[i] !== y[i]) return x[i] - y[i]; return 0; };
 const svcOfUrl = url => { const h = hostname(url); return (h && SVC.find(x => x.hosts.some(d => h === d || h.endsWith('.' + d)))) || null; };
 const EP_FORMATS = ['core', 'short-series', 'talk-show', 'home-video', 'related-series'];
@@ -241,6 +244,10 @@ function model(payload) {
   const posInt = v => (Number.isInteger(v) && v > 0 ? v : null);
   const ups = new Map(eps.map(e => [e.id, (e.uploads || []).filter(u => recById.has(u.recordId) && ROLES.includes(u.role))
     .map(u => ({r: recById.get(u.recordId), role: u.role, part: u.role === 'part' ? posInt(u.part) : null}))]));
+  for (const e of eps) for (const u of e.uploads || []) {
+    const r = recById.get(u.recordId), c = CONT_CLASS[u.container] || 0;
+    if (r && ROLES.includes(u.role) && c > (CONT.get(r) || 0)) CONT.set(r, c);
+  }
   const poss = new Map(eps.map(e => [e.id, (e.uploads || []).filter(u => recById.has(u.recordId) && u.role === 'possible')
     .map(u => ({r: recById.get(u.recordId), role: 'possible'}))]));
   const linked = new Set([...ups.values()].flat().map(u => u.r.id));
@@ -1109,6 +1116,11 @@ async function checkGuide(H, M) {
   const tiles = () => H.byClass('tile'), watchedNow = () => new Set(JSON.parse(H.storage.get('sumsum-watched') || '[]'));
   assert.equal(tiles().length, prods.reduce((s, p) => s + Math.min(12, M.paged(p) ? M.pageGroup(p, watchedNow()).eps.length : M.epsOf.get(p.id).length), 0),
     'Twelve tiles per production');
+  // "Show all" counts what it reveals: for a paged production, the episodes of the season it shows, not of every season.
+  for (const p of prods.filter(M.paged)) {
+    const n = M.pageGroup(p, watchedNow()).eps.length;
+    if (n > 12) assert.equal(H.fk('more-' + p.id).textContent, tr('en', 'showAllEps', {n: n.toLocaleString('en-US')}), 'Show all counts one season: ' + p.id);
+  }
   // A paged production: every season on its own page (?season=N), with its strip (excluded numbers skipped) and every tile.
   let pagedSeasons = 0;
   for (const p of prods.filter(M.paged)) {
@@ -1271,8 +1283,19 @@ async function checkGuide(H, M) {
     assert.equal(H.fk('next-ep').href, epHref(cands[0]), 'Back to Rechov Sumsum');
     H.storage.delete('sumsum-upnext'); await H.fk('pref-spoken-en').click();
     assert.equal(H.fk('next-fam-sesame-street').getAttribute('aria-pressed'), 'true', 'English Spoken starts on Sesame Street');
+    // Sesame Street chosen with Spoken Hebrew: nothing in it fits, so Rechov Sumsum is shown, pressed, with a line saying so.
+    await H.fk('next-fam-sesame-street').click(); await H.fk('pref-spoken-he').click();
+    const ssHe = ssProds.flatMap(p => M.epsOf.get(p.id)).some(e => cov(e) === 'whole-candidate' && !seen.has(e.id) &&
+      M.ups.get(e.id).some(u => ['whole-candidate', 'alternate-edition'].includes(u.role) && offerable(u.r) && spokenOfM(u.r).includes('he')));
+    if (!ssHe) {
+      assert.equal(H.fk('next-fam-' + rechov).getAttribute('aria-pressed'), 'true', 'The family shown is the one pressed');
+      assert.equal(H.fk('next-fam-sesame-street').getAttribute('aria-pressed'), 'false');
+      assert.equal(H.byClass('fam-none')[0]?.textContent, tr('en', 'upNextNone', {name: 'Sesame Street'}), 'and a line says the chosen one has nothing');
+    }
+    H.storage.delete('sumsum-upnext');
     await H.fk('pref-spoken-all').click();
     assert.equal(H.fk('next-fam-' + rechov).getAttribute('aria-pressed'), 'true');
+    assert(!H.byClass('fam-none').length, 'No fallback line when the chosen family is shown');
     ok('Up next family switch: Rechov Sumsum or Sesame Street, stored, earliest unwatched first, English Spoken defaults to Sesame Street');
   }
   // Strip keyboard: one tab stop, arrows by reading direction, Home/End.
@@ -1507,6 +1530,17 @@ async function checkNumbering(H, M) {
       assert(H.has('ep-' + e.id, H.view()), 'The Hebrew number label finds the episode too');
     }
   }
+  // A label that is also a plain word ("פרק", Sesame Street's) keeps finding unlabelled productions' episodes by their text
+  // ("פרק 5" was found through their own "פרק 5" token before any production used the label).
+  const shared = labelled.find(p => normalizeQ(p.numberLabelHe || '') === normalizeQ('פרק'));
+  const plainEp = shared && M.eps.find(e => Number.isInteger(e.number) && e.number < 10 && !M.label(M.prodById.get(e.production), 'en') &&
+    M.eps.some(x => x.production === shared.id && x.number === e.number));
+  if (plainEp) {
+    await search('פרק ' + plainEp.number);
+    assert(H.has('ep-' + plainEp.id, H.view()), `"פרק ${plainEp.number}" still finds ${plainEp.id}, an unlabelled production's episode`);
+    const own = M.eps.find(x => x.production === shared.id && x.number === plainEp.number);
+    assert(H.has('ep-' + own.id, H.view()), `and ${own.id}, by its number label`);
+  }
   // "<n>" must be a code search, not text search: take a labelled number that other episodes' notes or titles quote, so
   // the plain text fallback would find more episodes than the code does (real data: <133> is quoted by <148> and <178>).
   const quoted = M.eps.find(e => Number.isInteger(e.number) && M.label(M.prodById.get(e.production), 'en') &&
@@ -1622,6 +1656,29 @@ async function checkEpisodeAbout(H, M) {
     let row = H.fk('ur-' + u.recordId); while (row && !(row.className || '').split(' ').includes('urow')) row = row.parentElement;
     assert.equal(H.byClass('u-cont', row)[0]?.textContent, L.en['container_' + c], 'A ' + c + ' copy is labelled on its row');
     if (u.extentNoteEn) assert(row.textContent.includes(u.extentNoteEn), 'with its extent note');
+  }
+  // A copy of the episode alone outranks a compilation on the same host; an episode whose only whole copy is a compilation
+  // still has a star and a "+" that act on what Watch opens (the compilation's entry), and "+" toggles.
+  const W = ['whole-candidate', 'alternate-edition'];
+  const usable = (e, f) => (e.uploads || []).filter(u => W.includes(u.role) && M.recById.get(u.recordId) && f(u));
+  const mixed = M.eps.find(e => { const d = usable(e, u => !u.container), c = usable(e, u => u.container === 'compilation');
+    return d.length && c.length && c.some(cu => d.some(du => tierNo(M.recById.get(du.recordId)) === tierNo(M.recById.get(cu.recordId)))); });
+  if (mixed) {
+    await H.navigate('episode/' + encodeURIComponent(mixed.id));
+    const watch = H.fk('ep-watch').href, comp = usable(mixed, u => u.container === 'compilation').map(u => expectDest(M.recById.get(u.recordId)));
+    assert(!comp.includes(watch), 'Watch opens a copy of the episode alone before a compilation on the same host: ' + mixed.id);
+  }
+  const compOnly = M.eps.find(e => usable(e, () => true).length && usable(e, () => true).every(u => u.container === 'compilation') &&
+    (e.uploads || []).every(u => u.role !== 'part'));
+  if (compOnly) {
+    await H.navigate('episode/' + encodeURIComponent(compOnly.id));
+    assert(H.has('ep-star', H.view()), 'A compilation-only episode can be starred: ' + compOnly.id);
+    const q = () => H.fk('ep-q'), before = H.storage.get('sumsum-sitting') || '[]';
+    await q().click(); H.flushTimers();
+    assert.equal(q().getAttribute('aria-pressed'), 'true', 'Its "+" shows the compilation queued');
+    await q().click(); H.flushTimers();
+    assert.equal(q().getAttribute('aria-pressed'), 'false', 'and a second press takes it off the queue');
+    assert.deepEqual(JSON.parse(H.storage.get('sumsum-sitting') || '[]'), JSON.parse(before));
   }
   ok('episode About: the quoted summary with its source revision and licence, sponsors, word on the street and guest stars (EN, HE); compilation and listing rows labelled');
 }
@@ -2432,19 +2489,23 @@ function edgePayload(p) {
   ord('edge-ord-p2', 'https://www.youtube.com/watch?v=EdgeOrderP02', {kind: 'clip', durationSeconds: 800});
   ord('edge-ord-only-sub', 'https://play.edgestream.example/episode/3', {access: 'licensed'});
   ord('edge-ord-comp', 'https://archive.org/details/edge-order/compilation.mp4', {kind: 'collection', durationSeconds: 3600});
+  ord('edge-ord-ia6', 'https://archive.org/details/edge-order/six.mp4');
   add({id: 'edge-twin-a', url: 'https://hop.co.il/shows/edge-twin-a/', directUrl: 'https://vimeo.com/987654321/aaaa', series: 'modern', kind: 'clip',
     titleEn: 'Edge twin A zqtwin'});
   add({id: 'edge-twin-b', url: 'https://hop.co.il/music/edge-twin-b/', directUrl: 'https://vimeo.com/987654321/aaaa', series: 'modern', kind: 'clip',
     titleEn: 'Edge twin B zqtwin'});
   g.productions.push({id: 'edge-order', series: 'modern', format: 'core', order: 0, years: '2026', nameEn: 'Edge order', nameHe: 'סדר בדיקה',
-    expectedTotal: 5, totalsEvidence: [], seasons: []});
+    expectedTotal: 6, totalsEvidence: [], seasons: []});
   const oe = (n, uploads) => g.episodes.push({id: 'edge-order-' + n, production: 'edge-order', season: null, number: n, confidence: 'documented',
     titleEn: 'Edge order episode ' + n, uploads});
   oe(1, ['edge-ord-yt', 'edge-ord-ia-bad', 'edge-ord-sub', 'edge-ord-vm', 'edge-ord-ia'].map(recordId => ({recordId, role: 'whole-candidate'})));
   oe(2, [{recordId: 'edge-ord-p2', role: 'part', part: 2}, {recordId: 'edge-ord-p1', role: 'part', part: 1}]);
   oe(3, [{recordId: 'edge-ord-only-sub', role: 'whole-candidate'}]);
-  oe(4, [{recordId: 'edge-ord-comp', role: 'whole-candidate'}]);
-  oe(5, [{recordId: 'edge-ord-comp', role: 'whole-candidate'}]);
+  const comp = {recordId: 'edge-ord-comp', role: 'whole-candidate', container: 'compilation', extentNoteEn: 'Edge order episodes 4, 5 and 6.'};
+  oe(4, [comp]);
+  oe(5, [comp]);
+  // Listed first, the compilation still ranks after the episode's own copy on the same host.
+  oe(6, [comp, {recordId: 'edge-ord-ia6', role: 'whole-candidate'}]);
   return p;
 }
 
@@ -3376,7 +3437,7 @@ async function checkEntries(htmlPath) {
     'The model orders them archive.org, YouTube, the subscribed service, Vimeo, then the failed copy');
   await H.navigate('browse?q=zqorder');
   const cards = H.find(n => /^card-/.test(n.getAttribute?.('data-fk') || '')).map(n => n.getAttribute('data-fk').slice(5));
-  assert.deepEqual([...cards].sort(), ['edge-ord-comp', 'ep:edge-order-1', 'ep:edge-order-2', 'ep:edge-order-3'].sort(),
+  assert.deepEqual([...cards].sort(), ['edge-ord-comp', 'ep:edge-order-1', 'ep:edge-order-2', 'ep:edge-order-3', 'ep:edge-order-6'].sort(),
     'Browse lists one card per episode, and the compilation counted in two episodes as a card of its own: ' + cards.join(' '));
   const card = H.fk('card-ep:edge-order-1').parentElement.parentElement.parentElement;
   assert.equal(H.extLinks(card)[0].href, 'https://archive.org/details/edge-order/one.mp4', 'The card opens the archive.org copy');
@@ -3412,6 +3473,18 @@ async function checkEntries(htmlPath) {
   assert.deepEqual(JSON.parse(st.get('sumsum-sitting')), ['edge-ord-p2', 'edge-ord-ia'], 'The episode queues its first copy');
   await H.fk('ep-q').click(); H.flushTimers();
   assert.deepEqual(JSON.parse(st.get('sumsum-sitting')), ['edge-ord-p2'], 'and leaves the queue as one');
+  // A copy of the episode alone outranks a compilation on the same host, wherever the guide lists it.
+  await H.navigate('episode/edge-order-6');
+  assert.equal(H.fk('ep-watch').href, 'https://archive.org/details/edge-order/six.mp4', 'The episode\'s own copy before the compilation');
+  // An episode whose only whole copy is a compilation (no entry of its own): star and "+" act on the compilation's entry.
+  await H.navigate('episode/edge-order-4');
+  assert.equal(H.fk('ep-watch').href, 'https://archive.org/details/edge-order/compilation.mp4');
+  assert(H.has('ep-star', H.view()), 'A compilation-only episode can be starred');
+  await H.fk('ep-q').click(); H.flushTimers();
+  assert.equal(H.fk('ep-q').getAttribute('aria-pressed'), 'true', 'Its "+" shows the compilation queued');
+  assert.deepEqual(JSON.parse(st.get('sumsum-sitting')), ['edge-ord-p2', 'edge-ord-comp']);
+  await H.fk('ep-q').click(); H.flushTimers();
+  assert.deepEqual(JSON.parse(st.get('sumsum-sitting')), ['edge-ord-p2'], 'and a second press takes it off');
   // A subscribed service is offered unasked: Up next reaches the episode whose only copy is on it.
   const sub = 'https://play.edgestream.example/episode/3';
   assert(offerable(M.recById.get('edge-ord-only-sub')), 'The model offers a subscribed listing');
@@ -5078,12 +5151,12 @@ function builderChecks(builder, dir) {
   const write = (name, value) => { const f = path.join(dir, name); fs.writeFileSync(f, typeof value === 'string' ? value : JSON.stringify(value)); return f; };
   const guideFile = write('empty-guide.json', {productions: [], episodes: [], unidentified: {}});
   const rec = (id, url, extra = {}) => ({id, url, series: 'classic', kind: 'episode', titleEn: 'Fixture ' + id, ...extra});
-  const run = (records, {guide = guideFile, keep = false, services = null, series = null, vocabulary = null, priority = null} = {}) => {
+  const run = (records, {guide = guideFile, keep = false, services = null, series = null, vocabulary = null, priority = null, parts = []} = {}) => {
     const input = write('fixture-records.json', typeof records === 'string' ? records : {records});
     const out = path.join(dir, 'out.html'); if (!keep) fs.writeFileSync(out, 'KEEP');
     const r = spawnSync('python3', [builder, input, '--guide', guide, ...(services ? ['--services', services] : []),
       ...(series ? ['--series', series] : []), ...(vocabulary ? ['--vocabulary', vocabulary] : []),
-      ...(priority ? ['--link-priority', priority] : []), '--output', out],
+      ...(priority ? ['--link-priority', priority] : []), ...parts.flatMap(x => ['--guide-part', x]), '--output', out],
       {encoding: 'utf8'});
     return {status: r.status, text: (r.stdout || '') + (r.stderr || ''), out: fs.readFileSync(out, 'utf8')};
   };
@@ -5470,6 +5543,22 @@ function builderChecks(builder, dir) {
   const contained = c => guide({uploads: [{recordId: 'fx-w', role: 'whole-candidate', container: c, extentNoteEn: 'Episodes 1 and 2.'}]});
   builds('a compilation copy', run(recs, {guide: contained('compilation')}));
   fails(run(recs, {guide: contained('playlist')}), /upload 'fx-w': container must be one of \['compilation', 'listing'\]/, 'unknown container');
+  // Guide parts merge into the guide and are validated with it: a part's episode builds, an id repeated across files and a
+  // malformed base or part are refused with the file named (never a TypeError from the merge).
+  const partOf = (name, value) => write(name, {productions: [], episodes: [], unidentified: {}, ...value});
+  const partEp = {id: 'fx-ep2', production: 'fx-prod', season: 1, number: 2, confidence: 'documented', uploads: [{recordId: 'fx-x', role: 'whole-candidate'}]};
+  const partOut = run(recs, {guide: guide({uploads: [{recordId: 'fx-w', role: 'whole-candidate'}]}), parts: [partOf('fixture-part.json', {episodes: [partEp]})]});
+  builds('a guide part', partOut);
+  const partPayload = JSON.parse(partOut.out.match(/<script id="library-data" type="application\/json">([\s\S]*?)<\/script>/)[1]);
+  assert.deepEqual(partPayload.guide.episodes.map(e => e.id).sort(), ['fx-ep', 'fx-ep2'], 'A part\'s episodes join the guide');
+  assert.deepEqual(partPayload.meta.guideParts, ['fixture-part.json'], 'meta names the parts');
+  fails(run(recs, {guide: guide({}), parts: [partOf('fixture-part.json', {episodes: [{...partEp, id: 'fx-ep'}]})]}), /duplicate|already/i, 'an episode id repeated across parts');
+  fails(run(recs, {guide: guide({}), parts: [partOf('fixture-part.json', {unidentified: []})]}), /fixture-part\.json: unidentified must be an object/, 'a part with a list of queues');
+  for (const [k, v] of [['productions', null], ['unidentified', null], ['unidentified', []], ['episodes', {}]]) {
+    const base = write('fixture-base.json', {productions: [], episodes: [], unidentified: {}, [k]: v});
+    fails(run(recs, {guide: base, parts: [partOf('fixture-part.json', {})]}), new RegExp('fixture-base\\.json: ' + k + ' must be'), `a base guide with ${k} ${JSON.stringify(v)}`);
+  }
+  fails(run(recs, {guide: guide({}), parts: [path.join(dir, 'no-such-part.json')]}), /Guide part not found/, 'a missing guide part');
   // Record-file defaults: filled in for validation, left out of the embedded record (its "_d" names them); unknown default keys,
   // a record that sets "_d" and a malformed completeness-note table are refused.
   const withDefaults = (d, records, extra = {}) => JSON.stringify({defaults: d, records, ...extra});

@@ -11,7 +11,7 @@ The views nav has four items: Home, Episode guide, Browse and Starred. Phones al
 **Home** (`#/home`) is the start view when the guide exists; without a guide the library starts on Browse. It holds:
 
 - Two stored preferences, Spoken (All languages, Hebrew, English) and Length (any, or up to 5, 10, 20 or 30 minutes). They are `sumsum-spoken` and `sumsum-length`. They shape what Home and Surprise offer, never the guide, and a Browse hash never changes them.
-- **Up next.** This is the earliest core episode of one family not marked watched, with its best *offered* whole or alternate copy. A two-button switch on the card picks the family, Rechov Sumsum (the core productions of the goal series in `data/series.json`) or Sesame Street, stored as `sumsum-upnext`; without a stored choice, Spoken English starts on Sesame Street and anything else on Rechov Sumsum. When the chosen family has nothing to offer, Up next uses the other.
+- **Up next.** This is the earliest core episode of one family not marked watched, with its best *offered* whole or alternate copy. A two-button switch on the card picks the family, Rechov Sumsum (the core productions of the goal series in `data/series.json`) or Sesame Street, stored as `sumsum-upnext`; without a stored choice, Spoken English starts on Sesame Street and anything else on Rechov Sumsum. When the chosen family has nothing to offer, Up next uses the other, presses its button and says so in one line.
   - **Offered:** not marked as needing a VPN, a card or a purchase, not failed or region-limited in a check, and within the preferences.
   - **Choosing the copy:** the copy is picked among the episode's offered copies, so a copy that isn't offered never hides one that is.
   - **When no episode fits:** Up next offers any offered video.
@@ -46,7 +46,7 @@ The Research to-do page (`#/todo`, formerly To find) is linked from Missing epis
 
 The guide's coverage panel for core Rechov Sumsum sits at the end of the guide overview.
 
-A production with more than eight seasons (Sesame Street, 56) shows one season at a time, chosen with a season picker and kept in the route as `?season=N` (dropped when the production changes; an unknown season falls back). Without a route season, the first shown is the season of the earliest unwatched episode with a whole link. Searches and filters span every season and then show the matches without strips. The unscoped guide shows that production's first season with an "All N seasons" link. Its numbers are zero-padded (`numberWidth`).
+A production with more than eight seasons (Sesame Street, 56) shows one season at a time, chosen with a season picker and kept in the route as `?season=N` (dropped when the production changes; an unknown season falls back). Without a route season, the first shown is the season of the earliest unwatched episode with a whole link. Searches and filters span every season and show the matching seasons' tiles without strips (the Numbers layout keeps dimmed strips on the production's own page). The unscoped guide shows that same season, up to 12 tiles, with an "All N seasons" link; its "Show all" counts that season's episodes. Its numbers are zero-padded (`numberWidth`).
 
 The episode page shows "About this episode" when the guide has details: the summary quoted in English with its source revision and licence, "Brought to you by" the sponsor letters and numbers, word on the street and guest stars. Upload rows inside a compilation or on a service listing say so.
 
@@ -58,7 +58,7 @@ Browse, Starred, Home's shelves, Again, Surprise and the queue show **entries**,
 
 - **An episode entry** holds the counted copies of one episode: whole, alternate edition and parts. Its card is headed by the episode and opens its page.
   - Excerpts are other videos, and possible copies are unresolved, so neither joins it.
-  - A record that is a counted copy of several episodes (a compilation) is an entry of its own, so a star or an open never stands for two episodes.
+  - A record that is a counted copy of several episodes (a compilation) is an entry of its own, so a star or an open never stands for two episodes. When such a compilation is the copy an episode page's Watch button opens, its star and "+" act on the compilation's entry.
 - **A video entry** is every other record. Records that are the same video on another page join it (the same host video id in the record's own link, such as one Vimeo video on two Hop! pages).
 - **The research pages stay per upload:** Videos to identify, Identified videos, Missing episodes, record pages and the to-do export.
 
@@ -69,7 +69,7 @@ An entry's copies are ranked by `data/link-priority.json`, the user's order (202
   - A link needing the Israel VPN is `vpn`.
   - A region-limited free stream ranks with `free-with-ads`.
   - Anything else goes by host: archive.org, YouTube, Vimeo, or `other-free`.
-- **How copies are sorted** (`copyKey`): usable before failed, then whole and alternate editions, parts, excerpts, then the tier, then official before community, then part number.
+- **How copies are sorted** (`copyKey`): usable before failed, then whole and alternate editions, parts, excerpts, then a copy of the episode alone before one inside a compilation before a service listing (`container`), then the tier, then official before community, then part number.
 - **What uses the order:**
   - The Watch button and Up next open the first copy that fits.
   - A card shows the first copy that passes every active filter together, and names the other places once each ("Also on YouTube, Vimeo").
@@ -98,7 +98,7 @@ Two more personal stores sit beside them:
 
 The backup (`sumsum-direct-links-v1`) carries both, as `opened` and `sitting`. An import validates each entry and merges, keeping the higher count and the later date and appending queued items without repeats, so importing the same backup twice changes nothing.
 
-The UI preferences live in local storage too, as `sumsum-language`, `sumsum-theme`, `sumsum-appearance`, `sumsum-guide-layout` (the guide's Album, Numbers or List layout; `data-start-layout` overrides it), `sumsum-spoken` and `sumsum-length` (Home's preferences). The backup leaves them out, because it holds what the user collected (pasted links, stars, watched marks, opens and the queue), not how the page looks.
+The UI preferences live in local storage too, as `sumsum-language`, `sumsum-theme`, `sumsum-appearance`, `sumsum-guide-layout` (the guide's Album, Numbers or List layout; `data-start-layout` overrides it), `sumsum-spoken` and `sumsum-length` (Home's preferences), and `sumsum-upnext` (Up next's family). The backup leaves them out, because it holds what the user collected (pasted links, stars, watched marks, opens and the queue), not how the page looks.
 
 ## Themes and appearance
 

@@ -1354,6 +1354,7 @@ en: {
  nextHelp: 'The next core episode not marked watched, with a whole copy that is not marked as needing a VPN, a card or a purchase.',
  nextSkip: 'Another one',
  upNextFrom: 'Up next from',
+ upNextNone: 'Nothing in {name} fits right now.',
  navHome: 'Home',
  navHomeShort: 'Home',
  homeTitle: 'Home',
@@ -1996,6 +1997,7 @@ he: {
  nextHelp: 'פרק השידור המרכזי הבא שלא סומן כנצפה, עם עותק שלם שלא סומן כדורש VPN, כרטיס או רכישה.',
  nextSkip: 'פרק אחר',
  upNextFrom: 'הבא בתור מתוך',
+ upNextNone: 'אין כרגע פרק מתאים ב{name}.',
  navHome: 'בית',
  navHomeShort: 'בית',
  homeTitle: 'בית',
@@ -3035,7 +3037,7 @@ for (const e of guide.episodes) {
  upsById.set(e.id, ups); possById.set(e.id, poss);
  for (const u of [...ups, ...poss]) {
   if (!recLinks.has(u.r.id)) recLinks.set(u.r.id, []);
-  recLinks.get(u.r.id).push({e, role: u.role});
+  recLinks.get(u.r.id).push({e, role: u.role, container: u.container});
   if (u.role !== 'possible') matchedIds.add(u.r.id);
  }
 }
@@ -3421,9 +3423,12 @@ const tierRank = r => { const k = tierOf(r); return k === 'failed' ? FAILED_TIER
 // The order of one episode's copies: usable before failed; whole and alternate copies, then parts, then excerpts, then possible
 // copies; then the tier; official before community; then the part number.
 const ROLE_CLASS = {'whole-candidate': 0, 'alternate-edition': 0, part: 1, excerpt: 2, possible: 3};
+// A copy of the episode alone comes before one inside a compilation, and that before a service's season or series listing.
+const CONT_CLASS = {compilation: 1, listing: 2};
+const contClass = r => Math.max(0, ...(recLinks.get(r.id) || []).map(l => (l.role === 'possible' ? 0 : CONT_CLASS[l.container] || 0)));
 function copyKey(r, role, partNo) {
  const tr = tierRank(r);
- return [tr === FAILED_TIER ? 1 : 0, ROLE_CLASS[role] ?? 3, tr, r.sourceType === 'official' ? 0 : 1, partNo || 0];
+ return [tr === FAILED_TIER ? 1 : 0, ROLE_CLASS[role] ?? 3, contClass(r), tr, r.sourceType === 'official' ? 0 : 1, partNo || 0];
 }
 const cmpKeys = (x, y) => { for (let i = 0; i < x.length; i++) if (x[i] !== y[i]) return x[i] - y[i]; return 0; };
 // One link per episode, in that order (part 1 of the best parts). Possible copies (identity unresolved) are never candidates.
@@ -3657,6 +3662,7 @@ for (const p of prods) {
   if (k && !CODE_QUERIES.some(c => c.k === k)) CODE_QUERIES.push({k});
  }
 }
+const PLAIN_WORD_LABELS = new Set(['episode', 'פרק'].map(normalize));
 const PLAIN_CODE = /^(?:no|#|מס)\s*(\d+)$/, SE_CODE = [/^s\s*(\d+)\s*·\s*e\s*(\d+)$/, /^עונה\s*(\d+)\s*·\s*פרק\s*(\d+)$/];
 function codeQuery(q) {
  const s = normalize(q), m = s.match(/^<\s*(\d+)\s*>$/);
@@ -4258,8 +4264,11 @@ function epHits(e, Q) {
  if (Q.code) {
   const p = prodById.get(e.production);
   if (Q.code.plain) return !numLabel(p) && e.number === Q.code.n && (e.season ?? null) === Q.code.season;
-  return !!numLabel(p) && e.number === Q.code.n &&
+  if (numLabel(p)) return e.number === Q.code.n &&
    (!Q.code.label || [p.numberLabelEn, p.numberLabelHe].some(x => typeof x === 'string' && normalize(x) === Q.code.label));
+  // A label that is also the plain word other productions number by ("Episode 5", "פרק 5", Sesame Street's) finds their
+  // episodes by text, as before any production used it.
+  if (!PLAIN_WORD_LABELS.has(Q.code.label)) return false;
  }
  if (!Q.ts.length) return true;
  const s = epSearch(e); return Q.ts.every(x => s.includes(x));
@@ -4735,8 +4744,9 @@ function productionSection(p, Q, filtered) {
   const pa = el('p', 'seasons-link'); pa.append(a); sec.append(pa);
  }
  if (hidden.length) {
+  // The count is what the button reveals: the episodes of the groups drawn (one season of a paged production).
   const first = hidden[0], step = scoped && hidden.length > 96;
-  const more = btn('btn ghost show-more', step ? t('showMoreEps', {n: fmtN(96)}) : t('showAllEps', {n: fmtN(visible.size)}), () => {
+  const more = btn('btn ghost show-more', step ? t('showMoreEps', {n: fmtN(96)}) : t('showAllEps', {n: fmtN(rendered + hidden.length)}), () => {
    state.limits.set(limitKey, step ? limit + 96 : Infinity); G.focusAfter = (layout === 'list' ? 'row-' : 'ep-') + first.id;
    updateGuide();
   }, 'more-' + p.id);
@@ -4938,9 +4948,11 @@ VIEWS.episode = function mountEpisode(v) {
  info.append(tags);
  const prim = el('div', 'primary');
  // The episode's entry (its counted copies) is queued and starred as one; an episode with excerpts only queues the excerpt.
- const een = entryById.get('ep:' + e.id);
- if (b) prim.append(fk(ticket(viewed(watchLink(b, false, 'btn big', epTitle(e)), b.r), b.r), 'ep-watch'), een ? queueBtn(een, 'ep-q', b.r) : queueBtn(b.r, 'ep-q'));
- if (een) prim.append(starBtn(een, 'ep-star'));
+ // The queue and star act on what the Watch button opens: the episode's entry, or, when that copy is a compilation outside
+ // it (the episode's only whole copy), the compilation's own entry.
+ const een = entryById.get('ep:' + e.id), wen = b && (een && een.members.includes(b.r) ? een : entryOfRec.get(b.r.id));
+ if (b) prim.append(fk(ticket(viewed(watchLink(b, false, 'btn big', epTitle(e)), b.r), b.r), 'ep-watch'), wen ? queueBtn(wen, 'ep-q', b.r) : queueBtn(b.r, 'ep-q'));
+ if (een || wen) prim.append(starBtn(een || wen, 'ep-star'));
  if (cov !== 'whole-candidate') prim.append(ext(ytSearchUrl(p, epSearchWords(e)), t('searchYoutube'), b ? 'btn ghost big' : 'btn big', 'search'));
  // Personal, beside the decision: separate from coverage and evidence; not offered without a link to watch.
  if (upsOf(e).length) {
@@ -6188,9 +6200,9 @@ function famCands(f) {
  return out;
 }
 function nextCands() {
- // The chosen family first; when nothing in it qualifies, the other family's.
+ // The chosen family first; when nothing in it qualifies, the other family's (out.fam names the family shown).
  const f = upNextFam();
- for (const g of [f, ...UPNEXT_FAMS.filter(x => x !== f)]) { const out = g ? famCands(g) : []; if (out.length) return out; }
+ for (const g of [f, ...UPNEXT_FAMS.filter(x => x !== f)]) { const out = g ? famCands(g) : []; if (out.length) return Object.assign(out, {fam: g}); }
  // No core episode fits the preferences: any offered entry that does, through its first offered member.
  return entries.map(en => [en, pickMember(en, pickable)]).filter(([, r]) => r).map(([en, r]) => ({e: en.e, b: entryB(en, r)}));
 }
@@ -6370,10 +6382,11 @@ function stoop() {
  sec.append(h, ul, el('div', 'stoop-step')); return sec;
 }
 // The family switch on the Up next card: two small buttons, the chosen one pressed.
-function famSwitch() {
+// The pressed button is the family shown; when the chosen family has nothing to offer, a line says so.
+function famSwitch(shown) {
  if (UPNEXT_FAMS.length < 2) return null;
  const box = el('div', 'seg-toggle fam-switch'); box.setAttribute('role', 'group'); box.setAttribute('aria-label', t('upNextFrom'));
- const cur = upNextFam();
+ const cur = shown || upNextFam();
  for (const f of UPNEXT_FAMS) {
   const fam = FAMILIES.find(x => x.id === f) || {};
   const b = btn('', pick(fam.en, fam.he) || f, () => {
@@ -6386,7 +6399,9 @@ function famSwitch() {
 function heroNext() {
  const cands = nextCands(), sec = el('section', 'next'); sec.setAttribute('aria-labelledby', 'next-h');
  const h = el('h2', 'kicker', t('nextTitle')); h.setAttribute('id', 'next-h');
- const fs = famSwitch();
+ const fs = famSwitch(cands.fam), chosen = upNextFam();
+ const famName = f => { const x = FAMILIES.find(y => y.id === f) || {}; return pick(x.en, x.he) || f; };
+ const fallback = cands.fam && cands.fam !== chosen ? el('p', 'note fam-none', t('upNextNone', {name: famName(chosen)})) : null;
  if (!cands.length) {
   sec.className += ' none'; sec.append(h); if (fs) sec.append(fs); sec.append(el('p', '', t('nothingFits')), prefClears()); return sec;
  }
@@ -6397,7 +6412,7 @@ function heroNext() {
  const body = el('div', 'next-body');
  const tt = el('p', 'next-title');
  const a = e ? titleDir(go(epRoute(e.id), epTitle(e)), e) : titleDir(go(recRoute(r.id), recTitle(r)), r); fk(a, 'next-ep'); tt.append(a);
- body.append(h); if (fs) body.append(fs);
+ body.append(h); if (fs) body.append(fs); if (fallback) body.append(fallback);
  body.append(tt, el('p', 'note', e ? [prodName(p), epCode(e)].filter(Boolean).join(' · ') :
   [pick(...(SERIES[r.series] || [r.series])), t('k1_' + kindOf(r))].join(' · ')), accessLine(r));
  const title = e ? epTitle(e) : recTitle(r);
