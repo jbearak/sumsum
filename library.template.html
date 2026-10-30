@@ -6164,7 +6164,7 @@ const offerable = r => !!destination(r) && checkOf(r) !== 'region-limited' &&
  (PICK_ACC.has(accessOf(r)) || (accessOf(r) === 'licensed' && subscribedSvc(svcOf(r))));
 const pickable = r => offerable(r) && prefOk(r);
 const recByKey = new Map(records.map(r => [mapKey(r), r]));
-// Random choices (Surprise, shelf shuffles). data-start-seed makes them repeatable for the checks.
+// Random choices (Up next, Surprise, shelf shuffles). data-start-seed makes them repeatable for the checks.
 const rand = (() => {
  let s = Number(root.dataset.startSeed);
  if (!Number.isSafeInteger(s)) return Math.random;
@@ -6188,7 +6188,7 @@ function ticket(a, r) {
  if (d) { const s = el('span', 'stub'); s.setAttribute('aria-hidden', 'true'); s.append(ltr(d)); a.append(s); }
  return a;
 }
-// Up next: the next unwatched core Rechov Sumsum episode with a whole copy among the offered videos. The copy is chosen among
+// Up next: an unwatched core Rechov Sumsum episode with a whole copy among the offered videos. The copy is chosen among
 // the episode's offered whole and alternate copies, best access first, so a copy that is not offered never hides one that is.
 function nextCopy(e) {
  let best = null, bk = null;
@@ -6219,12 +6219,19 @@ function famCands(f) {
  }
  return out;
 }
+// Up next walks its candidates in a random order drawn once per page load, so each visit starts somewhere new; a candidate
+// keeps its place when the list changes (a watched mark, a preference, the family), and Previous goes back the same way.
+const nextRank = new Map();
+const nextRanked = out => {
+ for (const c of out) { const k = c.e ? 'e:' + c.e.id : 'r:' + mapKey(c.b.r); if (!nextRank.has(k)) nextRank.set(k, rand()); c.rank = nextRank.get(k); }
+ return out.sort((a, b) => a.rank - b.rank);
+};
 function nextCands() {
  // The chosen family first; when nothing in it qualifies, the other family's (out.fam names the family shown).
  const f = upNextFam();
- for (const g of [f, ...UPNEXT_FAMS.filter(x => x !== f)]) { const out = g ? famCands(g) : []; if (out.length) return Object.assign(out, {fam: g}); }
+ for (const g of [f, ...UPNEXT_FAMS.filter(x => x !== f)]) { const out = g ? famCands(g) : []; if (out.length) return Object.assign(nextRanked(out), {fam: g}); }
  // No core episode fits the preferences: any offered entry that does, through its first offered member.
- return entries.map(en => [en, pickMember(en, pickable)]).filter(([, r]) => r).map(([en, r]) => ({e: en.e, b: entryB(en, r)}));
+ return nextRanked(entries.map(en => [en, pickMember(en, pickable)]).filter(([, r]) => r).map(([en, r]) => ({e: en.e, b: entryB(en, r)})));
 }
 // Opened entries, last opened first, each with its opens summed and the member opened last. Keys that match no record stay
 // stored but are not shown.

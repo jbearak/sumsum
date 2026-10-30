@@ -11,9 +11,10 @@ The views nav has four items: Home, Episode guide, Browse and Starred. Phones al
 **Home** (`#/home`) is the start view when the guide exists; without a guide the library starts on Browse. It holds:
 
 - Two stored preferences, Spoken (All languages, Hebrew, English) and Length (any, up to 5, 10, 20 or 30 minutes, or full episodes). They are `sumsum-spoken` and `sumsum-length`. They shape what Home and Surprise offer, never the guide, and a Browse hash never changes them.
-- **Up next.** This is the earliest core episode of one family not marked watched, with its best *offered* whole or alternate copy. A two-button switch on the card picks the family, Rechov Sumsum (the core productions of the goal series in `data/series.json`) or Sesame Street, stored as `sumsum-upnext`; without a stored choice, Spoken English starts on Sesame Street and anything else on Rechov Sumsum. When the chosen family has nothing to offer, Up next uses the other, presses its button and says so in one line.
+- **Up next.** This is a core episode of one family not marked watched, with its best *offered* whole or alternate copy. A two-button switch on the card picks the family, Rechov Sumsum (the core productions of the goal series in `data/series.json`) or Sesame Street, stored as `sumsum-upnext`; without a stored choice, Spoken English starts on Sesame Street and anything else on Rechov Sumsum. When the chosen family has nothing to offer, Up next uses the other, presses its button and says so in one line.
   - **Offered:** not marked as needing a VPN, a card or a purchase, not failed or region-limited in a check, and within the preferences.
   - **Choosing the copy:** the copy is picked among the episode's offered copies, so a copy that isn't offered never hides one that is.
+  - **Order:** random, drawn once per page load, so each visit starts somewhere new. Another one and Previous walk that order; a candidate keeps its place when the list changes. The checks' `data-start-seed` makes it repeatable.
   - **When no episode fits:** Up next offers any offered video.
   - **Wording:** nothing says these videos play; most links are not test-played.
   - **Again:** when the last opened video is something else, the hero offers it again.

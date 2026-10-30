@@ -1247,7 +1247,7 @@ async function checkGuide(H, M) {
   await H.fk('layout-album').click();
   ok('album, numbers and list layouts; stored layout');
 
-  // Up next, on Home: the next core episode not marked watched, with its best offered whole or alternate copy, so a copy that
+  // Up next, on Home: a core episode not marked watched, in a random order, with its best offered whole or alternate copy, so a copy that
   // is not offered (a Hop page, a licensed listing, a blocked or region-limited upload) never hides one that is.
   await H.navigate('home');
   const local = localIn(H), seen = new Set(JSON.parse(H.storage.get('sumsum-watched') || '[]'));
@@ -1255,8 +1255,8 @@ async function checkGuide(H, M) {
     .filter(e => cov(e) === 'whole-candidate' && !seen.has(e.id) && nextCopyM(M, e, local));
   assert(cands.length && H.has('next-watch', H.view()), 'Up next has candidates');
   if (cands.length) {
-    const c0 = nextCopyM(M, cands[0], local).r;
-    assert.equal(H.fk('next-watch').href, expectDest(c0, local(c0)));
+    const e0 = cands.find(e => '#/episode/' + encodeURIComponent(e.id) === H.fk('next-ep').href), c0 = e0 && nextCopyM(M, e0, local).r;
+    assert(c0, 'Up next starts on a candidate: ' + H.fk('next-ep').href);
     assert(H.fk('next-watch').textContent.startsWith(L.en['watchOn_' + hostKind(expectDest(c0, local(c0)))]));
     // "Another one" cycles through exactly the candidates, each with its chosen copy.
     const shown = new Set();
@@ -1272,7 +1272,7 @@ async function checkGuide(H, M) {
     }
     assert.deepEqual([...shown].sort(), cands.map(e => '#/episode/' + encodeURIComponent(e.id)).sort(), 'Up next offers exactly the candidates');
   }
-  // The family switch: Sesame Street walks its own core episodes, earliest unwatched with an offered copy first; the choice is
+  // The family switch: Sesame Street walks its own core episodes, unwatched with an offered copy; the choice is
   // stored and focus stays on it. Without a stored choice, All starts on Rechov Sumsum and English Spoken on Sesame Street.
   const ssProds = prods.filter(p => p.format === 'core' && FAMILY_OF[p.series] === 'sesame-street');
   if (ssProds.length && cands.length) {
@@ -1284,12 +1284,12 @@ async function checkGuide(H, M) {
     assert.equal(H.storage.get('sumsum-upnext'), '"sesame-street"', 'The family choice is stored');
     assert.equal(H.document.activeElement, H.fk('next-fam-sesame-street'), 'Focus stays on the switch');
     assert.equal(H.fk('next-fam-sesame-street').getAttribute('aria-pressed'), 'true');
-    const s0 = [...ssProds].sort((a, b) => (a.order ?? 99) - (b.order ?? 99)).flatMap(p => M.epsOf.get(p.id))
-      .find(e => cov(e) === 'whole-candidate' && !seen.has(e.id) && nextCopyM(M, e, local));
-    assert.equal(H.fk('next-ep').href, epHref(s0), 'Sesame Street Up next starts at its earliest unwatched episode (Another one resets)');
+    const s0 = ssProds.flatMap(p => M.epsOf.get(p.id)).find(e => epHref(e) === H.fk('next-ep').href);
+    assert(s0 && cov(s0) === 'whole-candidate' && !seen.has(s0.id) && nextCopyM(M, s0, local),
+      'Sesame Street Up next starts on one of its unwatched episodes: ' + H.fk('next-ep').href);
     assert.equal(H.fk('next-watch').href, expectDest(nextCopyM(M, s0, local).r, local(nextCopyM(M, s0, local).r)), 'with its chosen copy');
     await H.fk('next-fam-' + rechov).click();
-    assert.equal(H.fk('next-ep').href, epHref(cands[0]), 'Back to Rechov Sumsum');
+    assert(cands.some(e => epHref(e) === H.fk('next-ep').href), 'Back to Rechov Sumsum');
     H.storage.delete('sumsum-upnext'); await H.fk('pref-spoken-en').click();
     assert.equal(H.fk('next-fam-sesame-street').getAttribute('aria-pressed'), 'true', 'English Spoken starts on Sesame Street');
     // Sesame Street chosen with Spoken Hebrew: nothing in it fits, so Rechov Sumsum is shown, pressed, with a line saying so.
@@ -1305,7 +1305,7 @@ async function checkGuide(H, M) {
     await H.fk('pref-spoken-all').click();
     assert.equal(H.fk('next-fam-' + rechov).getAttribute('aria-pressed'), 'true');
     assert(!H.byClass('fam-none').length, 'No fallback line when the chosen family is shown');
-    ok('Up next family switch: Rechov Sumsum or Sesame Street, stored, earliest unwatched first, English Spoken defaults to Sesame Street');
+    ok('Up next family switch: Rechov Sumsum or Sesame Street, stored, English Spoken defaults to Sesame Street');
   }
   // Strip keyboard: one tab stop, arrows by reading direction, Home/End.
   const strip0 = H.byClass('strip')[0];
@@ -4139,6 +4139,26 @@ const spokenOfM = r => {
 const lenOkM = (r, n) => !n || (n === 'full' ? kindOf(r) === 'episode' :
   Number(r.durationSeconds) > 0 && Number(r.durationSeconds) <= Number(n) * 60);
 const tagKeyM = v => normalizeQ((NAMES[String(v).toLowerCase()] || NAMES[normalizeQ(v)] || [v])[0]);
+// Up next's order is drawn at random on each page load: a seed repeats it, another seed or no seed gives another order.
+async function checkNextOrder(htmlPath) {
+  const order = async attrs => {
+    const H = harness(boot(htmlPath, attrs ? {htmlAttrs: attrs} : {})), out = [];
+    await H.navigate('home');
+    for (let k = 0; k < 8 && H.has('next-ep', H.view()); k++) {
+      out.push(H.fk('next-ep').href);
+      if (!H.has('next-skip', H.view())) break;
+      await H.fk('next-skip').click();
+    }
+    return out.join(' ');
+  };
+  const a = await order({'data-start-seed': '1'});
+  if (a.split(' ').length < 3) return ok('up next order (too few candidates to compare)');
+  assert.equal(await order({'data-start-seed': '1'}), a, 'A seed repeats Up next\'s order');
+  assert.notEqual(await order({'data-start-seed': '2'}), a, 'Another seed gives Up next another order');
+  const u1 = await order(null), u2 = await order(null);
+  assert.notEqual(u1, u2, 'Without a seed, each page load gives Up next another order');
+  ok('up next order is random per page load');
+}
 async function checkHome(htmlPath, M) {
   const H = harness(boot(htmlPath, {htmlAttrs: {'data-start-seed': '11'}})), {records} = M, keyOf = r => r.id || r.url;
   const byId = new Map(records.map(r => [r.id, r]));
@@ -5758,7 +5778,7 @@ async function run() {
   await tick(); await checkLangBoot(htmlPath);
   await tick(); await checkThemePicker(htmlPath);
   await tick(); await checkLicensed(htmlPath, H, M);
-  if (M.hasGuide) { await checkNav(H, M); await checkBrowsePages(H, M); await checkHome(htmlPath, M); }
+  if (M.hasGuide) { await checkNav(H, M); await checkBrowsePages(H, M); await checkHome(htmlPath, M); await checkNextOrder(htmlPath); }
   await sweep(H, M);
   await tick(); await checkWithoutGuide(htmlPath);
   await tick(); await checkEdgeCases(htmlPath);
